@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Login</title>
+  <style>
+    :root{--accent:#0077b6;--bg:linear-gradient(120deg,#0077b6,#90e0ef)}
+    html,body{height:100%;margin:0}
+    body{font-family:Inter,Arial,Helvetica,sans-serif;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px}
+    .card{background:#fff;padding:20px;border-radius:12px;box-shadow:0 8px 24px rgba(2,46,74,0.12);width:420px;max-width:95%}
+    h2{color:var(--accent);margin:0 0 10px}
+    input{width:100%;padding:10px;border-radius:8px;border:1px solid #e6e9ee;margin-top:6px}
+    button{background:var(--accent);color:#fff;padding:10px;border:none;border-radius:8px;margin-top:12px;width:100%}
+    .message{color:#c0392b;margin-top:8px}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Sign in</h2>
+    {% if message %}
+      <div class="message">{{ message }}</div>
+    {% endif %}
+    <form method="post" action="/login">
+      <label for="e_mail">E-mail</label>
+      <input type="email" id="e_mail" name="e_mail" required>
+
+      <label for="password" style="margin-top:8px">Password</label>
+      <input type="password" id="password" name="password" required>
+
+      <button type="submit">Login</button>
+    </form>
+    <div style="margin-top:12px;font-size:13px">No account? <a href="/register">Register</a></div>
+  </div>
+</body>
+</html>

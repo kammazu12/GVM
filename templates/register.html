@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Register</title>
+  <style>
+    :root{
+      --accent:#0077b6;
+      --accent-dark:#023e8a;
+      --bg1:linear-gradient(120deg,#0077b6,#90e0ef);
+      --card-bg:#ffffff;
+      --radius:12px;
+      --muted:#666;
+    }
+    body{font-family:Inter,Arial,Helvetica,sans-serif;margin:0;height:100vh;background:var(--bg1);display:flex;align-items:center;justify-content:center}
+    .card{background:var(--card-bg);padding:24px;border-radius:var(--radius);box-shadow:0 8px 24px rgba(2,46,74,0.12);width:420px;max-width:95%}
+    h2{margin:0 0 12px;color:var(--accent)}
+    label{display:block;font-weight:600;margin-top:10px;color:#222}
+    input,select{width:100%;padding:10px;border:1px solid #e6e9ee;border-radius:8px;margin-top:6px}
+    .row{display:flex;gap:8px}
+    .small{font-size:13px;color:var(--muted)}
+    .actions{margin-top:16px}
+    button{background:var(--accent);color:#fff;padding:10px 14px;border:none;border-radius:8px;cursor:pointer;width:100%}
+    button:hover{background:var(--accent-dark)}
+    .message{color:#c0392b;margin-top:10px;font-weight:600}
+    .toggle{display:flex;gap:8px;margin-top:8px}
+    .toggle input{margin-right:6px}
+    .subtle{font-size:13px;color:#555;margin-top:8px}
+    .inline{display:inline-block}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Register</h2>
+    {% if message %}
+      <div class="message">{{ message }}</div>
+    {% endif %}
+
+    <form method="post" id="regForm">
+      <label for="e_mail">E-mail</label>
+      <input type="email" id="e_mail" name="e_mail" required autocomplete="email">
+
+      <div style="display:flex;gap:12px;margin-top:8px">
+        <div style="flex:1">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required autocomplete="new-password">
+        </div>
+        <div style="flex:1">
+          <label for="confirm_password">Confirm Password</label>
+          <input type="password" id="confirm_password" name="confirm_password" required autocomplete="new-password">
+        </div>
+      </div>
+
+      <div class="toggle">
+        <label class="inline"><input type="radio" name="action" value="create" checked> Create new company</label>
+        <label class="inline"><input type="radio" name="action" value="join"> Join with invite code</label>
+      </div>
+
+      <div id="createFields" style="margin-top:10px">
+        <label for="company_name">Company name</label>
+        <input type="text" id="company_name" name="company_name" placeholder="Acme Logistics">
+
+        <label for="country">Country</label>
+        <input type="text" id="country" name="country" placeholder="Hungary">
+
+        <label for="post_code">Post code</label>
+        <input type="text" id="post_code" name="post_code">
+
+        <label for="address">Address</label>
+        <input type="text" id="address" name="address">
+
+        <label for="tax_number">Tax number</label>
+        <input type="text" id="tax_number" name="tax_number">
+
+        <label for="subscription_type">Subscription type (optional)</label>
+        <select id="subscription_type" name="subscription_type">
+          <option value="">-- none --</option>
+          <option value="basic">Basic</option>
+          <option value="pro">Pro</option>
+        </select>
+      </div>
+
+      <div id="joinFields" style="display:none;margin-top:12px">
+        <label for="invite_code">Invite code</label>
+        <input type="text" id="invite_code" name="invite_code" placeholder="Enter invite code">
+        <div class="subtle">If you already have an invite from your company admin, use it to join.</div>
+      </div>
+
+      <div class="actions">
+        <button type="submit">Register</button>
+      </div>
+    </form>
+
+    <div class="subtle" style="margin-top:12px">
+      Already have an account? <a href="/login">Sign in</a>
+    </div>
+  </div>
+
+  <script>
+    const actionRadios = document.querySelectorAll('input[name="action"]');
+    const createFields = document.getElementById('createFields');
+    const joinFields = document.getElementById('joinFields');
+
+    function toggleFields(){
+      const val = document.querySelector('input[name="action"]:checked').value;
+      if(val === 'create'){
+        createFields.style.display = 'block';
+        joinFields.style.display = 'none';
+      } else {
+        createFields.style.display = 'none';
+        joinFields.style.display = 'block';
+      }
+    }
+    actionRadios.forEach(r => r.addEventListener('change', toggleFields));
+    toggleFields();
+  </script>
+</body>
+</html>

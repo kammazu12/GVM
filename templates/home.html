@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Home</title>
+  <style>
+    :root{--accent:#0077b6;--bg:linear-gradient(120deg,#0077b6,#90e0ef)}
+    html,body{height:100%;margin:0}
+    body{font-family:Inter,Arial,Helvetica,sans-serif;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px}
+    .card{background:#fff;padding:24px;border-radius:12px;box-shadow:0 8px 24px rgba(2,46,74,0.12);width:720px;max-width:95%}
+    h1{color:var(--accent);margin:0}
+    p{color:#333}
+    .meta{margin-top:12px;padding-top:12px;border-top:1px solid #eef2f6}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Welcome, {{ user.e_mail }}!</h1>
+    <p>Role: <strong>{{ user.role }}</strong></p>
+
+    {% if company %}
+      <div class="meta">
+        <h3>Company</h3>
+        <p><strong>{{ company.name }}</strong></p>
+        <p>{{ company.street }} {{ company.house_number }}, {{ company.post_code }} {{ company.country }}</p>
+        <p>Subscription: {{ company.subscription_type or "—" }}</p>
+      </div>
+    {% else %}
+      <div class="meta">
+        <p>You are not linked to a company yet.</p>
+      </div>
+    {% endif %}
+
+    <div style="margin-top:18px">
+      <a href="/logout">Log out</a>
+    </div>
+  </div>
+</body>
+</html>
