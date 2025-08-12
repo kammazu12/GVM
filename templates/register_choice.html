@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Register — Choose</title>
+  <style>
+    :root{
+      --accent:#0077b6; --accent-dark:#023e8a; --bg:linear-gradient(120deg,#0077b6,#90e0ef);
+    }
+    body{margin:0;height:100vh;background:var(--bg);display:flex;align-items:center;justify-content:center;font-family:Inter,Arial,Helvetica,sans-serif}
+    .wrap{width:420px;max-width:95%;background:#fff;padding:28px;border-radius:12px;box-shadow:0 8px 24px rgba(2,46,74,0.12);text-align:center}
+    h2{color:var(--accent);margin:0 0 12px}
+    .btn{display:block;padding:12px 14px;margin:10px 0;border-radius:10px;border:none;cursor:pointer;font-size:16px}
+    .btn.create{background:var(--accent);color:#fff}
+    .btn.join{background:#f1f5f9;color:#022b3a;border:1px solid #e6edf5}
+    .small{color:#555;margin-top:10px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h2>Create or Join a Company</h2>
+    <p class="small">Choose one of the options below to start registration.</p>
+
+    <a href="/register/create"><button class="btn create">Register a Company</button></a>
+    <a href="/register/join"><button class="btn join">Join a Company with Invite Code</button></a>
+
+    <div style="margin-top:12px;font-size:14px">
+      Already have an account? <a href="/login">Sign in</a>
+    </div>
+  </div>
+</body>
+</html>

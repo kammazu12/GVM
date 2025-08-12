@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Invite Created</title>
+  <style>
+    body{font-family:Inter,Arial,Helvetica,sans-serif;background:linear-gradient(120deg,#0077b6,#90e0ef);display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
+    .card{background:#fff;padding:20px;border-radius:12px;box-shadow:0 8px 24px rgba(2,46,74,0.12);width:420px;max-width:95%}
+    h2{color:#0077b6}
+    pre{background:#f4f6f9;padding:10px;border-radius:8px}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Invite Created</h2>
+    <p>Invite code for company <strong>{{ company_id }}</strong> (role: <strong>{{ role }}</strong>):</p>
+    <pre>{{ code }}</pre>
+    <p>Expires at: {{ expires_at }}</p>
+    <p><a href="/">Back to home</a></p>
+  </div>
+</body>
+</html>

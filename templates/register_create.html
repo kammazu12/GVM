@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Register - Create Company</title>
+  <style>
+    :root{
+      --accent:#0077b6; --accent-dark:#023e8a; --bg1:linear-gradient(120deg,#0077b6,#90e0ef);
+      --card-bg:#ffffff; --radius:12px; --muted:#666; --req:#c0392b;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{font-family:Inter,Arial,Helvetica,sans-serif;margin:0;height:100vh;background:var(--bg1);display:flex;align-items:center;justify-content:center;padding:24px}
+    .card{background:var(--card-bg);padding:24px;border-radius:var(--radius);box-shadow:0 8px 24px rgba(2,46,74,0.12);width:640px;max-width:98%;max-height:calc(100vh - 48px);overflow-y:auto}
+    h2{color:var(--accent);margin:0 0 12px}
+    label{display:block;font-weight:600;margin-top:10px}
+    label .req{color:var(--req);margin-left:6px}
+    input,select{width:100%;padding:10px;border:1px solid #e6e9ee;border-radius:8px;margin-top:6px}
+    .row{display:flex;gap:12px}
+    .col{flex:1}
+    .actions{margin-top:16px}
+    button{background:var(--accent);color:#fff;padding:10px 14px;border:none;border-radius:8px;cursor:pointer}
+    .message{color:#c0392b;margin-top:10px;font-weight:600}
+    .note{font-size:13px;color:#555;margin-top:8px}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Register — Create a new company</h2>
+    {% if message %}
+      <div class="message">{{ message }}</div>
+    {% endif %}
+
+    <form method="POST" action="/register/create" novalidate>
+      <label for="e_mail">E-mail <span class="req">*</span></label>
+      <input type="email" id="e_mail" name="e_mail" required>
+
+      <div class="row">
+        <div class="col">
+          <label for="password">Password <span class="req">*</span></label>
+          <input type="password" id="password" name="password" required minlength="8" placeholder="Min 8 chars, upper & lower & number">
+        </div>
+        <div class="col">
+          <label for="confirm_password">Confirm Password <span class="req">*</span></label>
+          <input type="password" id="confirm_password" name="confirm_password" required>
+        </div>
+      </div>
+
+      <hr style="margin:16px 0">
+
+      <label for="company_name">Company name <span class="req">*</span></label>
+      <input type="text" id="company_name" name="company_name" required>
+
+      <div class="row">
+        <div class="col">
+          <label for="country">Country <span class="req">*</span></label>
+          <input type="text" id="country" name="country" required>
+        </div>
+        <div class="col">
+          <label for="post_code">Post code <span class="req">*</span></label>
+          <input type="text" id="post_code" name="post_code" required>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col">
+          <label for="street">Street <span class="req">*</span></label>
+          <input type="text" id="street" name="street" required>
+        </div>
+        <div style="width:140px">
+          <label for="house_number">House number <span class="req">*</span></label>
+          <input type="text" id="house_number" name="house_number" required>
+        </div>
+      </div>
+
+      <label for="tax_number">Tax number</label>
+      <input type="text" id="tax_number" name="tax_number">
+
+      <label for="subscription_type">Subscription type</label>
+      <select id="subscription_type" name="subscription_type">
+        <option value="">-- none --</option>
+        <option value="basic">Basic</option>
+        <option value="pro">Pro</option>
+      </select>
+
+      <div class="actions">
+        <button type="submit">Create company and register</button>
+      </div>
+    </form>
+
+    <div class="note">Fields marked with * are required.</div>
+    <div style="margin-top:12px" class="note">Already have an account? <a href="/login">Sign in</a></div>
+  </div>
+</body>
+</html>
