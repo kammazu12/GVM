@@ -12,6 +12,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship, Session
+from sqlalchemy.exc import IntegrityError
 
 import bcrypt
 import secrets
@@ -19,7 +20,7 @@ import secrets
 # ---------------------------
 # Config / DB setup
 # ---------------------------
-DATABASE_URL = "sqlite:///./app.db"  # dev: SQLite file; prod: switch to PostgreSQL URL
+DATABASE_URL = "sqlite:///./app.db"  # dev: SQLite file; prod: change to PostgreSQL URL
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
@@ -36,7 +37,8 @@ class Company(Base):
     subscription_type = Column(String, nullable=True)
     country = Column(String, nullable=True)
     post_code = Column(String, nullable=True)
-    address = Column(String, nullable=True)
+    street = Column(String, nullable=True)
+    house_number = Column(String, nullable=True)
     tax_number = Column(String, nullable=True)
     domestic_only = Column(Boolean, default=False)
 
@@ -49,7 +51,7 @@ class User(Base):
     user_id = Column(Integer, primary_key=True, index=True)
     e_mail = Column(String, nullable=False, unique=True, index=True)
     hashed_password = Column(String, nullable=False)
-    role = Column(String, nullable=False)  # e.g. carrier company / freight forwarder / consignor/consignee / admin / manager
+    role = Column(String, nullable=False)  # e.g. company_admin / freight forwarder / carrier / consignor/consignee / manager
     company_id = Column(Integer, ForeignKey("companies.company_id"), nullable=True)
     is_company_admin = Column(Boolean, default=False)
     common_user = Column(Boolean, default=False)  # uses service occasionally or often
@@ -137,9 +139,19 @@ def home(request: Request, db: Session = Depends(get_db)):
 
 
 @app.get("/register", response_class=HTMLResponse)
-def register_form(request: Request):
-    # show registration form; it contains option to create company or join via invite code
-    return templates.TemplateResponse("register.html", {"request": request, "message": ""})
+def register_choice(request: Request):
+    # Choice page: create or join
+    return templates.TemplateResponse("register_choice.html", {"request": request})
+
+
+@app.get("/register/create", response_class=HTMLResponse)
+def register_create_form(request: Request):
+    return templates.TemplateResponse("register.html", {"request": request, "mode": "create", "message": ""})
+
+
+@app.get("/register/join", response_class=HTMLResponse)
+def register_join_form(request: Request):
+    return templates.TemplateResponse("register.html", {"request": request, "mode": "join", "message": ""})
 
 
 @app.post("/register", response_class=HTMLResponse)
@@ -148,48 +160,63 @@ def register_post(
     e_mail: str = Form(...),
     password: str = Form(...),
     confirm_password: str = Form(...),
-    action: str = Form(...),  # "create" or "join"
+    mode: str = Form(...),  # "create" or "join"
     # fields for create
     company_name: Optional[str] = Form(None),
     country: Optional[str] = Form(None),
     post_code: Optional[str] = Form(None),
-    address: Optional[str] = Form(None),
+    street: Optional[str] = Form(None),
+    house_number: Optional[str] = Form(None),
     tax_number: Optional[str] = Form(None),
     subscription_type: Optional[str] = Form(None),
     # fields for join
     invite_code: Optional[str] = Form(None),
     db: Session = Depends(get_db)
 ):
-    # Basic checks
+    # Normalize email
     e_mail = e_mail.strip().lower()
+
+    # Basic checks
     if db.query(User).filter(User.e_mail == e_mail).first():
-        return templates.TemplateResponse("register.html", {"request": request, "message": "E-mail already registered."})
+        return templates.TemplateResponse("register.html", {"request": request, "mode": mode, "message": "E-mail already registered."})
 
     if password != confirm_password:
-        return templates.TemplateResponse("register.html", {"request": request, "message": "Passwords do not match."})
+        return templates.TemplateResponse("register.html", {"request": request, "mode": mode, "message": "Passwords do not match."})
 
     if not validate_password(password):
-        return templates.TemplateResponse("register.html", {"request": request, "message": "Password must be minimum 8 chars, include upper & lower case letters and a number."})
+        return templates.TemplateResponse("register.html", {"request": request, "mode": mode, "message": "Password must be minimum 8 chars, include upper & lower case letters and a number."})
 
     # CREATE new company flow
-    if action == "create":
-        if not company_name or company_name.strip() == "":
-            return templates.TemplateResponse("register.html", {"request": request, "message": "Company name is required to create a new company."})
+    if mode == "create":
+        # Required fields for creating company: company_name, street, house_number, country
+        if not company_name or not company_name.strip():
+            return templates.TemplateResponse("register.html", {"request": request, "mode": mode, "message": "Company name is required."})
+        if not street or not street.strip():
+            return templates.TemplateResponse("register.html", {"request": request, "mode": mode, "message": "Street is required."})
+        if not house_number or not house_number.strip():
+            return templates.TemplateResponse("register.html", {"request": request, "mode": mode, "message": "House number is required."})
+        if not country or not country.strip():
+            return templates.TemplateResponse("register.html", {"request": request, "mode": mode, "message": "Country is required."})
 
         # Ensure unique company name
         if db.query(Company).filter(Company.name == company_name.strip()).first():
-            return templates.TemplateResponse("register.html", {"request": request, "message": "Company name already exists."})
+            return templates.TemplateResponse("register.html", {"request": request, "mode": mode, "message": "Company name already exists."})
 
         company = Company(
             name=company_name.strip(),
             subscription_type=subscription_type,
-            country=country,
-            post_code=post_code,
-            address=address,
-            tax_number=tax_number
+            country=country.strip(),
+            post_code=post_code.strip() if post_code else None,
+            street=street.strip(),
+            house_number=house_number.strip(),
+            tax_number=tax_number.strip() if tax_number else None
         )
         db.add(company)
-        db.commit()
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            return templates.TemplateResponse("register.html", {"request": request, "mode": mode, "message": "Error creating company; maybe name taken."})
         db.refresh(company)
 
         # create admin user for company
@@ -201,30 +228,30 @@ def register_post(
             is_company_admin=True
         )
         db.add(user)
-        db.commit()
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            return templates.TemplateResponse("register.html", {"request": request, "mode": mode, "message": "Error creating user; maybe e-mail already exists."})
         db.refresh(user)
-
-        # Optionally: create an initial invite code for company admins or staff
-        # invite = InviteCode(code=generate_invite_code(), company_id=company.company_id, role="freight forwarder", expires_at=datetime.utcnow() + timedelta(days=7))
-        # db.add(invite); db.commit()
 
         # Set session and redirect to home
         request.session["user_id"] = user.user_id
         return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
 
     # JOIN company via invite code flow
-    elif action == "join":
-        if not invite_code or invite_code.strip() == "":
-            return templates.TemplateResponse("register.html", {"request": request, "message": "Invite code is required to join an existing company."})
+    elif mode == "join":
+        if not invite_code or not invite_code.strip():
+            return templates.TemplateResponse("register.html", {"request": request, "mode": mode, "message": "Invite code is required to join an existing company."})
 
         code = invite_code.strip()
         inv: Optional[InviteCode] = db.query(InviteCode).filter(InviteCode.code == code).first()
         if not inv:
-            return templates.TemplateResponse("register.html", {"request": request, "message": "Invalid invite code."})
+            return templates.TemplateResponse("register.html", {"request": request, "mode": mode, "message": "Invalid invite code."})
         if inv.is_used:
-            return templates.TemplateResponse("register.html", {"request": request, "message": "Invite code already used."})
+            return templates.TemplateResponse("register.html", {"request": request, "mode": mode, "message": "Invite code already used."})
         if inv.expires_at and inv.expires_at < datetime.utcnow():
-            return templates.TemplateResponse("register.html", {"request": request, "message": "Invite code expired."})
+            return templates.TemplateResponse("register.html", {"request": request, "mode": mode, "message": "Invite code expired."})
 
         # create user linked to company with the role specified by invite
         user = User(
@@ -235,9 +262,12 @@ def register_post(
             is_company_admin=False
         )
         db.add(user)
-        # mark invite used
         inv.is_used = True
-        db.commit()
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            return templates.TemplateResponse("register.html", {"request": request, "mode": mode, "message": "Error creating user; maybe e-mail already exists."})
         db.refresh(user)
 
         # auto-login
@@ -245,7 +275,7 @@ def register_post(
         return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
 
     else:
-        return templates.TemplateResponse("register.html", {"request": request, "message": "Unknown action."})
+        return templates.TemplateResponse("register.html", {"request": request, "mode": mode, "message": "Unknown registration mode."})
 
 
 @app.get("/login", response_class=HTMLResponse)
