@@ -6,28 +6,24 @@
   <title>Register</title>
   <style>
     :root{
-      --accent:#0077b6;
-      --accent-dark:#023e8a;
-      --bg1:linear-gradient(120deg,#0077b6,#90e0ef);
-      --card-bg:#ffffff;
-      --radius:12px;
-      --muted:#666;
+      --accent:#0077b6; --accent-dark:#023e8a; --bg:linear-gradient(120deg,#0077b6,#90e0ef);
+      --card-bg:#fff; --radius:12px; --muted:#666;
     }
-    body{font-family:Inter,Arial,Helvetica,sans-serif;margin:0;height:100vh;background:var(--bg1);display:flex;align-items:center;justify-content:center}
-    .card{background:var(--card-bg);padding:24px;border-radius:var(--radius);box-shadow:0 8px 24px rgba(2,46,74,0.12);width:420px;max-width:95%}
+    html,body{height:100%;margin:0}
+    body{font-family:Inter,Arial,Helvetica,sans-serif;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px}
+    .card{background:var(--card-bg);padding:20px;border-radius:var(--radius);box-shadow:0 8px 24px rgba(2,46,74,0.12);width:640px;max-width:100%;max-height:calc(100vh - 40px);overflow:auto}
     h2{margin:0 0 12px;color:var(--accent)}
     label{display:block;font-weight:600;margin-top:10px;color:#222}
     input,select{width:100%;padding:10px;border:1px solid #e6e9ee;border-radius:8px;margin-top:6px}
-    .row{display:flex;gap:8px}
-    .small{font-size:13px;color:var(--muted)}
-    .actions{margin-top:16px}
-    button{background:var(--accent);color:#fff;padding:10px 14px;border:none;border-radius:8px;cursor:pointer;width:100%}
-    button:hover{background:var(--accent-dark)}
+    .row{display:flex;gap:12px}
+    .col{flex:1}
+    .actions{margin-top:16px;display:flex;gap:12px}
+    button{background:var(--accent);color:#fff;padding:10px 14px;border:none;border-radius:8px;cursor:pointer}
+    button.secondary{background:#f1f5f9;color:#022b3a;border:1px solid #e6edf5}
     .message{color:#c0392b;margin-top:10px;font-weight:600}
-    .toggle{display:flex;gap:8px;margin-top:8px}
-    .toggle input{margin-right:6px}
-    .subtle{font-size:13px;color:#555;margin-top:8px}
-    .inline{display:inline-block}
+    .required{color:#c0392b;margin-left:6px}
+    .note{font-size:13px;color:var(--muted);margin-top:10px}
+    .field-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   </style>
 </head>
 <body>
@@ -37,83 +33,76 @@
       <div class="message">{{ message }}</div>
     {% endif %}
 
-    <form method="post" id="regForm">
-      <label for="e_mail">E-mail</label>
+    <!-- mode hidden form field -->
+    <form method="post">
+      <input type="hidden" name="mode" value="{{ mode }}">
+
+      <label for="e_mail">E-mail <span class="required">*</span></label>
       <input type="email" id="e_mail" name="e_mail" required autocomplete="email">
 
-      <div style="display:flex;gap:12px;margin-top:8px">
-        <div style="flex:1">
-          <label for="password">Password</label>
+      <div class="row" style="margin-top:8px">
+        <div class="col">
+          <label for="password">Password <span class="required">*</span></label>
           <input type="password" id="password" name="password" required autocomplete="new-password">
         </div>
-        <div style="flex:1">
-          <label for="confirm_password">Confirm Password</label>
+        <div class="col">
+          <label for="confirm_password">Confirm Password <span class="required">*</span></label>
           <input type="password" id="confirm_password" name="confirm_password" required autocomplete="new-password">
         </div>
       </div>
 
-      <div class="toggle">
-        <label class="inline"><input type="radio" name="action" value="create" checked> Create new company</label>
-        <label class="inline"><input type="radio" name="action" value="join"> Join with invite code</label>
-      </div>
+      {% if mode == 'create' %}
+        <hr style="margin:14px 0">
+        <label for="company_name">Company name <span class="required">*</span></label>
+        <input type="text" id="company_name" name="company_name" required>
 
-      <div id="createFields" style="margin-top:10px">
-        <label for="company_name">Company name</label>
-        <input type="text" id="company_name" name="company_name" placeholder="Acme Logistics">
+        <div class="field-grid">
+          <div>
+            <label for="street">Street <span class="required">*</span></label>
+            <input type="text" id="street" name="street" required placeholder="Main St">
+          </div>
+          <div>
+            <label for="house_number">House number <span class="required">*</span></label>
+            <input type="text" id="house_number" name="house_number" required placeholder="12/A">
+          </div>
+        </div>
 
-        <label for="country">Country</label>
-        <input type="text" id="country" name="country" placeholder="Hungary">
+        <div class="field-grid" style="margin-top:8px">
+          <div>
+            <label for="country">Country <span class="required">*</span></label>
+            <input type="text" id="country" name="country" required placeholder="Hungary">
+          </div>
+          <div>
+            <label for="post_code">Post code</label>
+            <input type="text" id="post_code" name="post_code" placeholder="1234">
+          </div>
+        </div>
 
-        <label for="post_code">Post code</label>
-        <input type="text" id="post_code" name="post_code">
+        <label for="tax_number" style="margin-top:10px">Tax number</label>
+        <input type="text" id="tax_number" name="tax_number" placeholder="Optional">
 
-        <label for="address">Address</label>
-        <input type="text" id="address" name="address">
-
-        <label for="tax_number">Tax number</label>
-        <input type="text" id="tax_number" name="tax_number">
-
-        <label for="subscription_type">Subscription type (optional)</label>
+        <label for="subscription_type" style="margin-top:10px">Subscription type</label>
         <select id="subscription_type" name="subscription_type">
           <option value="">-- none --</option>
           <option value="basic">Basic</option>
           <option value="pro">Pro</option>
         </select>
-      </div>
-
-      <div id="joinFields" style="display:none;margin-top:12px">
-        <label for="invite_code">Invite code</label>
-        <input type="text" id="invite_code" name="invite_code" placeholder="Enter invite code">
-        <div class="subtle">If you already have an invite from your company admin, use it to join.</div>
-      </div>
+      {% elif mode == 'join' %}
+        <hr style="margin:14px 0">
+        <label for="invite_code">Invite code <span class="required">*</span></label>
+        <input type="text" id="invite_code" name="invite_code" required placeholder="Enter invite code">
+        <div class="note">Enter the invite code you received from your company admin to join the company.</div>
+      {% endif %}
 
       <div class="actions">
         <button type="submit">Register</button>
+        <a href="/register" style="text-decoration:none"><button type="button" class="secondary">Back</button></a>
       </div>
     </form>
 
-    <div class="subtle" style="margin-top:12px">
-      Already have an account? <a href="/login">Sign in</a>
-    </div>
+    <div class="note">Fields marked with <span class="required">*</span> are required.</div>
+    <div class="note" style="margin-top:10px">Already registered? <a href="/login">Sign in</a></div>
   </div>
 
-  <script>
-    const actionRadios = document.querySelectorAll('input[name="action"]');
-    const createFields = document.getElementById('createFields');
-    const joinFields = document.getElementById('joinFields');
-
-    function toggleFields(){
-      const val = document.querySelector('input[name="action"]:checked').value;
-      if(val === 'create'){
-        createFields.style.display = 'block';
-        joinFields.style.display = 'none';
-      } else {
-        createFields.style.display = 'none';
-        joinFields.style.display = 'block';
-      }
-    }
-    actionRadios.forEach(r => r.addEventListener('change', toggleFields));
-    toggleFields();
-  </script>
 </body>
 </html>
