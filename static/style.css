@@ -1,43 +1,246 @@
+/* --------- Alap --------- */
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f6f8;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-}
-
-form {
-    background-color: white;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    width: 320px;
-}
-
-h2 {
-    text-align: center;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: #f4f6f8;
     color: #333;
+    display: flex; /* sidebar + main content */
+    min-height: 100vh;
 }
 
-input, select {
-    width: 100%;
-    padding: 10px;
-    margin: 8px 0;
-    border: 1px solid #ccc;
+/* --------- Sidebar --------- */
+.sidebar {
+    width: 220px;
+    background: #2c3e50;
+    color: #fff;
+    min-height: 100vh;
+    padding-left: 10px;
+    padding-right: 10px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    box-sizing: border-box;
+}
+
+.sidebar-header h2 {
+    text-align: center;
+    margin-bottom: 30px;
+
+}
+
+.sidebar-menu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.sidebar-menu li {
+    margin: 10px 0;
+}
+
+.sidebar-menu a {
+    color: #fff;
+    text-decoration: none;
+    padding: 10px 15px;
+    display: flex;
+    align-items: center;
     border-radius: 6px;
+    transition: background 0.3s;
 }
 
+.sidebar-menu a img {
+    width: 24px;
+    margin-right: 10px;
+}
+
+.sidebar-menu a:hover {
+    background: #34495e;
+}
+
+/* --------- Main content --------- */
+.main-content {
+    margin-left: 18vw; /* sidebar szélessége */
+    flex-grow: 1;
+    box-sizing: border-box;
+}
+
+.main-content > h1{
+    font-size: 3rem;
+    text-align: left;
+    color: #4a90e2;
+}
+/* --------- Container / Form --------- */
+.container, .register-choice-container, form {
+    background: #fff;
+    padding: 20px 30px;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    margin: 20px auto;
+    max-width: 500px;
+}
+
+h1, h2 {
+    text-align: center;
+    color: #4a90e2;
+}
+
+/* --------- Gombok --------- */
 button {
-    width: 100%;
-    padding: 10px;
-    background-color: #1976d2;
-    color: white;
+    background: #4a90e2;
+    color: #fff;
     border: none;
-    border-radius: 6px;
+    padding: 12px 20px;
+    border-radius: 8px;
     cursor: pointer;
+    font-size: 16px;
+    transition: background 0.3s;
 }
 
 button:hover {
-    background-color: #0d47a1;
+    background: #357fBD;
+}
+
+/* --------- Input / Select --------- */
+input, select {
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0 20px 0;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+}
+
+/* --------- Flex gombok --------- */
+.flex {
+    display: flex;
+    justify-content: space-between;
+}
+
+.flex button {
+    width: 70%;
+}
+
+/* --------- Register Choice gombok --------- */
+.button-group {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-top: 30px;
+}
+
+.choice-button {
+    flex: 1 1 25%;
+    padding: 30px 20px;
+    text-decoration: none;
+    background: linear-gradient(145deg, #6a11cb, #2575fc);
+    color: #fff;
+    font-size: 1.2rem;
+    font-weight: bold;
+    border-radius: 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s, box-shadow 0.3s, background 0.3s;
+    position: relative;
+    overflow: hidden;
+}
+
+.choice-button img {
+    max-width: 90px;
+    margin-bottom: 15px;
+    transition: transform 0.3s;
+}
+
+.choice-button:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 25px rgba(0,0,0,0.3);
+    background: linear-gradient(145deg, #7b22d4, #1a6ffb);
+}
+
+.choice-button:hover img {
+    transform: scale(1.1);
+}
+
+/* --------- Alert / Figyelmeztetés --------- */
+.alert {
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    border-radius: 6px;
+    font-weight: bold;
+    text-align: center;
+}
+
+.alert-warning {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+}
+
+.back-button {
+    display: inline-block;
+    padding: 12px 25px;
+    background: #888;
+    color: #fff;
+    font-weight: bold;
+    border-radius: 12px;
+    text-decoration: none;
+    transition: background 0.3s, transform 0.3s;
+}
+
+.back-button:hover {
+    background: #666;
+    transform: translateY(-3px);
+}
+
+
+#logo{
+    font-size: 3rem;
+    color:red;
+}
+
+
+/* --------- Password rules --------- */
+#password-rules li.valid::before {
+    content: "✔ ";
+}
+#password-rules li.invalid::before {
+    content: "✖ ";
+}
+
+
+/* --------- Reszponzív --------- */
+@media (max-width: 768px) {
+    body {
+        flex-direction: column;
+    }
+    .sidebar {
+        width: 100%;
+        min-height: auto;
+        position: relative;
+    }
+    .main-content {
+        margin-left: 0;
+        padding: 20px;
+    }
+}
+
+@media (max-width: 600px) {
+    .container, .register-choice-container, form {
+        margin: 20px;
+        padding: 20px;
+    }
+    .flex {
+        flex-direction: column;
+    }
+    .flex button {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+    .choice-button {
+        flex: 1 1 100%;
+    }
 }

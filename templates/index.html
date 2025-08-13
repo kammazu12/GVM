@@ -1,0 +1,5 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Welcome, {{ user.email }}</h1>
+<p>Company: {{ user.company.name if user.company else 'None' }}</p>
+{% endblock %}
