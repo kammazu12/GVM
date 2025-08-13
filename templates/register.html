@@ -1,108 +1,54 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Register</title>
-  <style>
-    :root{
-      --accent:#0077b6; --accent-dark:#023e8a; --bg:linear-gradient(120deg,#0077b6,#90e0ef);
-      --card-bg:#fff; --radius:12px; --muted:#666;
-    }
-    html,body{height:100%;margin:0}
-    body{font-family:Inter,Arial,Helvetica,sans-serif;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px}
-    .card{background:var(--card-bg);padding:20px;border-radius:var(--radius);box-shadow:0 8px 24px rgba(2,46,74,0.12);width:640px;max-width:100%;max-height:calc(100vh - 40px);overflow:auto}
-    h2{margin:0 0 12px;color:var(--accent)}
-    label{display:block;font-weight:600;margin-top:10px;color:#222}
-    input,select{width:100%;padding:10px;border:1px solid #e6e9ee;border-radius:8px;margin-top:6px}
-    .row{display:flex;gap:12px}
-    .col{flex:1}
-    .actions{margin-top:16px;display:flex;gap:12px}
-    button{background:var(--accent);color:#fff;padding:10px 14px;border:none;border-radius:8px;cursor:pointer}
-    button.secondary{background:#f1f5f9;color:#022b3a;border:1px solid #e6edf5}
-    .message{color:#c0392b;margin-top:10px;font-weight:600}
-    .required{color:#c0392b;margin-left:6px}
-    .note{font-size:13px;color:var(--muted);margin-top:10px}
-    .field-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  </style>
-</head>
-<body>
-  <div class="card">
-    <h2>Register</h2>
-    {% if message %}
-      <div class="message">{{ message }}</div>
-    {% endif %}
+<form method="POST" action="{{ url_for('register') }}">
+    <label for="email">Email:</label>
+    <input type="email" id="email" name="email" required>
 
-    <!-- mode hidden form field -->
-    <form method="post">
-      <input type="hidden" name="mode" value="{{ mode }}">
+    <label for="password">Jelszó:</label>
+    <input type="password" id="password" name="password" required>
 
-      <label for="e_mail">E-mail <span class="required">*</span></label>
-      <input type="email" id="e_mail" name="e_mail" required autocomplete="email">
+    <ul id="password-rules">
+        <li id="rule-length" class="invalid">Min. 8 karakter</li>
+        <li id="rule-lower" class="invalid">Tartalmaz kisbetűt</li>
+        <li id="rule-upper" class="invalid">Tartalmaz nagybetűt</li>
+        <li id="rule-number" class="invalid">Tartalmaz számot</li>
+        <li id="rule-special" class="invalid">Tartalmaz speciális karaktert</li>
+    </ul>
 
-      <div class="row" style="margin-top:8px">
-        <div class="col">
-          <label for="password">Password <span class="required">*</span></label>
-          <input type="password" id="password" name="password" required autocomplete="new-password">
-        </div>
-        <div class="col">
-          <label for="confirm_password">Confirm Password <span class="required">*</span></label>
-          <input type="password" id="confirm_password" name="confirm_password" required autocomplete="new-password">
-        </div>
-      </div>
+    <button type="submit">Regisztráció</button>
+</form>
 
-      {% if mode == 'create' %}
-        <hr style="margin:14px 0">
-        <label for="company_name">Company name <span class="required">*</span></label>
-        <input type="text" id="company_name" name="company_name" required>
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <ul>
+      {% for msg in messages %}
+        <li style="color:red;">{{ msg }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% endwith %}
 
-        <div class="field-grid">
-          <div>
-            <label for="street">Street <span class="required">*</span></label>
-            <input type="text" id="street" name="street" required placeholder="Main St">
-          </div>
-          <div>
-            <label for="house_number">House number <span class="required">*</span></label>
-            <input type="text" id="house_number" name="house_number" required placeholder="12/A">
-          </div>
-        </div>
+<style>
+    #password-rules { list-style: none; padding: 0; margin: 10px 0; }
+    #password-rules li { margin: 5px 0; font-size: 0.9rem; }
+    .valid { color: green; }
+    .invalid { color: red; }
+</style>
 
-        <div class="field-grid" style="margin-top:8px">
-          <div>
-            <label for="country">Country <span class="required">*</span></label>
-            <input type="text" id="country" name="country" required placeholder="Hungary">
-          </div>
-          <div>
-            <label for="post_code">Post code</label>
-            <input type="text" id="post_code" name="post_code" placeholder="1234">
-          </div>
-        </div>
+<script>
+const passwordInput = document.getElementById('password');
+const rules = {
+    length: document.getElementById('rule-length'),
+    lower: document.getElementById('rule-lower'),
+    upper: document.getElementById('rule-upper'),
+    number: document.getElementById('rule-number'),
+    special: document.getElementById('rule-special')
+};
 
-        <label for="tax_number" style="margin-top:10px">Tax number</label>
-        <input type="text" id="tax_number" name="tax_number" placeholder="Optional">
-
-        <label for="subscription_type" style="margin-top:10px">Subscription type</label>
-        <select id="subscription_type" name="subscription_type">
-          <option value="">-- none --</option>
-          <option value="basic">Basic</option>
-          <option value="pro">Pro</option>
-        </select>
-      {% elif mode == 'join' %}
-        <hr style="margin:14px 0">
-        <label for="invite_code">Invite code <span class="required">*</span></label>
-        <input type="text" id="invite_code" name="invite_code" required placeholder="Enter invite code">
-        <div class="note">Enter the invite code you received from your company admin to join the company.</div>
-      {% endif %}
-
-      <div class="actions">
-        <button type="submit">Register</button>
-        <a href="/register" style="text-decoration:none"><button type="button" class="secondary">Back</button></a>
-      </div>
-    </form>
-
-    <div class="note">Fields marked with <span class="required">*</span> are required.</div>
-    <div class="note" style="margin-top:10px">Already registered? <a href="/login">Sign in</a></div>
-  </div>
-
-</body>
-</html>
+passwordInput.addEventListener('input', () => {
+    const val = passwordInput.value;
+    rules.length.className = val.length >= 8 ? 'valid' : 'invalid';
+    rules.lower.className = /[a-z]/.test(val) ? 'valid' : 'invalid';
+    rules.upper.className = /[A-Z]/.test(val) ? 'valid' : 'invalid';
+    rules.number.className = /\d/.test(val) ? 'valid' : 'invalid';
+    rules.special.className = /[!@#$%^&*(),.?":{}|<>]/.test(val) ? 'valid' : 'invalid';
+});
+</script>

@@ -1,0 +1,15 @@
+<!-- templates/sidebar.html -->
+<nav class="sidebar">
+    <div class="sidebar-header">
+        <h1 id="logo">LogiAI</h1>
+    </div>
+    <ul class="sidebar-menu">
+        <li><a href="{{ url_for('home') }}"><img src="{{ url_for('static', filename='icons/home.png') }}" alt=""> Kezdőlap</a></li>
+        <li><a href="{{ url_for('cargo') }}"><img src="{{ url_for('static', filename='icons/truck.png') }}" alt=""> Fuvarok</a></li>
+        <li><a href="{{ url_for('shipments') }}"><img src="{{ url_for('static', filename='icons/warehouse.png') }}" alt=""> Raktér</a></li>
+        <li><a href="{{ url_for('vehicles') }}"><img src="{{ url_for('static', filename='icons/car.png') }}" alt=""> Járművek</a></li>
+        <li><a href="{{ url_for('companies') }}"><img src="{{ url_for('static', filename='icons/company.png') }}" alt=""> Cégek</a></li>
+        <li><a href="{{ url_for('profile') }}"><img src="{{ url_for('static', filename='icons/user.png') }}" alt=""> Profil</a></li>
+        <li><a href="{{ url_for('statistics') }}"><img src="{{ url_for('static', filename='icons/stats.png') }}" alt=""> Statisztika</a></li>
+    </ul>
+</nav>
