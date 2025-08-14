@@ -1,30 +1,228 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="container">
-    <h2>Create a New Company</h2>
+    <h2 style="text-align:center; margin-bottom: 30px;">Create Profile & Company</h2>
 
-    {% if warning %}
-    <div class="alert alert-warning">{{ warning }}</div>
-    {% endif %}
+    <form method="POST" class="register-form">
+        <!-- Email -->
+        <label for="email">Email <span class="required">*</span></label>
+        <input type="email" id="email" name="email" placeholder="Email" value="{{ request.form.email }}" required>
 
-    <form method="POST">
-        <input type="email" name="email" placeholder="Email" value="{{ request.form.email }}" required>
-        <input type="password" name="password" placeholder="Password" required>
-        <input type="password" name="confirm_password" placeholder="Confirm Password" required>
-        <input type="text" name="company_name" placeholder="Company Name" value="{{ request.form.company_name }}" required>
-        <input type="text" name="country" placeholder="Country" value="{{ request.form.country }}" required>
-        <input type="text" name="post_code" placeholder="Post Code" value="{{ request.form.post_code }}" required>
-        <input type="text" name="street" placeholder="Street" value="{{ request.form.street }}" required>
-        <input type="text" name="house_number" placeholder="House Number" value="{{ request.form.house_number }}" required>
-        <input type="text" name="tax_number" placeholder="Tax Number" value="{{ request.form.tax_number }}" required>
-        <label for="subscription_type">Subscription Type</label>
+        <!-- Vezetéknév, keresztnév -->
+        <div class="form-row">
+            <div>
+                <label for="last_name">Vezetéknév <span class="required">*</span></label>
+                <input type="text" id="last_name" name="last_name" placeholder="Vezetéknév" value="{{ request.form.last_name }}" required>
+            </div>
+            <div>
+                <label for="first_name">Keresztnév <span class="required">*</span></label>
+                <input type="text" id="first_name" name="first_name" placeholder="Keresztnév" value="{{ request.form.first_name }}" required>
+            </div>
+        </div>
+
+        <!-- Telefonszám -->
+        <label for="phone_number">Telefonszám <span class="required">*</span></label>
+        <input type="tel" id="phone_number" name="phone_number" placeholder="+36301234567"
+                       value="{{ request.form.phone_number }}"
+                       pattern="^\+?\d{7,15}$"
+                       title="Nemzetközi formátum: +36301234567 vagy +441234567890"
+                       required>
+
+        <!-- Jelszó + szabályok -->
+        <div class="form-row">
+            <div>
+                <label for="password">Jelszó <span class="required">*</span></label>
+                <input type="password" id="password" name="password" placeholder="Jelszó" required>
+            </div>
+            <div>
+                <label for="confirm_password">Jelszó megerősítése <span class="required">*</span></label>
+                <input type="password" id="confirm_password" name="confirm_password" placeholder="Jelszó megerősítése" required>
+            </div>
+        </div>
+        <p class="password-rules">
+            A jelszónak legalább 8 karakter hosszúnak kell lennie, tartalmaznia kell kis- és nagybetűt, valamint legalább 1 számjegyet.
+        </p>
+
+        <!-- Cég neve, adószám -->
+        <div class="form-row">
+            <div>
+                <label for="company_name">Cég neve <span class="required">*</span></label>
+                <input type="text" id="company_name" name="company_name" placeholder="Cég neve" value="{{ request.form.company_name }}" required>
+            </div>
+            <div>
+                <label for="tax_number">Adószám <span class="required">*</span></label>
+                <input type="text" id="tax_number" name="tax_number" placeholder="Adószám" value="{{ request.form.tax_number }}" required>
+            </div>
+        </div>
+
+        <!-- Ország, irányítószám, település -->
+        <div class="form-row">
+            <div>
+                <label for="country">Ország <span class="required">*</span></label>
+                <input type="text" id="country" name="country" placeholder="Ország" value="{{ request.form.country }}" required>
+            </div>
+            <div>
+                <label for="post_code">Irányítószám <span class="required">*</span></label>
+                <input type="text" id="post_code" name="post_code" placeholder="Irányítószám" value="{{ request.form.post_code }}" required>
+            </div>
+            <div>
+                <label for="city">Település <span class="required">*</span></label>
+                <input type="text" id="city" name="city" placeholder="Település" value="{{ request.form.city }}" required>
+            </div>
+        </div>
+
+        <!-- Utca, házszám -->
+        <div class="form-row">
+            <div>
+                <label for="street">Utca <span class="required">*</span></label>
+                <input type="text" id="street" name="street" placeholder="Utca" value="{{ request.form.street }}" required>
+            </div>
+            <div>
+                <label for="house_number">Házszám <span class="required">*</span></label>
+                <input type="text" id="house_number" name="house_number" placeholder="Házszám" value="{{ request.form.house_number }}" required>
+            </div>
+        </div>
+
+        <!-- Előfizetés -->
+        <label for="subscription_type">Előfizetés típusa <span class="required">*</span></label>
         <select name="subscription_type" id="subscription_type" required>
             <option value="free" {% if request.form.subscription_type == "free" %}selected{% endif %}>Free</option>
             <option value="basic" {% if request.form.subscription_type == "basic" %}selected{% endif %}>Basic</option>
             <option value="pro" {% if request.form.subscription_type == "pro" %}selected{% endif %}>Pro</option>
         </select>
-        <button type="submit">Create Company</button>
+
+        <!-- Gomb -->
+        <div style="text-align:center; margin-top: 20px;">
+            <button type="submit" id="submitBtn">Regisztráció</button>
+        </div>
     </form>
-    <p style="text-align:center;"><a href="{{ url_for('register_choice') }}">Back</a></p>
 </div>
+
+<script>
+(function(){
+    const taxInput = document.getElementById('tax_number');
+    const submitBtn = document.getElementById('submitBtn');
+
+    if (!taxInput || !submitBtn) return;
+
+    let timer = null;
+    let lastValue = '';
+
+    function setErrorState(exists) {
+        if (exists) {
+            // vizuális figyelmeztetés
+            taxInput.classList.add('input-error'); // stílus tetszőleges
+            // letiltjuk a gombot
+            submitBtn.disabled = true;
+        } else {
+            taxInput.classList.remove('input-error');
+            submitBtn.disabled = false;
+        }
+    }
+
+    taxInput.addEventListener('input', function() {
+        const value = this.value.trim();
+
+        // ha ugyanaz, nem kérdezünk újra
+        if (value === lastValue) return;
+        lastValue = value;
+
+        // debounce: várunk 400ms-et gépelés után
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+            if (!value) {
+                setErrorState(false);
+                return;
+            }
+
+            fetch(`/check_tax_number?tax_number=${encodeURIComponent(value)}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data && data.exists) {
+                        // popup figyelmeztetés (csak egyszer)
+                        // alert('Ez az adószám már regisztrálva van.');
+                        // jobb: inline üzenet
+                        if (!document.getElementById('taxWarning')) {
+                            const warn = document.createElement('div');
+                            warn.id = 'taxWarning';
+                            warn.style.color = 'darkred';
+                            warn.style.marginTop = '6px';
+                            warn.innerText = 'Figyelem: ez az adószám már regisztrálva van.';
+                            taxInput.insertAdjacentElement('afterend', warn);
+                        }
+                        setErrorState(true);
+                    } else {
+                        const existingWarn = document.getElementById('taxWarning');
+                        if (existingWarn) existingWarn.remove();
+                        setErrorState(false);
+                    }
+                })
+                .catch(err => {
+                    console.error('Tax check hiba', err);
+                    // nem szabad false-pozitív módon letiltani — csak engedjük tovább
+                    setErrorState(false);
+                });
+        }, 400);
+    });
+})();
+</script>
+
+<style>
+/* opcionális stílus */
+.input-error {
+    border-color: darkred !important;
+    box-shadow: 0 0 6px rgba(255,0,0,0.12);
+}
+</style>
+
+
+<style>
+/* Piros keret ha hibás */
+input.error {
+    border: 2px solid red;
+}
+
+.container {
+    width: 80%;
+    margin: auto;
+    font-family: Arial, sans-serif;
+}
+
+.register-form label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.register-form .required {
+    color: red;
+    font-weight: bold;
+}
+
+.register-form input,
+.register-form select {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 15px;
+}
+
+.form-row {
+    display: flex;
+    gap: 20px;
+}
+
+.form-row > div {
+    flex: 1;
+}
+
+.password-rules {
+    font-size: 0.9em;
+    color: #555;
+    margin-top: -10px;
+    margin-bottom: 20px;
+}
+</style>
 {% endblock %}

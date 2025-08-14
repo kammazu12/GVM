@@ -1,15 +1,24 @@
 <!-- templates/sidebar.html -->
 <nav class="sidebar">
     <div class="sidebar-header">
-        <h1 id="logo">LogiAI</h1>
+        <img src="{{ url_for('static', filename='images/logiailogo.png') }}" alt="logiAI logo">
     </div>
     <ul class="sidebar-menu">
-        <li><a href="{{ url_for('home') }}"><img src="{{ url_for('static', filename='icons/home.png') }}" alt=""> Kezdőlap</a></li>
-        <li><a href="{{ url_for('cargo') }}"><img src="{{ url_for('static', filename='icons/truck.png') }}" alt=""> Fuvarok</a></li>
-        <li><a href="{{ url_for('shipments') }}"><img src="{{ url_for('static', filename='icons/warehouse.png') }}" alt=""> Raktér</a></li>
-        <li><a href="{{ url_for('vehicles') }}"><img src="{{ url_for('static', filename='icons/car.png') }}" alt=""> Járművek</a></li>
+        <li><a href="{{ url_for('home') }}"><img src="{{ url_for('static', filename='icons/home.png') }}" alt="">Kezdőlap</a></li>
+        <li><a href="{{ url_for('cargo') }}"><img src="{{ url_for('static', filename='icons/truck.png') }}" alt="">Járművet keresek</a></li>
+        <li><a href="{{ url_for('shipments') }}"><img src="{{ url_for('static', filename='icons/warehouse.png') }}" alt="">Rakományt keresek</a></li>
+        <li><a href="{{ url_for('vehicles') }}"><img src="{{ url_for('static', filename='icons/car.png') }}" alt=""> Saját járművek</a></li>
         <li><a href="{{ url_for('companies') }}"><img src="{{ url_for('static', filename='icons/company.png') }}" alt=""> Cégek</a></li>
         <li><a href="{{ url_for('profile') }}"><img src="{{ url_for('static', filename='icons/user.png') }}" alt=""> Profil</a></li>
         <li><a href="{{ url_for('statistics') }}"><img src="{{ url_for('static', filename='icons/stats.png') }}" alt=""> Statisztika</a></li>
+    </ul>
+
+    <!-- Logout gomb a sidebar alján -->
+    <ul class="sidebar-logout">
+        <li>
+            <a href="{{ url_for('logout') }}" class="logout-btn">
+                <img src="{{ url_for('static', filename='icons/exit.png') }}" alt=""> Kijelentkezés
+            </a>
+        </li>
     </ul>
 </nav>

@@ -1,5 +1,6 @@
 <!-- templates/profile.html -->
 {% extends "base.html" %}
+
 {% block content %}
 <div class="home-container">
     <aside class="sidebar">
@@ -7,7 +8,61 @@
     </aside>
     <main class="main-content">
         <h1 class="cim">Profil</h1>
-        <p>Itt láthatók a profil adatai.</p>
+
+        <!-- Flash üzenetek -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div id="flash-container" style="position: fixed; top: 20px; right: 20px; z-index: 1000;">
+              {% for category, message in messages %}
+                <div class="flash {{ category }}" style="
+                    background-color: #28a745;
+                    color: white;
+                    padding: 12px 20px;
+                    border-radius: 8px;
+                    margin-bottom: 10px;
+                    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+                    animation: slide-in 0.5s ease-out;">
+                  {{ message }}
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        <div class="profile-container">
+            <div class="profile-card">
+                <div class="profile-image">
+                    <img src="{{ url_for('static', filename='icons/user.png') }}" alt="Profile Picture">
+                </div>
+                <div class="profile-info">
+                    <p><strong><big>{{ user.first_name }}{{ user.last_name }}</big></strong> | {{ user.company.name if user.company else 'Nincs cég' }}</p>    <!-- Név -->
+                    <br>
+                    <p><strong>E-mail:</strong> {{ user.email }}</p>
+                    <p><strong>Telefon:</strong> {{ user.phone_number }}</p>
+                    <p><strong>Szerep:</strong> {{ user.role }}</p>
+                    <p><strong>Tagság kezdete:</strong> {{ user.created_at }}</p>
+
+                    <a href="{{ url_for('change_password') }}" class="btn">Change Password</a>
+                </div>
+            </div>
+        </div>
     </main>
 </div>
+
+<!-- Flash animáció stílus -->
+<style>
+@keyframes slide-in {
+    0% { transform: translateX(100%); opacity: 0; }
+    100% { transform: translateX(0); opacity: 1; }
+}
+</style>
+
+<!-- Flash eltűnés 3 mp után -->
+<script>
+  setTimeout(() => {
+    const container = document.getElementById('flash-container');
+    if (container) container.style.display = 'none';
+  }, 3000);
+</script>
+
 {% endblock %}

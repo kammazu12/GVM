@@ -7,13 +7,81 @@
     <div class="alert alert-warning">{{ warning }}</div>
     {% endif %}
 
-    <form method="POST">
-        <input type="email" name="email" placeholder="Email" value="{{ request.form.email }}" required>
-        <input type="password" name="password" placeholder="Password" required>
-        <input type="password" name="confirm_password" placeholder="Confirm Password" required>
-        <input type="text" name="invite_code" placeholder="Invite Code" value="{{ request.form.invite_code }}" required>
-        <button type="submit">Join Company</button>
+    <form method="POST" class="register-form">
+        <div class="form-row">
+            <div>
+                <!-- Email -->
+                <label for="email">Email <span class="required">*</span></label>
+                <input type="email" id="email" name="email" placeholder="Email" value="{{ request.form.email }}" required></div>
+            <div>
+                <!-- Telefonszám -->
+                <label for="phone_number">Telefonszám <span class="required">*</span></label>
+                <input type="tel" id="phone_number" name="phone_number" placeholder="+36301234567"
+                   value="{{ request.form.phone_number }}"
+                   pattern="^\+?\d{7,15}$"
+                   title="Nemzetközi formátum: +36301234567 vagy +441234567890"
+                   required>
+            </div>
+        </div>
+
+        <!-- Vezetéknév, keresztnév -->
+        <div class="form-row">
+            <div>
+                <label for="last_name">Vezetéknév <span class="required">*</span></label>
+                <input type="text" id="last_name" name="last_name" placeholder="Vezetéknév" value="{{ request.form.last_name }}" required>
+            </div>
+            <div>
+                <label for="first_name">Keresztnév <span class="required">*</span></label>
+                <input type="text" id="first_name" name="first_name" placeholder="Keresztnév" value="{{ request.form.first_name }}" required>
+            </div>
+        </div>
+
+
+        <!-- Jelszó + szabályok -->
+        <div class="form-row">
+            <div>
+                <label for="password">Jelszó <span class="required">*</span></label>
+                <input type="password" id="password" name="password" placeholder="Jelszó" required>
+            </div>
+            <div>
+                <label for="confirm_password">Jelszó megerősítése <span class="required">*</span></label>
+                <input type="password" id="confirm_password" name="confirm_password" placeholder="Jelszó megerősítése" required>
+            </div>
+        </div>
+        <p class="password-rules">
+            A jelszónak legalább 8 karakter hosszúnak kell lennie, tartalmaznia kell kis- és nagybetűt, valamint legalább 1 számjegyet.
+        </p>
+
+        <!-- Meghívó kód -->
+        <label for="invite_code">Meghívó kód <span class="required">*</span></label>
+        <input type="text" id="invite_code" name="invite_code" placeholder="Meghívó kód" value="{{ request.form.invite_code }}" required>
+
+        <!-- Gomb -->
+        <div style="text-align:center; margin-top: 20px;">
+            <button type="submit">Csatlakozás</button>
+        </div>
     </form>
-    <p style="text-align:center;"><a href="{{ url_for('register_choice') }}">Back</a></p>
+
+    <p style="text-align:center; margin-top:15px;">
+        <a href="{{ url_for('register_choice') }}">Vissza</a>
+    </p>
 </div>
+
+<style>
+.required {
+    color: red;
+    font-weight: bold;
+}
+.form-row {
+    display: flex;
+    gap: 15px;
+}
+.form-row > div {
+    flex: 1;
+}
+.password-rules {
+    font-size: 0.9em;
+    color: #666;
+}
+</style>
 {% endblock %}
