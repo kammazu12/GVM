@@ -5,9 +5,267 @@
     <aside class="sidebar">
         {% include 'sidebar.html' %}
     </aside>
+
     <main class="main-content">
+        <!-- Cím -->
         <h1 class="cim">Cégek</h1>
-        <p>Itt láthatók a cégek.</p>
+
+        <!-- Kereső a cím alatt -->
+        <div class="search-container">
+            <input type="text" id="companySearch" placeholder="Keresés cégnév, adószám vagy ország szerint..." value="{{ search }}">
+        </div>
+
+        <!-- Cégek listája -->
+        <div class="companies-list">
+            {% if companies|length > 0 %}
+                {% for company in companies %}
+                    <a href="{{ url_for('company_profile', slug=company.slug) }}" target="_self" class="company-card-link">
+                        <div class="company-card">
+                            <div class="company-logo">
+                                <div class="placeholder-logo">
+                                    <img id='company_logo_pic' src="{{ url_for('static', filename='icons/company.png') }}">
+                                </div>
+                            </div>
+                            <div class="company-info">
+                                <h3>{{ company.name }}</h3>
+                                <div class="company-details">
+                                    <p><strong>Hely:</strong> {{ company.country }}</p>
+                                    <p><strong>Cím:</strong> {{ company.post_code }}, {{ company.street }} {{ company.house_number }}</p>
+                                    <p><strong>Tagság kezdete:</strong> {{ company.created_at.strftime('%Y-%m-%d') if company.created_at else '' }}</p>
+                                </div>
+
+                                <!-- Rövid alkalmazott lista a kártyán (max 3 neve) -->
+                                <div class="company-employees">
+                                    <p><strong>Alkalmazottak:</strong>
+                                        {% if company.users %}
+                                                 {{ company.users|length }}
+                                        {% else %}
+                                            Nincsenek alkalmazottak
+                                        {% endif %}
+                                    </p>
+                                </div>
+
+                            </div>
+                        </div>
+                    </a>
+                {% endfor %}
+
+            {% else %}
+                <div class="no-results">Nincsenek cégek az adatbázisban.</div>
+            {% endif %}
+        </div>
     </main>
 </div>
+
+<!-- AJAX keresés -->
+<script>
+const logoUrl = "{{ url_for('static', filename='icons/company.png') }}";
+
+function escapeHtml(unsafe) {
+    if (unsafe === null || unsafe === undefined) return '';
+    return String(unsafe)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+}
+
+document.getElementById('companySearch').addEventListener('input', function() {
+    const query = this.value;
+
+    fetch(`/search_companies?q=${encodeURIComponent(query)}`)
+        .then(response => response.json())
+        .then(data => {
+            const container = document.querySelector('.companies-list');
+            container.innerHTML = '';  // ürítjük a listát
+
+            if (!data || data.length === 0) {
+                container.innerHTML = '<div class="no-results">Nincs találat.</div>';
+                return;
+            }
+
+            data.forEach(company => {
+                const cardWrap = document.createElement('a');
+                cardWrap.className = 'company-card-link';
+
+                // ha slug-ot használsz, cseréld le; itt fallback a company_id-ra
+                if (company.slug) {
+                    cardWrap.href = `/company/${company.slug}`;
+                } else {
+                    cardWrap.href = `/company/${company.company_id}`;
+                }
+                cardWrap.target = "_self";
+
+                const empCount = Number(company.employee_count) || 0;
+                const empText = empCount > 0 ? `${empCount} fő` : 'Nincsenek alkalmazottak';
+
+                const card = document.createElement('div');
+                card.className = 'company-card';
+                card.innerHTML = `
+                    <div class="company-logo">
+                        <div class="placeholder-logo">
+                            <img src="${escapeHtml(logoUrl)}" alt="logo" id="company_logo_pic">
+                        </div>
+                    </div>
+                    <div class="company-info">
+                        <h3>${escapeHtml(company.name)}</h3>
+                        <div class="company-details">
+                            <p><strong>Hely:</strong> ${escapeHtml(company.country)}</p>
+                            <p><strong>Cím:</strong> ${escapeHtml(company.post_code)}, ${escapeHtml(company.street)} ${escapeHtml(company.house_number)}</p>
+                            <p><strong>Tagság kezdete:</strong> ${escapeHtml(company.created_at)}</p>
+                            <p class="company-employees"><strong>Alkalmazottak:</strong> ${escapeHtml(empText)}</p>
+                        </div>
+                    </div>
+                `;
+                cardWrap.appendChild(card);
+                container.appendChild(cardWrap);
+            });
+        })
+        .catch(err => console.error('Hiba a keresésnél:', err));
+});
+</script>
+
+
+<!-- CSS -->
+<style>
+/* Cím */
+.cim {
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+
+/* Kereső a cím alatt */
+.search-container {
+    margin-bottom: 20px;
+}
+
+.search-container input#companySearch {
+    width: 350px;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+}
+
+/* Cégek listája grid-elrendezéssel */
+.companies-list {
+    width: 80vw;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* maximum 3 oszlop */
+    gap: 10px;
+    justify-items: left;
+    min-height: 200px;
+}
+
+.no-results {
+    width: 100%;
+    text-align: center;
+    font-size: 16px;
+    color: #555;
+}
+
+/* Cégek kártyák link wrapper */
+.company-card-link {
+    display: block;
+    width: calc((100% - 40px) / 3); /* 3 kártya / sor, gap=20px */
+    box-sizing: border-box;
+    text-decoration: none;
+    color: inherit;
+}
+
+/* Cégek kártyák maguk */
+.company-card {
+    display: flex;
+    align-items: flex-start;
+    padding: 15px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    width: 90%; /* a link wrapper már meghatározza a szélességet */
+    min-width: 300px;
+    height: 150px; /* fix magasság */
+    transition: transform 0.2s ease;
+    text-decoration: none;
+    color: inherit;
+}
+
+.company-card:hover {
+    transform: translateY(-3px);
+}
+
+/* Logo */
+.company-logo,
+#company_logo_pic,
+.placeholder-logo {
+    width: 60px;
+    height: 60px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    margin-right: 20px;
+    object-fit: cover;
+}
+
+/* Cégnév és részletek */
+.company-info h3 {
+    margin: 0 0 8px 0;
+    font-size: 20px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.company-details {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.company-details p {
+    margin: 0;
+    font-size: 14px;
+    color: #555;
+}
+
+.company-employees {
+    margin-top: 8px;
+    font-size: 13px;
+    color: #333;
+}
+
+/* Hover hatás */
+.company-card-link:hover .company-card {
+    transform: translateY(-3px);
+}
+
+/* ---------- Reszponzív ---------- */
+/* 2 kártya / sor tablet */
+@media (max-width: 1100px) {
+    .company-card-link {
+        width: calc((100% - 20px) / 2);
+    }
+    .company-card {
+        height: 160px;
+    }
+}
+
+/* 1 kártya / sor mobil */
+@media (max-width: 700px) {
+    .company-card-link {
+        width: 100%;
+    }
+}
+
+/* Reszponzív */
+@media (max-width: 1100px) {
+    .companies-list {
+        grid-template-columns: repeat(2, 1fr); /* maximum 2 oszlop kisebb képernyőn */
+    }
+}
+
+@media (max-width: 700px) {
+    .companies-list {
+        grid-template-columns: 1fr; /* 1 oszlop mobilon */
+    }
+}
+
 {% endblock %}

@@ -9,6 +9,34 @@ body {
     min-height: 100vh;
 }
 
+/* Minden h1 sticky */
+h1 {
+    position: sticky;
+    top: 0;
+    background: #f4f6f8;
+    z-index: 10;
+    padding: 10px 0;
+    margin: 0;
+}
+
+/* Minden keresősáv sticky - ha input mező van .search-container-ben */
+.search-container {
+    position: sticky;
+    top: 80px; /* igazítsd a h1 magasságához */
+    background: #f4f6f8;
+    z-index: 9;
+    padding: 10px 0;
+}
+
+/* Cégek kártyák grid elrendezés */
+.companies-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    justify-items: center;
+}
+
+
 /* --------- Sidebar --------- */
 .sidebar {
     width: 220px;
@@ -21,18 +49,33 @@ body {
     top: 0;
     left: 0;
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
 }
+
+.sidebar-header {
+    text-align: center;       /* középre igazítás */
+    padding: 20px 0;          /* fent-lent térköz */
+}
+
+.sidebar-header img {
+    width: 120px;             /* logó szélessége */
+    height: auto;             /* arányok megtartása */
+    display: inline-block;
+    margin-bottom: 10px;
+}
+
 
 .sidebar-header h2 {
     text-align: center;
     margin-bottom: 30px;
-
 }
 
 .sidebar-menu {
     list-style: none;
     padding: 0;
     margin: 0;
+    flex-grow: 1; /* menü kitölti a rendelkezésre álló helyet */
 }
 
 .sidebar-menu li {
@@ -58,6 +101,34 @@ body {
     background: #34495e;
 }
 
+/* --------- Logout gomb --------- */
+.sidebar-logout {
+    margin-top: auto; /* mindig alul legyen */
+    list-style: none;
+    padding: 0;
+    margin-bottom: 20px;
+}
+
+.logout-btn {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    color: #fff;
+    background-color: #e53e3e;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: background 0.3s;
+}
+
+.logout-btn img {
+    width: 24px;
+    margin-right: 10px;
+}
+
+.logout-btn:hover {
+    background-color: #c53030;
+}
+
 /* --------- Main content --------- */
 .main-content {
     margin-left: 18vw; /* sidebar szélessége */
@@ -70,6 +141,7 @@ body {
     text-align: left;
     color: #4a90e2;
 }
+
 /* --------- Container / Form --------- */
 .container, .register-choice-container, form {
     background: #fff;
@@ -77,7 +149,7 @@ body {
     border-radius: 12px;
     box-shadow: 0 8px 20px rgba(0,0,0,0.1);
     margin: 20px auto;
-    max-width: 500px;
+    max-width: 90%;
 }
 
 h1, h2 {
@@ -196,12 +268,10 @@ input, select {
     transform: translateY(-3px);
 }
 
-
 #logo{
     font-size: 3rem;
     color:red;
 }
-
 
 /* --------- Password rules --------- */
 #password-rules li.valid::before {
@@ -211,6 +281,159 @@ input, select {
     content: "✖ ";
 }
 
+.profile-container {
+    display: flex;
+    justify-content: center; /* vízszintesen középre */
+    align-items: flex-start; /* felülről kezdjük az igazítást */
+    min-height: calc(100vh - 50px); /* opcionálisan csökkenthetjük */
+    margin-left: 20vw;
+}
+
+.profile-card {
+    background: white;
+    border-radius: 15px;
+    padding: 50px;
+    width: 25vw;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+
+.profile-image img {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 20px;
+    border: 3px solid #ddd;
+}
+
+.profile-info h2 {
+    margin-bottom: 10px;
+    font-size: 1.5rem;
+    color: #333;
+}
+
+.profile-info p {
+    margin: 5px 0;
+    font-size: 1rem;
+    color: #555;
+}
+
+/* Profil-kártya stílus */
+.password-card {
+    background: linear-gradient(145deg, #ffffff, #f0f0f0);
+    border-radius: 15px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    max-width: 420px;
+    margin: 40px auto;
+    padding: 30px;
+    font-family: 'Arial', sans-serif;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.password-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 25px rgba(0,0,0,0.2);
+}
+
+/* Cím */
+.password-card h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #333;
+    font-weight: 600;
+}
+
+/* Input mezők */
+.password-card input[type="password"] {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0 20px 0;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 16px;
+    transition: border-color 0.2s ease;
+}
+
+.password-card input[type="password"]:focus {
+    border-color: #007BFF;
+    outline: none;
+}
+
+/* Submit gomb – modern, fényes */
+.password-card input[type="submit"] {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: none;
+    background: linear-gradient(90deg, #007BFF, #00A3FF);
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,123,255,0.4);
+    transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.password-card input[type="submit"]:hover {
+    background: linear-gradient(90deg, #0056b3, #007BFF);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,123,255,0.5);
+}
+
+/* Üzenetek */
+.password-card .message {
+    text-align: center;
+    color: red;
+    margin-bottom: 15px;
+}
+
+/* Link vissza a profilhoz */
+.password-card p a {
+    display: block;
+    text-align: center;
+    margin-top: 15px;
+    color: #007BFF;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.password-card p a:hover {
+    text-decoration: underline;
+}
+.header-search {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    gap: 20px;
+}
+
+.header-search h1 {
+    font-size: 3rem;
+}
+
+.header-search input {
+    margin-top: 35px;
+    margin-right: 5vw;
+    width: 35vw;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+}
+
+/* Reszponzív: kisebb képernyőn a keresősáv alá kerül */
+@media (max-width: 800px) {
+    .header-search {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .header-search input {
+        width: 100%;
+    }
+}
 
 /* --------- Reszponzív --------- */
 @media (max-width: 768px) {
@@ -225,6 +448,9 @@ input, select {
     .main-content {
         margin-left: 0;
         padding: 20px;
+    }
+    .sidebar-logout {
+        margin-bottom: 10px;
     }
 }
 
