@@ -3,12 +3,24 @@
     <div class="sidebar-header">
         <img src="{{ url_for('static', filename='images/logiailogo.png') }}" alt="logiAI logo">
     </div>
+
     <ul class="sidebar-menu">
-        <li><a href="{{ url_for('home') }}"><img src="{{ url_for('static', filename='icons/home.png') }}" alt="">Kezdőlap</a></li>
-        <li><a href="{{ url_for('cargo') }}"><img src="{{ url_for('static', filename='icons/truck.png') }}" alt="">Járművet keresek</a></li>
-        <li><a href="{{ url_for('shipments') }}"><img src="{{ url_for('static', filename='icons/warehouse.png') }}" alt="">Rakományt keresek</a></li>
+        <li><a href="{{ url_for('home') }}"><img src="{{ url_for('static', filename='icons/home.png') }}" alt=""> Kezdőlap</a></li>
+        <li><a href="{{ url_for('cargo') }}"><img src="{{ url_for('static', filename='icons/truck.png') }}" alt=""> Járművet keresek</a></li>
+        <li><a href="{{ url_for('shipments') }}"><img src="{{ url_for('static', filename='icons/warehouse.png') }}" alt=""> Rakományt keresek</a></li>
         <li><a href="{{ url_for('vehicles') }}"><img src="{{ url_for('static', filename='icons/car.png') }}" alt=""> Saját járművek</a></li>
-        <li><a href="{{ url_for('companies') }}"><img src="{{ url_for('static', filename='icons/company.png') }}" alt=""> Cégek</a></li>
+
+        <!-- Cégek (lenyíló) -->
+        <li>
+            <a href="#" class="submenu-toggle"><img src="{{ url_for('static', filename='icons/company.png') }}" alt=""> Cégek</a>
+            <ul class="submenu">
+                <li><a href="{{ url_for('my_company') }}">Saját cég</a></li>
+                <li><a href="{{ url_for('companies') }}">Cégkereső</a></li>
+            </ul>
+        </li>
+
+
+
         <li><a href="{{ url_for('profile') }}"><img src="{{ url_for('static', filename='icons/user.png') }}" alt=""> Profil</a></li>
         <li><a href="{{ url_for('statistics') }}"><img src="{{ url_for('static', filename='icons/stats.png') }}" alt=""> Statisztika</a></li>
     </ul>
@@ -22,3 +34,69 @@
         </li>
     </ul>
 </nav>
+
+<!-- Inline script: kis JS a toggle-hoz (beilleszthető külön JS fájlba is) -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const toggle = document.querySelector('.submenu-toggle');
+    if (!toggle) return;
+
+    const submenu = document.getElementById(toggle.getAttribute('aria-controls'));
+
+    // visszaállítás localStorage-ból (opcionális)
+    try {
+        const key = 'sidebar_companies_open';
+        const saved = localStorage.getItem(key);
+        if (saved === '1') {
+            submenu.hidden = false;
+            toggle.setAttribute('aria-expanded', 'true');
+            toggle.classList.add('open');
+        }
+
+        toggle.addEventListener('click', function() {
+            const isOpen = toggle.getAttribute('aria-expanded') === 'true';
+            if (isOpen) {
+                submenu.hidden = true;
+                toggle.setAttribute('aria-expanded', 'false');
+                toggle.classList.remove('open');
+                localStorage.setItem(key, '0');
+            } else {
+                submenu.hidden = false;
+                toggle.setAttribute('aria-expanded', 'true');
+                toggle.classList.add('open');
+                localStorage.setItem(key, '1');
+            }
+        });
+    } catch (e) {
+        // ha localStorage tiltott - csak toggle
+        toggle.addEventListener('click', function() {
+            const isOpen = toggle.getAttribute('aria-expanded') === 'true';
+            submenu.hidden = isOpen;
+            toggle.setAttribute('aria-expanded', String(!isOpen));
+            toggle.classList.toggle('open');
+        });
+    }
+});
+document.querySelectorAll('.submenu-toggle').forEach(function(toggle) {
+    toggle.addEventListener('click', function(e) {
+        e.preventDefault();
+        const submenu = this.nextElementSibling;
+
+        // pozicionálás: a menüpont tetejéhez igazítjuk
+        const rect = this.getBoundingClientRect();
+        submenu.style.top = `${this.offsetTop}px`; // vagy rect.top + scrollY, ha scroll van
+        submenu.classList.toggle('active');
+    });
+});
+
+
+// Opció: kattintás bárhova a menün kívül bezárja az almenüt
+document.addEventListener('click', function(e) {
+    document.querySelectorAll('.submenu').forEach(function(menu) {
+        if (!menu.contains(e.target) && !menu.previousElementSibling.contains(e.target)) {
+            menu.classList.remove('active');
+        }
+    });
+});
+
+</script>

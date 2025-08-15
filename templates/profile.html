@@ -7,47 +7,102 @@
         {% include 'sidebar.html' %}
     </aside>
     <main class="main-content">
-        <h1 class="cim">Profil</h1>
+    <h1 class="cim">Profil</h1>
 
-        <!-- Flash üzenetek -->
-        {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            <div id="flash-container" style="position: fixed; top: 20px; right: 20px; z-index: 1000;">
-              {% for category, message in messages %}
-                <div class="flash {{ category }}" style="
-                    background-color: #28a745;
-                    color: white;
-                    padding: 12px 20px;
-                    border-radius: 8px;
-                    margin-bottom: 10px;
-                    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-                    animation: slide-in 0.5s ease-out;">
-                  {{ message }}
+    <div class="profile-container">
+        <div class="profile-card">
+            <div class="profile-image" style="
+                position: relative;
+                display: inline-block;
+                cursor: pointer;
+                width: 150px;
+                height: 150px;
+                border-radius: 50%;
+                overflow: hidden; /* megakadályozza a belógást */
+            ">
+                <img id="profile-image"
+                     src="{{ url_for('static', filename='uploads/profile_pictures/' + user.profile_picture) if user.profile_picture else url_for('static', filename='icons/user.png') }}"
+                     alt="Profile Picture"
+                     style="width: 100%; height: 100%; object-fit: cover;">
+
+                <!-- Hover overlay -->
+                <div id="profile-overlay" style="
+                    position: absolute;
+                    top: 0; left: 0;
+                    width: 100%; height: 100%;
+                    background: rgba(0,0,0,0.5);
+                    color: #fff;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    opacity: 0;
+                    transition: opacity 0.3s;
+                ">
+                    Kép cseréje
                 </div>
-              {% endfor %}
+
+                <input type="file" id="profile-upload" accept="image/*" style="display: none;">
             </div>
-          {% endif %}
-        {% endwith %}
 
-        <div class="profile-container">
-            <div class="profile-card">
-                <div class="profile-image">
-                    <img src="{{ url_for('static', filename='icons/user.png') }}" alt="Profile Picture">
-                </div>
-                <div class="profile-info">
-                    <p><strong><big>{{ user.first_name }}{{ user.last_name }}</big></strong> | {{ user.company.name if user.company else 'Nincs cég' }}</p>    <!-- Név -->
-                    <br>
-                    <p><strong>E-mail:</strong> {{ user.email }}</p>
-                    <p><strong>Telefon:</strong> {{ user.phone_number }}</p>
-                    <p><strong>Szerep:</strong> {{ user.role }}</p>
-                    <p><strong>Tagság kezdete:</strong> {{ user.created_at }}</p>
+            <div class="profile-info">
+                <p><strong><big>{{ user.first_name }} {{ user.last_name }}</big></strong> | {{ user.company.name if user.company else 'Nincs cég' }}</p>
+                <br>
+                <p><strong>E-mail:</strong> {{ user.email }}</p>
+                <p><strong>Telefon:</strong> {{ user.phone_number }}</p>
+                <p><strong>Szerep:</strong> {{ user.role }}</p>
+                <p><strong>Tagság kezdete:</strong> {{ user.created_at }}</p>
 
-                    <a href="{{ url_for('change_password') }}" class="btn">Change Password</a>
-                </div>
+                <a href="{{ url_for('edit_profile') }}" class="btn">Profil szerkesztése</a>
+                <br>
+                <a href="{{ url_for('change_password') }}" class="btn">Change Password</a>
             </div>
         </div>
-    </main>
+    </div>
+</main>
 </div>
+
+
+<script>
+const profileImageContainer = document.querySelector('.profile-image');
+const profileOverlay = document.getElementById('profile-overlay');
+const profileInput = document.getElementById('profile-upload');
+const profileImg = document.getElementById('profile-image');
+
+profileImageContainer.addEventListener('mouseenter', () => profileOverlay.style.opacity = 1);
+profileImageContainer.addEventListener('mouseleave', () => profileOverlay.style.opacity = 0);
+
+profileOverlay.addEventListener('click', () => profileInput.click());
+
+profileInput.addEventListener('change', () => {
+    const file = profileInput.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('profile_picture', file);
+
+    fetch("{{ url_for('upload_profile_picture') }}", {
+        method: 'POST',
+        body: formData,
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                profileImg.src = e.target.result;
+            }
+            reader.readAsDataURL(file);
+        } else {
+            alert(data.error);
+        }
+    })
+    .catch(err => {
+        alert("Hiba történt a feltöltés során.");
+        console.error(err);
+    });
+});
+</script>
+
 
 <!-- Flash animáció stílus -->
 <style>
@@ -56,13 +111,5 @@
     100% { transform: translateX(0); opacity: 1; }
 }
 </style>
-
-<!-- Flash eltűnés 3 mp után -->
-<script>
-  setTimeout(() => {
-    const container = document.getElementById('flash-container');
-    if (container) container.style.display = 'none';
-  }, 3000);
-</script>
 
 {% endblock %}

@@ -5,15 +5,13 @@
     <aside class="sidebar">
         {% include 'sidebar.html' %}
     </aside>
-
     <main class="main-content">
         <!-- Cím -->
         <h1 class="company-title">{{ company.name }}</h1>
-
         <!-- Logó és adatok -->
         <div class="company-header">
             <div class="company-logo">
-                <img src="{{ url_for('static', filename='icons/company.png') }}" alt="{{ company.name }}">
+                <img src="{{ url_for('static', filename='uploads/company_logos/' + company.logo_filename) if company.logo_filename else url_for('static', filename='icons/company.png') }}">
             </div>
             <div class="company-info">
                 <p><strong>Hely:</strong> {{ company.country }}</p>
@@ -22,22 +20,28 @@
                 <p><strong>Tagság kezdete:</strong> {{ company.created_at.strftime('%Y-%m-%d') if company.created_at else '' }}</p>
             </div>
         </div>
-
         <!-- Alkalmazottak listája -->
         <h2>Alkalmazottak</h2>
         <div class="employees-list">
             {% if company.users %}
                 {% for employee in company.users %}
-                    <div class="employee-card">
-                        <div class="employee-left">
-                            <img src="{{ url_for('static', filename='icons/user.png') }}" alt="user" class="emp-avatar">
+                    <a id="employee_card" href="{{ url_for('user_profile', company_slug=company.slug, email=employee.email) }}">
+                        <div class="employee-card">
+                            <div class="employee-left">
+                                <img src="{% if employee.profile_picture %}
+                                            {{ url_for('static', filename='uploads/profile_pictures/' + employee.profile_picture) }}
+                                         {% else %}
+                                            {{ url_for('static', filename='icons/user.png') }}
+                                         {% endif %}"
+                                     alt="{{ employee.first_name }}" class="emp-avatar">
+                            </div>
+                            <div class="employee-right">
+                                <p class="emp-name"><strong>{{ employee.first_name }} {{ employee.last_name }}</strong></p>
+                                <p class="emp-role">{{ employee.role }}</p>
+                                <p class="emp-email">{{ employee.email }}</p>
+                            </div>
                         </div>
-                        <div class="employee-right">
-                            <p class="emp-name"><strong>{{ employee.first_name }} {{ employee.last_name }}</strong></p>
-                            <p class="emp-role">{{ employee.role }}</p>
-                            <p class="emp-email">{{ employee.email }}</p>
-                        </div>
-                    </div>
+                    </a>
                 {% endfor %}
             {% else %}
                 <p>Nincsenek alkalmazottak.</p>
@@ -78,6 +82,11 @@
     gap: 20px;
 }
 
+.employee-card-link {
+    text-decoration: none;
+    color: inherit;
+}
+
 .employee-card {
     background: #fff;
     border-radius: 12px;
@@ -90,6 +99,12 @@
     gap: 12px;
     align-items: center;
     box-sizing: border-box;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.employee-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.12);
 }
 
 .employee-left {
@@ -113,6 +128,11 @@
     margin: 0;
     font-size: 13px;
     color: #666;
+}
+
+#employee_card{
+    text-decoration: none;
+    color: inherit;
 }
 
 /* Reszponzív */
