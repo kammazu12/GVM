@@ -1,0 +1,378 @@
+<!-- templates/company_profile.html -->
+{% extends "base.html" %}
+{% block content %}
+<div class="home-container">
+    <aside class="sidebar">
+        {% include 'sidebar.html' %}
+    </aside>
+
+    <main class="main-content">
+        <!-- Cím -->
+        <h1 class="company-title">{{ company.name }}</h1>
+
+        <!-- Logó és adatok -->
+        <div class="company-header">
+            <div class="company-logo-container" style="position: relative; display: inline-block;">
+                <img id="company-logo"
+                     src="{{ url_for('static', filename='uploads/company_logos/' + company.logo_filename) if company.logo_filename else url_for('static', filename='icons/company.png') }}"
+                     alt="{{ company.name }}" style="width:120px; height:120px; border-radius:12px; object-fit:cover;">
+
+                {% if is_company_admin %}
+                <div id="logo-overlay" style="
+                    position: absolute;
+                    top: 0; left: 0;
+                    width: 100%; height: 100%;
+                    background: rgba(0,0,0,0.5);
+                    color: #fff;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    border-radius: 12px;
+                    opacity: 0;
+                    transition: opacity 0.3s;
+                    cursor: pointer;
+                    ">
+                    Kép cseréje
+                </div>
+                <input type="file" id="logo-input" style="display: none;" accept="image/*,.heic">
+                {% endif %}
+            </div>
+
+            <div class="company-info">
+                <p><strong>Hely:</strong> {{ company.country }}</p>
+                <p><strong>Cím:</strong> {{ company.post_code }}, {{ company.street }} {{ company.house_number }}</p>
+                <p><strong>Adószám:</strong> {{ company.tax_number }}</p>
+                <p><strong>Tagság kezdete:</strong> {{ company.created_at.strftime('%Y-%m-%d') if company.created_at else '' }}</p>
+            </div>
+        </div>
+
+        <!-- Alkalmazottak listája -->
+
+        <h2>Alkalmazottak</h2>
+        <div class="employees-list">
+            {% if company.users %}
+                {% for employee in company.users %}
+                    <div class="employee-card relative">
+                        <!-- Jobb felső ikonok -->
+                        {% if is_company_admin or current_user_role == 'owner' %}
+                        <div class="employee-actions">
+                            {% if current_user_role == 'owner' and employee.role !='owner'%}
+                                {% if employee.user_id != current_user_id %}
+                                    <button class="action-btn promote-btn" title="Admin jog megadása / megvonása" data-user-id="{{ employee.user_id }}">👑</button>
+                                    <button class="action-btn remove-btn" title="Törlés a cégből" data-user-id="{{ employee.user_id }}">❌</button>
+                                {% endif %}
+                            {% else %}
+                                {% if not employee.is_company_admin and employee.user_id != current_user_id %}
+                                    <button class="action-btn promote-btn" title="Admin jog megadása" data-user-id="{{ employee.user_id }}">👑</button>
+                                    <button class="action-btn remove-btn" title="Törlés a cégből" data-user-id="{{ employee.user_id }}">❌</button>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                        <div class="employee-left">
+                            <img src="{{ url_for('static', filename='uploads/profile_pictures/' + employee.profile_picture) if employee.profile_picture else url_for('static', filename='icons/user.png') }}"
+                                 alt="{{ employee.first_name }}"
+                                 class="emp-avatar">
+                        </div>
+
+                        <div class="employee-right">
+                            <p class="emp-name"><strong>{{ employee.first_name }} {{ employee.last_name }}</strong></p>
+                            <p class="emp-role">{{ employee.role }}</p>
+                            <p class="emp-email">{{ employee.email }}</p>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+
+
+
+        <!-- Meghívók kezelése (csak admin) -->
+        {% if is_company_admin %}
+        <hr>
+        <h2>Meghívók kezelése</h2>
+        <form method="POST" action="{{ url_for('generate_invite') }}" class="invite-form space-y-6 max-w-md mx-auto bg-white p-6 rounded-xl shadow-md">
+
+            <!-- Szerepkör -->
+            <div>
+                <label for="role" class="block text-gray-700 font-medium mb-1">Szerepkör</label>
+                <select name="role" id="role" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    <option value="freight_forwarder">Speditőr</option>
+                    <option value="manager">Manager</option>
+                    <option value="accountant">Pénzügy</option>
+                    <option value="owner">Tulaj</option>
+                </select>
+            </div>
+
+            <!-- Admin jog toggle -->
+            <div class="flex items-center" id="admin-toggle-container">
+                <span style="margin-bottom:50px;">Admin jog</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" name="for_admin" value="1" id="admin-toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <!-- Submit gomb -->
+            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200">
+                Új meghívó kód generálása
+            </button>
+        </form>
+
+        <h3>Aktív meghívók:</h3>
+        <ul class="invite-list">
+            {% for invite in company.invite_codes if not invite.is_used and invite.expires_at > now %}
+                <li>
+                    <strong>{{ invite.code }}</strong> - szerep: {{ invite.role }} - lejár: {{ invite.expires_at }}
+                </li>
+            {% else %}
+                <li>Nincsenek aktív meghívók.</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </main>
+</div>
+
+{% if is_company_admin %}
+<script>
+const logoContainer = document.querySelector('.company-logo-container');
+const overlay = document.getElementById('logo-overlay');
+const input = document.getElementById('logo-input');
+const logoImg = document.getElementById('company-logo');
+
+const roleSelect = document.getElementById('role');
+const adminToggleContainer = document.getElementById('admin-toggle-container');
+const adminToggle = document.getElementById('admin-toggle');
+
+function updateAdminToggle() {
+    if(roleSelect.value === 'owner') {
+        // Ha Owner-t választott, checkbox be van pipálva és elrejtjük
+        adminToggle.checked = true;
+        adminToggleContainer.style.display = 'none';
+    } else {
+        // Más szerepkör esetén toggle látható és módosítható
+        adminToggle.checked = false;
+        adminToggleContainer.style.display = 'flex';
+    }
+}
+
+// Betöltéskor is ellenőrizzük az alapértelmezett értéket
+updateAdminToggle();
+
+// Select változására reagálunk
+roleSelect.addEventListener('change', updateAdminToggle);
+
+logoContainer.addEventListener('mouseenter', () => overlay.style.opacity = 1);
+logoContainer.addEventListener('mouseleave', () => overlay.style.opacity = 0);
+
+overlay.addEventListener('click', () => input.click());
+
+input.addEventListener('change', () => {
+    const file = input.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('logo', file);
+
+    fetch("{{ url_for('upload_company_logo') }}", {
+        method: 'POST',
+        body: formData,
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Frissítjük a képet azonnal
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                logoImg.src = e.target.result;
+            }
+            reader.readAsDataURL(file);
+        } else {
+            alert(data.error);
+        }
+    })
+    .catch(err => {
+        alert("Hiba történt a feltöltés során.");
+        console.error(err);
+    });
+});
+
+document.querySelectorAll('.promote-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const userId = btn.dataset.userId;
+        fetch(`/company/{{ company.company_id }}/promote/${userId}`, { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) location.reload();
+                else alert(data.error);
+            });
+    });
+});
+
+document.querySelectorAll('.remove-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const userId = btn.dataset.userId;
+        if (!confirm("Biztosan törlöd ezt a felhasználót a cégtől?")) return;
+        fetch(`/company/{{ company.company_id }}/remove/${userId}`, { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) location.reload();
+                else alert(data.error);
+            });
+    });
+});
+
+</script>
+{% endif %}
+<style>
+
+.company-title {
+    font-size: 28px;
+    margin-bottom: 20px;
+}
+
+.company-header {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 30px;
+    align-items: center;
+}
+
+.company-logo img {
+    width: 120px;
+    height: 120px;
+    border-radius: 12px;
+    object-fit: cover;
+}
+
+.company-info p {
+    margin: 5px 0;
+    font-size: 16px;
+}
+
+/* Alkalmazott kártyák */
+.employees-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+.employee-card {
+    position: relative;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    padding: 12px;
+    width: 30%;
+    min-width: 25vw;
+    height: 150px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    box-sizing: border-box;
+}
+
+.employee-actions {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    display: flex;
+    gap: 6px;
+}
+
+.action-btn {
+    background: transparent;
+    /*border: 1px solid violet;*/
+    text-align: center;
+    cursor: pointer;
+    font-size: 18px;
+    transition: transform 0.2s;
+}
+
+.action-btn:hover {
+    transform: scale(1.2);
+}
+
+
+.employee-left {
+    flex-shrink: 0;
+}
+
+.emp-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #eee;
+}
+
+.employee-right .emp-name {
+    margin: 0 0 4px 0;
+    font-size: 15px;
+}
+
+.employee-right .emp-role, .employee-right .emp-email {
+    margin: 0;
+    font-size: 13px;
+    color: #666;
+}
+
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 28px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0;
+    right: 0; bottom: 0;
+    background-color: #ccc;
+    transition: 0.4s;
+    border-radius: 34px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 22px;
+    width: 22px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: #4a90e2;
+}
+
+input:checked + .slider:before {
+    transform: translateX(22px);
+}
+
+
+
+/* Reszponzív */
+@media (max-width: 1100px) {
+    .employee-card {
+        width: 45%;
+    }
+}
+
+@media (max-width: 700px) {
+    .employee-card {
+        width: 100%;
+    }
+}
+</style>
+{% endblock %}

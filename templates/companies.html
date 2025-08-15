@@ -23,7 +23,7 @@
                         <div class="company-card">
                             <div class="company-logo">
                                 <div class="placeholder-logo">
-                                    <img id='company_logo_pic' src="{{ url_for('static', filename='icons/company.png') }}">
+                                    <img id="company_logo_pic" src="{{ url_for('static', filename='uploads/company_logos/' + company.logo_filename) if company.logo_filename else url_for('static', filename='icons/company.png') }}">
                                 </div>
                             </div>
                             <div class="company-info">
@@ -56,29 +56,27 @@
         </div>
     </main>
 </div>
-
-<!-- AJAX keresés -->
+<!-- AJAX keresés (slug-aware, csak számot mutat az alkalmazottakról) -->
 <script>
-const logoUrl = "{{ url_for('static', filename='icons/company.png') }}";
+const companyIconUrl = "{{ url_for('static', filename='icons/company.png') }}";
 
 function escapeHtml(unsafe) {
     if (unsafe === null || unsafe === undefined) return '';
     return String(unsafe)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 
 document.getElementById('companySearch').addEventListener('input', function() {
     const query = this.value;
-
     fetch(`/search_companies?q=${encodeURIComponent(query)}`)
         .then(response => response.json())
         .then(data => {
             const container = document.querySelector('.companies-list');
-            container.innerHTML = '';  // ürítjük a listát
+            container.innerHTML = '';
 
             if (!data || data.length === 0) {
                 container.innerHTML = '<div class="no-results">Nincs találat.</div>';
@@ -89,31 +87,33 @@ document.getElementById('companySearch').addEventListener('input', function() {
                 const cardWrap = document.createElement('a');
                 cardWrap.className = 'company-card-link';
 
-                // ha slug-ot használsz, cseréld le; itt fallback a company_id-ra
+                // prioritás: slug (ha van), különben company_id fallback
                 if (company.slug) {
-                    cardWrap.href = `/company/${company.slug}`;
+                    cardWrap.href = `/company/${encodeURIComponent(company.slug)}`;
+                } else if (company.company_id) {
+                    cardWrap.href = `/company/${encodeURIComponent(company.company_id)}`;
                 } else {
-                    cardWrap.href = `/company/${company.company_id}`;
+                    cardWrap.href = '#';
                 }
                 cardWrap.target = "_self";
 
-                const empCount = Number(company.employee_count) || 0;
-                const empText = empCount > 0 ? `${empCount} fő` : 'Nincsenek alkalmazottak';
+                const empCount = (typeof company.employee_count === 'number') ? company.employee_count : 0;
+                const empText = empCount === 0 ? 'Nincsenek alkalmazottak' : (empCount + ' fő');
 
                 const card = document.createElement('div');
                 card.className = 'company-card';
                 card.innerHTML = `
                     <div class="company-logo">
                         <div class="placeholder-logo">
-                            <img src="${escapeHtml(logoUrl)}" alt="logo" id="company_logo_pic">
+                            <img id='company_logo_pic' src="${escapeHtml(companyIconUrl)}" alt="logo">
                         </div>
                     </div>
                     <div class="company-info">
                         <h3>${escapeHtml(company.name)}</h3>
                         <div class="company-details">
-                            <p><strong>Hely:</strong> ${escapeHtml(company.country)}</p>
-                            <p><strong>Cím:</strong> ${escapeHtml(company.post_code)}, ${escapeHtml(company.street)} ${escapeHtml(company.house_number)}</p>
-                            <p><strong>Tagság kezdete:</strong> ${escapeHtml(company.created_at)}</p>
+                            <p><strong>Hely:</strong> ${escapeHtml(company.country || '')}</p>
+                            <p><strong>Cím:</strong> ${escapeHtml(company.post_code || '')}, ${escapeHtml(company.street || '')} ${escapeHtml(company.house_number || '')}</p>
+                            <p><strong>Tagság kezdete:</strong> ${escapeHtml(company.created_at || '')}</p><br>
                             <p class="company-employees"><strong>Alkalmazottak:</strong> ${escapeHtml(empText)}</p>
                         </div>
                     </div>
@@ -125,6 +125,7 @@ document.getElementById('companySearch').addEventListener('input', function() {
         .catch(err => console.error('Hiba a keresésnél:', err));
 });
 </script>
+
 
 
 <!-- CSS -->
