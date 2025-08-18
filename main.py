@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, Blueprint, abort, current_app
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Blueprint, abort, current_app
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user, UserMixin
@@ -7,12 +7,14 @@ from datetime import datetime, timedelta, date
 import re
 import secrets
 import unicodedata
-from sqlalchemy import or_
 import os
 import uuid
-from flask import current_app
 from PIL import Image
 import pillow_heif
+from sqlalchemy.orm import joinedload
+from sqlalchemy import or_, func
+import requests
+import pycountry
 
 
 def save_uploaded_image(file, subfolder, prefix="file_", allowed_extensions=None):
@@ -72,7 +74,9 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'heic'}
 # -------------------------
 # MODELS
 # -------------------------
-# a Company osztályban
+
+# Regisztrációhoz kellő adatok
+
 class Company(db.Model):
     company_id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(150), nullable=False)
@@ -87,8 +91,7 @@ class Company(db.Model):
     slug = db.Column(db.String(200), unique=True, index=True, nullable=True)
     invite_codes = db.relationship('InviteCode', backref='company', lazy=True)
     users = db.relationship('User', back_populates='company')
-    # Új mező a logóhoz
-    logo_filename = db.Column(db.String(200), nullable=True)  # ha None → alapértelmezett kép
+    logo_filename = db.Column(db.String(200), nullable=True)
 
 
 class User(db.Model, UserMixin):
@@ -137,6 +140,109 @@ class PasswordResetToken(db.Model):
         db.session.add(prt)
         db.session.commit()
         return token
+
+# Rakományok
+
+class Cargo(db.Model):
+    cargo_id = db.Column(db.Integer, primary_key=True)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.company_id'))
+    company = db.relationship("Company", backref="cargos")
+    user_id = db.Column(db.Integer, db.ForeignKey('user.user_id'))
+    posted_by = db.relationship("User", backref="posted_cargos")  # <-- ide jön a kapcsolat
+    description = db.Column(db.Text, nullable=False, default="Nincs leírás")
+
+    # Eredeti adatok
+    origin_country = db.Column(db.String(100))
+    origin_postcode = db.Column(db.String(20))
+    origin_city = db.Column(db.String(100))
+    is_hidden_from = db.Column(db.Boolean, default=False)  # indulás bújtatott?
+
+    destination_country = db.Column(db.String(100))
+    destination_postcode = db.Column(db.String(20))
+    destination_city = db.Column(db.String(100))
+    is_hidden_to = db.Column(db.Boolean, default=False)    # érkezés bújtatott?
+
+    # Időpontok (intervallumokkal)
+    start_date_1 = db.Column(db.Date)
+    start_date_2 = db.Column(db.Date)
+    start_time_1 = db.Column(db.Time)
+    start_time_2 = db.Column(db.Time)
+
+    end_date_1 = db.Column(db.Date)
+    end_date_2 = db.Column(db.Date)
+    end_time_1 = db.Column(db.Time)
+    end_time_2 = db.Column(db.Time)
+
+    # Rakomány adatok
+    weight = db.Column(db.Float)
+    size = db.Column(db.Float)
+
+    # Jármű követelmények
+    vehicle_type = db.Column(db.String(100))     # típus
+    stucture = db.Column(db.String(100))         # felépítmény
+    equipment = db.Column(db.String(200))        # felszereltség
+    certificates = db.Column(db.String(200))     # tanúsítványok
+    cargo_securement = db.Column(db.String(200)) # rakományrögzítés
+
+    # Egyéb
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    offers = db.relationship("Offer", backref="cargo", lazy=True)
+
+
+
+class Offer(db.Model):
+    offer_id = db.Column(db.Integer, primary_key=True)
+    cargo_id = db.Column(db.Integer, db.ForeignKey('cargo.cargo_id'))
+    company_id = db.Column(db.Integer, db.ForeignKey('company.company_id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.user_id'))
+
+    price = db.Column(db.Float, nullable=False)
+    currency = db.Column(db.String(10), default="EUR")
+    status = db.Column(db.String(20), default="pending")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    conversation = db.relationship("ChatConversation", backref="offer", uselist=False)
+
+
+class ChatConversation(db.Model):
+    conversation_id = db.Column(db.Integer, primary_key=True)
+    cargo_id = db.Column(db.Integer, db.ForeignKey('cargo.cargo_id'))
+    offer_id = db.Column(db.Integer, db.ForeignKey('offer.offer_id'))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    messages = db.relationship("ChatMessage", backref="conversation", lazy=True)
+
+
+class ChatMessage(db.Model):
+    message_id = db.Column(db.Integer, primary_key=True)
+    conversation_id = db.Column(db.Integer, db.ForeignKey('chat_conversation.conversation_id'))
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.user_id'))
+    text = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_read = db.Column(db.Boolean, default=False)
+
+
+class Vehicle(db.Model):
+    vehicle_id = db.Column(db.Integer, primary_key=True)
+    company_id = db.Column(db.Integer, db.ForeignKey("company.company_id"))
+    user_id = db.Column(db.Integer, db.ForeignKey("user.user_id"))
+
+    license_plate = db.Column(db.String(20), unique=True, nullable=False)
+    vehicle_type = db.Column(db.String(50), nullable=False)  # pl. "kamion", "furgon"
+    capacity_kg = db.Column(db.Float, nullable=True)
+    volume_m3 = db.Column(db.Float, nullable=True)
+    available_from = db.Column(db.Date, nullable=True)
+    available_until = db.Column(db.Date, nullable=True)
+
+    origin_city = db.Column(db.String(100))
+    origin_country = db.Column(db.String(100))
+    destination_city = db.Column(db.String(100))
+    destination_country = db.Column(db.String(100))
+
+    is_available = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
 
 # -------------------------
 # LOGIN MANAGER
@@ -482,15 +588,288 @@ def change_password():
 def home():
     return render_template('home.html', user=current_user)
 
+
 @app.route('/shipments')
 @login_required
 def shipments():
-    return render_template('shipments.html', user=current_user)
+    cargos = Cargo.query.order_by(Cargo.created_at.desc()).all()
+    return render_template('shipments.html', user=current_user, cargos=cargos)
 
-@app.route('/cargo')
+
+
+def get_nearby_major_city(city_name, country_code):
+    params = {
+        "q": city_name,
+        "maxRows": 1,
+        "username": GEONAMES_USERNAME
+    }
+    search = requests.get("http://api.geonames.org/searchJSON", params=params).json()
+    if not search.get("geonames"):
+        return city_name, None  # fallback
+
+    lat = search['geonames'][0]['lat']
+    lng = search['geonames'][0]['lng']
+
+    params = {
+        "lat": lat,
+        "lng": lng,
+        "cities": "cities23000",  # csak a nagyobb városok
+        "maxRows": 1,
+        "username": GEONAMES_USERNAME
+    }
+    nearby = requests.get("http://api.geonames.org/findNearbyPlaceNameJSON", params=params).json()
+    if nearby.get("geonames"):
+        major = nearby['geonames'][0]
+        return major['name'], major.get('postalCode', None)
+
+    return city_name, None
+
+
+@app.route('/cargo', methods=["GET", "POST"])
 @login_required
 def cargo():
-    return render_template('cargo.html', user=current_user)
+    if request.method == "POST":
+
+        # FÖLDRAJZI ADATOK
+        origin_country = request.form.get("from_country")
+        origin_postcode = request.form.get("from_postcode")
+        origin_city = request.form.get("from_city")
+        is_hidden_from = request.form.get("is_hidden_from") == "on"
+        destination_country = request.form.get("to_country")
+        destination_postcode = request.form.get("to_postcode")
+        destination_city = request.form.get("to_city")
+        is_hidden_to = request.form.get("is_hidden_to") == "on"
+
+        # DÁTUM ÉS IDŐ
+        start_date_1_str = request.form.get("departure_from")  # '2025-08-18'
+        if start_date_1_str:
+            start_date_1 = datetime.strptime(start_date_1_str, "%Y-%m-%d").date()
+        else:
+            start_date_1 = None
+
+        # ugyanez minden dátum mezőre
+        start_date_2 = datetime.strptime(request.form.get("departure_end_date"), "%Y-%m-%d").date() if request.form.get(
+            "departure_end_date") else None
+        end_date_1 = datetime.strptime(request.form.get("arrival_start_date"), "%Y-%m-%d").date() if request.form.get(
+            "arrival_start_date") else None
+        end_date_2 = datetime.strptime(request.form.get("arrival_end_date"), "%Y-%m-%d").date() if request.form.get(
+            "arrival_end_date") else None
+
+        start_time_1 = datetime.strptime(request.form.get("arrival_start_time_start"),
+                                         "%H:%M").time() if request.form.get("arrival_start_time_start") else None
+        start_time_2 = datetime.strptime(request.form.get("arrival_start_time_start"),
+                                         "%H:%M").time() if request.form.get("arrival_start_time_end") else None
+        end_time_1 = datetime.strptime(request.form.get("arrival_start_time_start"),
+                                         "%H:%M").time() if request.form.get("arrival_end_time_start") else None
+        end_time_2 = datetime.strptime(request.form.get("arrival_start_time_start"),
+                                         "%H:%M").time() if request.form.get("arrival_end_time_end") else None
+
+        # JÁRMŰ
+        vehicle_type = request.form.get("vehicle_type")
+        stucture = request.form.get("superstructure")
+        equipment = request.form.get("equipment")
+        certificates = request.form.get("certificates")
+        cargo_securement = request.form.get("cargo_securement")
+
+        # ÁRU
+        description = request.form.get("description")
+        weight = request.form.get("weight")
+        size = request.form.get("length")
+
+        new_cargo = Cargo(
+            company_id=current_user.company_id,
+            user_id=current_user.user_id,
+            description=description,
+            origin_country=origin_country,
+            origin_postcode=origin_postcode,
+            origin_city=origin_city,
+            is_hidden_from=is_hidden_from,
+            destination_country=destination_country,
+            destination_postcode=destination_postcode,
+            destination_city=destination_city,
+            is_hidden_to=is_hidden_to,
+            start_date_1=start_date_1,
+            start_date_2=start_date_2,
+            start_time_1=start_time_1,
+            start_time_2=start_time_2,
+            end_date_1=end_date_1,
+            end_date_2=end_date_2,
+            end_time_1=end_time_1,
+            end_time_2=end_time_2,
+            weight=weight,
+            size=size,
+            vehicle_type=vehicle_type,
+            stucture=stucture,
+            equipment=equipment,
+            certificates=certificates,
+            cargo_securement=cargo_securement,
+            created_at=datetime.now()
+        )
+
+        db.session.add(new_cargo)
+        db.session.commit()
+        flash("Új rakomány sikeresen hozzáadva!", "success")
+        return redirect(url_for("cargo"))
+
+    vehicles = Vehicle.query.filter_by(is_available=True).all()
+    cargos = Cargo.query.filter_by(company_id=current_user.company_id).all()
+
+    return render_template("cargo.html", user=current_user, vehicles=vehicles, cargos=cargos)
+
+
+
+GEONAMES_USERNAME = "kammazu12"  # ide jön a GeoNames felhasználód
+
+# Ország autocomplete
+@app.route('/autocomplete/country')
+def autocomplete_country():
+    term = request.args.get('term', '')
+    params = {
+        'q': term,
+        'maxRows': 20,
+        'username': GEONAMES_USERNAME,
+        'style': 'full'
+    }
+    response = requests.get('http://api.geonames.org/countryInfoJSON', params={'username': GEONAMES_USERNAME})
+    countries = response.json().get('geonames', [])
+
+    results = []
+    for c in countries:
+        if term.lower() in c['countryName'].lower():
+            results.append({
+                'label': c['countryName'],  # amit a felhasználó lát
+                'value': c['countryCode'],  # amit az inputba kerül
+                'fips': c.get('fipsCode', ''),  # FIPS kód
+                'iso': c.get('countryCode', '')  # ISO kód, ha inkább ez kell
+            })
+    return jsonify(results)
+
+
+# Város autocomplete (opcionális: ország szűréssel)
+@app.route('/autocomplete/city')
+def autocomplete_city():
+    term = request.args.get('term', '')
+    country = request.args.get('country', '')  # ez a FIPS kód
+
+    params = {
+        'q': term,
+        'maxRows': 10,
+        'username': GEONAMES_USERNAME,
+        'style': 'json'
+    }
+
+    if country:
+        params['country'] = country  # itt FIPS kódot vár a Geonames
+
+    cities = requests.get('http://api.geonames.org/searchJSON', params=params).json()
+    results = [c['name'] for c in cities.get('geonames', [])]
+    return jsonify(results)
+
+# Irányítószám alapján város
+@app.route('/zipcode')
+def zipcode_lookup():
+    postalcode = request.args.get('postalcode', '')
+    country = request.args.get('country', '')
+    params = {
+        'postalcode': postalcode,
+        'maxRows': 1,
+        'username': GEONAMES_USERNAME,
+        'country': country
+    }
+    res = requests.get('http://api.geonames.org/postalCodeSearchJSON', params=params).json()
+    if res.get('postalCodes'):
+        return jsonify({'city': res['postalCodes'][0]['placeName']})
+    return jsonify({'city': ''})
+
+
+@app.route("/cargo/<int:cargo_id>/offer", methods=["POST"])
+@login_required
+def make_offer(cargo_id):
+    cargo = Cargo.query.get_or_404(cargo_id)
+    price = float(request.form.get("price"))
+    message_text = request.form.get("message")
+
+    offer = Offer(
+        cargo_id=cargo.cargo_id,
+        company_id=current_user.company_id,
+        user_id=current_user.user_id,
+        price=price
+    )
+    db.session.add(offer)
+    db.session.flush()  # kell, hogy legyen offer_id
+
+    # automatikus chat létrehozás
+    conversation = ChatConversation(cargo_id=cargo.cargo_id, offer_id=offer.offer_id)
+    db.session.add(conversation)
+    db.session.flush()
+
+    # első üzenet
+    if message_text:
+        msg = ChatMessage(
+            conversation_id=conversation.conversation_id,
+            sender_id=current_user.user_id,
+            text=message_text
+        )
+        db.session.add(msg)
+
+    db.session.commit()
+
+    flash("Ajánlat elküldve!", "success")
+    return redirect(url_for("cargo_detail", cargo_id=cargo.cargo_id))
+
+
+@app.route("/offer/<int:offer_id>/accept")
+@login_required
+def accept_offer(offer_id):
+    offer = Offer.query.get_or_404(offer_id)
+    cargo = offer.cargo
+
+    # csak a fuvar tulajdonosa fogadhat el
+    if cargo.user_id != current_user.user_id:
+        abort(403)
+
+    offer.status = "accepted"
+    # a többit rejected-re állítjuk
+    for o in cargo.offers:
+        if o.offer_id != offer_id:
+            o.status = "rejected"
+
+    db.session.commit()
+    flash("Ajánlat elfogadva!", "success")
+    return redirect(url_for("cargo_detail", cargo_id=cargo.cargo_id))
+
+
+@app.route("/offer/<int:offer_id>/reject")
+@login_required
+def reject_offer(offer_id):
+    offer = Offer.query.get_or_404(offer_id)
+    cargo = offer.cargo
+
+    if cargo.user_id != current_user.user_id:
+        abort(403)
+
+    offer.status = "rejected"
+    db.session.commit()
+    flash("Ajánlat elutasítva!", "info")
+    return redirect(url_for("cargo_detail", cargo_id=cargo.cargo_id))
+
+
+@app.route("/conversation/<int:conversation_id>/send", methods=["POST"])
+@login_required
+def send_message(conversation_id):
+    conv = ChatConversation.query.get_or_404(conversation_id)
+    text = request.form.get("text")
+
+    msg = ChatMessage(
+        conversation_id=conv.conversation_id,
+        sender_id=current_user.user_id,
+        text=text
+    )
+    db.session.add(msg)
+    db.session.commit()
+
+    return redirect(url_for("conversation_view", conversation_id=conv.conversation_id))
+
 
 @app.route('/vehicles')
 @login_required
@@ -643,22 +1022,23 @@ def generate_invite():
 @login_required
 def search_companies():
     query = request.args.get('q', '').strip()
+
     if query:
-        results = Company.query.filter(
-            (Company.name.ilike(f'%{query}%')) |
-            (Company.tax_number.ilike(f'%{query}%')) |
-            (Company.country.ilike(f'%{query}%'))
-        ).all()
+        # csatlakozás a User táblához
+        results = Company.query.outerjoin(User).options(joinedload(Company.users)).filter(
+            or_(
+                Company.name.ilike(f'%{query}%'),
+                Company.tax_number.ilike(f'%{query}%'),
+                Company.country.ilike(f'%{query}%'),
+                func.concat(User.first_name, ' ', User.last_name).ilike(f'%{query}%')
+            )
+        ).distinct().all()  # distinct, hogy ne duplikálódjon, ha több user is található
     else:
-        results = Company.query.all()
+        results = Company.query.options(joinedload(Company.users)).all()
 
     companies_data = []
     for c in results:
-        # számoljuk az alkalmazottak számát (company.users backref alapján)
         emp_count = len(c.users) if hasattr(c, 'users') and c.users is not None else 0
-
-        # készítünk egy slugot (egyszerű, nem ír a DB-be)
-        s = slugify(c.name)  # ha szükséges, tehetsz utána '-<id>'-t hogy garantáltan egyedi legyen: f"{s}-{c.company_id}"
         companies_data.append({
             'company_id': c.company_id,
             'name': c.name,
@@ -676,28 +1056,25 @@ def search_companies():
 @app.route('/company/<slug>')
 @login_required
 def company_profile(slug):
-    # ha számjegyekből áll (pl. valami id-s fallback), kíséreljük az id szerinti lekérést is:
+    # Slug/fallback lekérdezések (ahogy eddig)
+    company = None
     if slug.isdigit():
         company = Company.query.get(int(slug))
-        if not company:
-            abort(404)
-        return render_template('company_profile.html', company=company)
+    if not company:
+        company = Company.query.filter_by(slug=slug).first()
+    if not company:
+        import re
+        m = re.search(r'-(\d+)$', slug)
+        if m:
+            company = Company.query.get(int(m.group(1)))
+    if not company:
+        abort(404)
 
-    # elsődleges: keresés slug mező alapján
-    company = Company.query.filter_by(slug=slug).first()
-    if company:
-        return render_template('company_profile.html', company=company)
+    # Cég összes hirdetett fuvara
+    cargos = Cargo.query.filter_by(company_id=company.company_id).order_by(Cargo.start_date_1.desc()).all()
 
-    # ha nem található, próbáljuk a slug végén lévő -<id> kinyerését (további fallback)
-    import re
-    m = re.search(r'-(\d+)$', slug)
-    if m:
-        cid = int(m.group(1))
-        company = Company.query.get(cid)
-        if company:
-            return render_template('company_profile.html', company=company)
+    return render_template('company_profile.html', company=company, cargos=cargos)
 
-    abort(404)
 
 @app.route("/company/<company_slug>/<email>")
 @login_required

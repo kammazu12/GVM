@@ -1,13 +1,626 @@
-<!-- templates/cargo.html -->
 {% extends "base.html" %}
 {% block content %}
 <div class="home-container">
     <aside class="sidebar">
         {% include 'sidebar.html' %}
     </aside>
+
     <main class="main-content">
-        <h1 class="cim">Rakományok</h1>
-        <p>Itt láthatók a raktér adatai.</p>
-    </main>
+    <h1 class="cim">Járművek</h1>
+
+    <div class="cargo-container">
+
+        <!-- Accordion gomb -->
+        <button class="accordion-btn">Áru keresése/feltöltése ▼</button>
+
+        <!-- Lenyíló form -->
+        <div class="accordion-content">
+            <form action="{{ url_for('cargo') }}" method="POST" class="freight-form">
+
+              <!-- Honnan és Hová blokk egymás mellett -->
+              <!-- Honnan-Hová + Mikor -->
+                <div class="grid-top">
+                    <fieldset>
+                        <legend>Honnan</legend>
+                        <label for="from-country">Ország:</label>
+                        <input type="text" id="from-country" name="from_country" list="country-list" autocomplete="off" required>
+                        <datalist id="country-list"></datalist>
+
+                        <label for="from-postcode">Irányítószám:</label>
+                        <input type="text" id="from-postcode" name="from_postcode" required>
+
+                        <label for="from-city">Város:</label>
+                        <input type="text" id="from-city" name="from_city" required>
+                        <div class="toggle-row">
+                            <span>Bújtatott fuvar</span>
+                            <label class="switch">
+                                <input type="checkbox" name="is_hidden_from">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+
+                    </fieldset>
+
+                    <div class="swap-container">
+                        <button type="button" id="swap-btn">⇄</button>
+                    </div>
+
+                    <fieldset>
+                        <legend>Hová</legend>
+                        <label for="to-country">Ország:</label>
+                        <input type="text" id="to-country" name="to_country" required>
+                        <label for="to-postcode">Irányítószám:</label>
+                        <input type="text" id="to-postcode" name="to_postcode" required>
+                        <label for="to-city">Város:</label>
+                        <input type="text" id="to-city" name="to_city" required>
+                        <div class="toggle-row">
+                            <span>Bújtatott fuvar</span>
+                            <label class="switch">
+                                <input type="checkbox" name="is_hidden_to">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="date-container">
+                        <legend>Mikor</legend>
+                        <div class="datetime-row">
+                            <label>Indulás kezdő:</label>
+                            <div class="datetime-inputs">
+                                <input type="date" name="departure_from" required class="date-input">
+                                <input type="time" name="departure_from_time_start" placeholder="08:00" class="time-input">
+                                <input type="time" name="departure_from_time_end" placeholder="16:00" class="time-input">
+                            </div>
+                        </div>
+
+                        <div class="datetime-row">
+                            <label>Indulás záró:</label>
+                            <div class="datetime-inputs">
+                                <input type="date" name="departure_end_date" required class="date-input">
+                                <input type="time" name="departure_end_time_start" placeholder="08:00" class="time-input">
+                                <input type="time" name="departure_end_time_end" placeholder="16:00" class="time-input">
+                            </div>
+                        </div>
+
+                        <hr>
+                        <div class="datetime-row">
+                            <label>Kezdő dátum:</label>
+                            <div class="datetime-inputs">
+                                <input type="date" name="arrival_start_date" required class="date-input">
+                                <input type="time" name="arrival_start_time_start" placeholder="08:00" class="time-input">
+                                <input type="time" name="arrival_start_time_end" placeholder="16:00" class="time-input">
+                            </div>
+                        </div>
+
+                        <div class="datetime-row">
+                            <label>Záró dátum:</label>
+                            <div class="datetime-inputs">
+                                <input type="date" name="arrival_end_date" required class="date-input">
+                                <input type="time" name="arrival_end_time_start" placeholder="08:00" class="time-input">
+                                <input type="time" name="arrival_end_time_end" placeholder="16:00" class="time-input">
+                            </div>
+                        </div>
+                    </fieldset>
+
+                </div>
+
+                <!-- Áru és Jármű alatta -->
+                <div class="grid-bottom">
+                    <fieldset class="vehicle-grid">
+                        <legend>Jármű</legend>
+                        <label for="vehicle_type">Típus:</label>
+                        <input type="text" id="vehicle_type" name="vehicle_type">
+                        <label for="superstructure">Felépítmény:</label>
+                        <input type="text" id="superstructure" name="superstructure">
+                        <label for="equipment">Felszereltség:</label>
+                        <input type="text" id="equipment" name="equipment">
+                        <label for="certificates">Tanúsítványok:</label>
+                        <input type="text" id="certificates" name="certificates">
+                        <label for="cargo_securement">Rakományrögzítés:</label>
+                        <input type="text" id="cargo_securement" name="cargo_securement">
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Áru</legend>
+                        <label for="length">Hossz (m):</label>
+                        <input type="number" id="length" name="length" step="0.1">
+                        <label for="weight">Tömeg (t):</label>
+                        <input type="number" id="weight" name="weight" step="0.5">
+                        <label for="description">Leírás:</label>
+                        <input type="text" id="description" name="description">
+                    </fieldset>
+                </div>
+
+              <button type="submit">Áru feltölése és fuvar keresése</button>
+            </form>
+        </div>
+
+        <!-- Táblázat -->
+        <div class="table-container">
+            <h2>Szabad járművek</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Rendszám</th>
+                        <th>Típus</th>
+                        <th>Kapacitás</th>
+                        <th>Helyszín</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for vehicle in vehicles %}
+                <tr>
+                    <td>{{ vehicle.plate }}</td>
+                    <td>{{ vehicle.type }}</td>
+                    <td>{{ vehicle.capacity }}</td>
+                    <td>{{ vehicle.location }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+
+            </table>
+        </div>
+    </div>
+</main>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const swapBtn = document.getElementById('swap-btn');
+
+    swapBtn.addEventListener('click', () => {
+        const fromCountry = document.getElementById('from-country');
+        const fromPostcode = document.getElementById('from-postcode');
+        const fromCity = document.getElementById('from-city');
+
+        const toCountry = document.getElementById('to-country');
+        const toPostcode = document.getElementById('to-postcode');
+        const toCity = document.getElementById('to-city');
+
+        // Csere
+        [fromCountry.value, toCountry.value] = [toCountry.value, fromCountry.value];
+        [fromPostcode.value, toPostcode.value] = [toPostcode.value, fromPostcode.value];
+        [fromCity.value, toCity.value] = [toCity.value, fromCity.value];
+    });
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    function setupAutocomplete(inputId, url, extraParams = {}) {
+        const input = document.getElementById(inputId);
+        const datalist = document.getElementById(input.getAttribute('list'));
+
+        input.addEventListener('input', () => {
+            let params = {...extraParams, term: input.value};
+            fetch(url + '?' + new URLSearchParams(params))
+                .then(res => res.json())
+                .then(data => {
+                    datalist.innerHTML = '';
+                    data.forEach(item => {
+                        let option = document.createElement('option');
+                        option.value = item;
+                        datalist.appendChild(option);
+                    });
+                });
+        });
+    }
+
+    // Ország autocomplete
+    setupAutocomplete('from-country', '/autocomplete/country');
+    setupAutocomplete('to-country', '/autocomplete/country');
+
+
+    function setupCityAutocomplete(cityInputId, countryInputId) {
+    const cityInput = document.getElementById(cityInputId);
+    const countryInput = document.getElementById(countryInputId);
+    const datalist = document.getElementById(cityInput.getAttribute('list'));
+
+    cityInput.addEventListener('input', () => {
+        const countryName = countryInput.value;
+
+        // 1. Lekérjük a FIPS kódot
+        fetch(`/country/fips?country=${countryName}`)
+            .then(res => res.json())
+            .then(data => {
+                const fips = data.fips || '';
+                if (!fips) return;
+
+                // 2. Lekérjük a városokat FIPS kód alapján
+                fetch(`/autocomplete/city?term=${cityInput.value}&country=${fips}`)
+                    .then(res => res.json())
+                    .then(cities => {
+                        datalist.innerHTML = '';
+                        cities.forEach(city => {
+                            let option = document.createElement('option');
+                            option.value = city;
+                            datalist.appendChild(option);
+                        });
+                    });
+            });
+    });
+}
+
+        // Használat
+        setupCityAutocomplete('from-city', 'from-country');
+        setupCityAutocomplete('to-city', 'to-country');
+
+
+    // Irányítószám kitöltés várossal
+    document.getElementById('from-postcode').addEventListener('blur', () => {
+        let country = document.getElementById('from-country').value;
+        let postcode = document.getElementById('from-postcode').value;
+        fetch(`/zipcode?postalcode=${postcode}&country=${country}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.city) document.getElementById('from-city').value = data.city;
+            });
+    });
+
+    document.getElementById('to-postcode').addEventListener('blur', () => {
+        let country = document.getElementById('to-country').value;
+        let postcode = document.getElementById('to-postcode').value;
+        fetch(`/zipcode?postalcode=${postcode}&country=${country}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.city) document.getElementById('to-city').value = data.city;
+            });
+    });
+});
+
+
+</script>
+
+<style>
+.home-container {
+    display: flex;
+    min-height: 100vh;
+    min-width: 100vw;
+}
+
+.date-container{
+height: 85%;
+}
+
+.swap-container {
+    display: flex;
+    align-self: center;
+    justify-content: center;
+    text-align: left;
+}
+
+#swap-btn {
+    display: flex;
+    align-items: center;      /* függőlegesen középre */
+    justify-content: center;  /* vízszintesen középre */
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 0;               /* padding eltávolítása, hogy tényleg középen legyen */
+    line-height: 1;           /* sor magasság normalizálása */
+    text-align: center;
+    transition: background 0.2s;
+}
+
+.main-content {
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    margin-left: 10%;
+}
+
+.cim {
+    align-self: flex-start;
+    font-size: 28px;
+    margin-bottom: 20px;
+    margin-left: 10%;
+}
+
+.cargo-container {
+    min-width: 80%;
+    max-width: 80%;
+    margin: 10px auto;
+}
+
+.accordion-btn {
+    width: 50%;
+    background-color: #007bff;
+    color: white;
+    padding: 12px;
+    font-size: 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: left;
+    margin-bottom: 10px;
+    transition: background 0.2s;
+}
+
+.accordion-btn:hover {
+    background-color: #0056b3;
+}
+
+.accordion-content {
+    display: none;
+}
+
+.datetime-row {
+    margin-top: 5px;
+}
+
+.datetime-row label {
+    display: block;
+    margin-bottom: 2px; /* kis tér a label és az inputok között */
+}
+
+.datetime-inputs {
+    display: grid;
+    grid-template-columns: 40% 25% 25%;
+    gap: 5px;
+}
+
+fieldset{
+    height: 80%;
+}
+
+.date-input,
+.time-input {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.freight-form {
+    min-width: 100%;
+    /*margin: auto;*/
+    padding: 20px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    font-family: sans-serif;
+    display: grid;
+}
+/* Honnan-Hová + Mikor */
+.grid-top {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr 1fr; /* Honnan, swap gomb, Hová, Mikor */
+    column-gap: 20px;
+    align-items: start;
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+/* Swap gomb középre a két fieldset között */
+.swap-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Áru és Jármű alatta, 45-45% */
+.grid-bottom {
+    display: grid;
+    align-items: end;
+    grid-template-columns: 63% 35%;
+    column-gap: 2%;
+    width: 100%;
+}
+
+.vehicle-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 15% 28%);
+    column-gap: 25px;
+}
+
+fieldset {
+    border: 1px solid #ccc;
+    padding: 15px 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    max-width: 100%;
+}
+
+legend {
+    font-weight: bold;
+    padding: 0 10px;
+}
+
+label {
+    display: block;
+    margin-top: 10px;
+    font-size: 14px;
+    color: #333;
+}
+
+input {
+    width: 100%;
+    padding: 8px 10px;
+    margin-top: 4px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+}
+
+button[type="submit"] {
+    background: #4a90e2;
+    color: #fff;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background 0.2s;
+}
+
+button[type="submit"]:hover {
+    background: #3578c3;
+}
+
+.table-container {
+    overflow-x: auto;
+    margin-top: 15px;
+}
+
+table, th, td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: center;
+    align-content: center;
+
+}
+
+.toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 26px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 26px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: #4a90e2;
+}
+
+input:checked + .slider:before {
+    transform: translateX(24px);
+}
+
+
+.table-container{
+    align-content: center;
+    min-width: 100%;
+}
+
+th {
+    background: #007bff;
+    color: white;
+}
+
+tr:nth-child(even) {
+    background: #f9f9f9;
+}
+</style>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const accordionBtn = document.querySelector('.accordion-btn');
+    const accordionContent = document.querySelector('.accordion-content');
+
+    accordionBtn.addEventListener('click', () => {
+        if (accordionContent.style.display === "block") {
+            accordionContent.style.display = "none";
+        } else {
+            accordionContent.style.display = "block";
+        }
+    });
+});
+
+$(function() {
+    let selectedCountryISO = '';
+
+    $("#from-country").autocomplete({
+        source: "/autocomplete/country",
+        minLength: 1,
+        select: function(event, ui) {
+            // FIPS/ISO kód elmentése
+            selectedCountryISO = ui.item.iso;
+        }
+    });
+    $("#to-country").autocomplete({
+        source: "/autocomplete/country",
+        minLength: 1,
+        select: function(event, ui) {
+            // FIPS/ISO kód elmentése
+            selectedCountryISO = ui.item.iso;
+        }
+    });
+
+
+    $("#from-city").autocomplete({
+        source: function(request, response) {
+            $.getJSON("/autocomplete/city", {
+                term: request.term,
+                country: $("#from-city").data("fips")  // ország FIPS kód
+            }, function(data) {
+                response($.map(data, function(item) {
+                    return {
+                        label: item.name,   // amit a user lát
+                        value: item.name,   // ami az inputba kerül
+                        fips: item.fips     // extra adat, hidden mezőbe
+                    };
+                }));
+            });
+        },
+        select: function(event, ui) {
+            $("#to-city").val(ui.item.value);       // csak a város neve
+            $("#to-city-fips").val(ui.item.fips);   // hiddenbe a FIPS
+            return false;
+        }
+    });
+
+    $("#to-city").autocomplete({
+        source: function(request, response) {
+            $.getJSON("/autocomplete/city", {
+                term: request.term,
+                country: $("#to-country").data("fips")  // ország FIPS kód
+            }, function(data) {
+                response($.map(data, function(item) {
+                    return {
+                        label: item.name,   // amit a user lát
+                        value: item.name,   // ami az inputba kerül
+                        fips: item.fips     // extra adat, hidden mezőbe
+                    };
+                }));
+            });
+        },
+        select: function(event, ui) {
+            $("#to-city").val(ui.item.value);       // csak a város neve
+            $("#to-city-fips").val(ui.item.fips);   // hiddenbe a FIPS
+            return false;
+        }
+    });
+
+});
+</script>
 {% endblock %}
