@@ -47,6 +47,78 @@
                 <p>Nincsenek alkalmazottak.</p>
             {% endif %}
         </div>
+
+        <h2>Hirdetett fuvarok</h2>
+            {% if cargos %}
+            <table id="companyCargos" class="display" style="width:100%; font-size:0.9em;">
+                <thead>
+                    <tr>
+                        <th>Felvétel dátuma</th>
+                        <th>Felvétel helye</th>
+                        <th>Letétel dátuma</th>
+                        <th>Letétel helye</th>
+                        <th>Hossza (m)</th>
+                        <th>Tömege (t)</th>
+                        <th>Jármű típusa</th>
+                        <th>Felépítmény</th>
+                        <th>Felszereltség</th>
+                        <th>Rakomány rögzítés</th>
+                        <th>Hirdető</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cargo in cargos %}
+                    <tr>
+                        <td>
+                            {{ cargo.start_date_1.strftime('%Y.%m.%d.') if cargo.start_date_1 else '' }}
+                            {% if cargo.start_date_2 %}
+                                (+{{ (cargo.start_date_2 - cargo.start_date_1).days }})
+                            {% endif %}
+                        </td>
+                        <td>{{ cargo.origin_country }}<br>{{ cargo.origin_postcode }}<br>{{ cargo.origin_city }}</td>
+                        <td>
+                            {{ cargo.end_date_1.strftime('%Y.%m.%d.') if cargo.end_date_1 else '' }}
+                            {% if cargo.end_date_2 %}
+                                (+{{ (cargo.end_date_2 - cargo.end_date_1).days }})
+                            {% endif %}
+                        </td>
+                        <td>{{ cargo.destination_country }}<br>{{ cargo.destination_postcode }}<br>{{ cargo.destination_city }}</td>
+                        <td>{{ cargo.size }}</td>
+                        <td>{{ cargo.weight }}</td>
+                        <td>{{ cargo.vehicle_type or '-' }}</td>
+                        <td>{{ cargo.stucture or '-' }}</td>
+                        <td>{{ cargo.equipment or '-' }}</td>
+                        <td>{{ cargo.cargo_securement or '-' }}</td>
+                        <td>
+                            {% if cargo.posted_by %}
+                                <a href="{{ url_for('user_profile', company_slug=cargo.company.slug, email=cargo.posted_by.email) }}">
+                                    {{ cargo.posted_by.first_name }} {{ cargo.posted_by.last_name }}
+                                </a>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p>Ez a cég még nem hirdetett fuvarokat.</p>
+            {% endif %}
+
+            <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+            <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+            <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+            <script>
+            $(document).ready(function() {
+                $('#companyCargos').DataTable({
+                    "order": [[0, "desc"]],
+                    "pageLength": 10
+                });
+            });
+            </script>
+
     </main>
 </div>
 

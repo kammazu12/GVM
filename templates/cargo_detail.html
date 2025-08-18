@@ -1,0 +1,24 @@
+<h2>{{ cargo.description }}</h2>
+<p>{{ cargo.origin_city }} → {{ cargo.destination_city }}</p>
+
+<h3>Ajánlatok</h3>
+<ul>
+{% for offer in cargo.offers %}
+  <li>
+    {{ offer.company.name }} - {{ offer.price }} {{ offer.currency }} ({{ offer.status }})
+    <a href="{{ url_for('conversation_view', conversation_id=offer.conversation.conversation_id) }}">💬 Chat</a>
+
+    {% if cargo.user_id == current_user.user_id and offer.status == "pending" %}
+      <a href="{{ url_for('accept_offer', offer_id=offer.offer_id) }}">✅ Elfogad</a>
+      <a href="{{ url_for('reject_offer', offer_id=offer.offer_id) }}">❌ Elutasít</a>
+    {% endif %}
+  </li>
+{% endfor %}
+</ul>
+
+<h3>Új ajánlat</h3>
+<form method="post" action="{{ url_for('make_offer', cargo_id=cargo.cargo_id) }}">
+  <input type="number" step="0.01" name="price" placeholder="Ajánlott ár" required>
+  <textarea name="message" placeholder="Üzenet az ajánlathoz"></textarea>
+  <button type="submit">Ajánlat küldése</button>
+</form>

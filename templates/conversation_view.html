@@ -1,0 +1,14 @@
+<h2>Chat</h2>
+<div class="chat-box">
+  {% for msg in conversation.messages %}
+    <div class="message {% if msg.sender_id == current_user.user_id %}me{% else %}other{% endif %}">
+      <strong>{{ msg.sender.first_name }}</strong>: {{ msg.text }}
+      <small>{{ msg.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+    </div>
+  {% endfor %}
+</div>
+
+<form method="post" action="{{ url_for('send_message', conversation_id=conversation.conversation_id) }}">
+  <input type="text" name="text" placeholder="Írd meg az üzenetet..." required>
+  <button type="submit">Küld</button>
+</form>

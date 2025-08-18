@@ -1,4 +1,3 @@
-<!-- templates/shipments.html -->
 {% extends "base.html" %}
 {% block content %}
 <div class="home-container">
@@ -6,8 +5,120 @@
         {% include 'sidebar.html' %}
     </aside>
     <main class="main-content">
-        <h1 class="cim">Fuvarok</h1>
-        <p>Itt láthatók a fuvarok.</p>
+        <h1 class="cim">Rakományok</h1>
+
+        {% if cargos %}
+        <table id="shipmentsTable" class="display" style="font-size: 0.9em; width:100%;">
+            <thead>
+                <tr>
+                    <th>Felvétel dátuma</th>
+                    <th>Felvétel helye</th>
+                    <th>Letétel dátuma</th>
+                    <th>Letétel helye</th>
+                    <th>Hossza (m)</th>
+                    <th>Tömege (t)</th>
+                    <th>Jármű típusa</th>
+                    <th>Felépítmény</th>
+                    <th>Felszereltség</th>
+                    <th>Rakomány rögzítés</th>
+                    <th>Hirdető cég</th>
+                    <th style="display:none;">created_at</th> <!-- rejtett oszlop a csökkenő rendezéshez -->
+                </tr>
+            </thead>
+            <tbody>
+                {% for cargo in cargos %}
+                <tr>
+                    <td>
+                        {% if cargo.start_date_1 %}
+                            {{ cargo.start_date_1.strftime('%Y.%m.%d.') }}
+                            {% if cargo.start_date_2 %}
+                                {% set delta = (cargo.start_date_2 - cargo.start_date_1).days %}
+                                (+{{ delta }})
+                            {% endif %}
+                        {% endif %}
+
+                        {% if cargo.start_time_1 or cargo.start_time_2 %}
+                            <br>
+                            {{ cargo.start_time_1.strftime('%H:%M') if cargo.start_time_1 else '' }}
+                            – {{ cargo.start_time_2.strftime('%H:%M') if cargo.start_time_2 else '' }}
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {{ cargo.origin_country }}<br>
+                        {{ cargo.origin_postcode }}<br>
+                        {{ cargo.origin_city }}
+                    </td>
+
+                    <td>
+                        {% if cargo.end_date_1 %}
+                            {{ cargo.end_date_1.strftime('%Y.%m.%d.') }}
+                            {% if cargo.end_date_2 %}
+                                {% set delta = (cargo.end_date_2 - cargo.end_date_1).days %}
+                                (+{{ delta }})
+                            {% endif %}
+                        {% endif %}
+
+                        {% if cargo.end_time_1 or cargo.end_time_2 %}
+                            <br>
+                            {{ cargo.end_time_1.strftime('%H:%M') if cargo.end_time_1 else '' }}
+                            – {{ cargo.end_time_2.strftime('%H:%M') if cargo.end_time_2 else '' }}
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {{ cargo.destination_country }}<br>
+                        {{ cargo.destination_postcode }}<br>
+                        {{ cargo.destination_city }}
+                    </td>
+
+                    <td>{{ cargo.size }}</td>
+                    <td>{{ cargo.weight }}</td>
+                    <td>{{ cargo.vehicle_type or '-' }}</td>
+                    <td>{{ cargo.stucture or '-' }}</td>
+                    <td>{{ cargo.equipment or '-' }}</td>
+                    <td>{{ cargo.cargo_securement or '-' }}</td>
+                    <td>
+                        {% if cargo.company %}
+                            <a href="{{ url_for('company_profile', slug=cargo.company.slug) }}">
+                                {{ cargo.company.name }}
+                            </a>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+
+                    <td style="display:none;">{{ cargo.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>Nincs még rakomány.</p>
+        {% endif %}
     </main>
 </div>
+
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+<script>
+$(document).ready(function() {
+    $('#shipmentsTable').DataTable({
+        "order": [[11, "desc"], [0, "asc"]], // a rejtett created_at oszlop szerint alapértelmezett rendezés
+        "pageLength": 25,        // alapértelmezett sorok száma
+        "columnDefs": [
+            { "orderable": false, "targets": [] } // ide teheted, ha van olyan oszlop, amit ne lehessen rendezni
+        ]
+    });
+});
+</script>
+
+
+<style>
+    #shipmentsTable_wrapper{
+        margin-right: 20px;
+    }
+</style>
 {% endblock %}

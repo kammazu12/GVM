@@ -27,6 +27,55 @@
             </div>
 
         </div>
+
+        {% if user.posted_cargos %}
+            <h2>Hirdetett fuvarok</h2>
+            <table id="companyCargos" class="display" style="width:100%; font-size:0.9em;">
+                <thead>
+                    <tr>
+                        <th>Felvétel dátuma</th>
+                        <th>Felvétel helye</th>
+                        <th>Letétel dátuma</th>
+                        <th>Letétel helye</th>
+                        <th>Hossza (m)</th>
+                        <th>Tömege (t)</th>
+                        <th>Jármű típusa</th>
+                        <th>Felépítmény</th>
+                        <th>Felszereltség</th>
+                        <th>Rakomány rögzítés</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cargo in user.posted_cargos %}
+                        <tr>
+                        <td>
+                            {{ cargo.start_date_1.strftime('%Y.%m.%d.') if cargo.start_date_1 else '' }}
+                            {% if cargo.start_date_2 %}
+                                (+{{ (cargo.start_date_2 - cargo.start_date_1).days }})
+                            {% endif %}
+                        </td>
+                        <td>{{ cargo.origin_country }}<br>{{ cargo.origin_postcode }}<br>{{ cargo.origin_city }}</td>
+                        <td>
+                            {{ cargo.end_date_1.strftime('%Y.%m.%d.') if cargo.end_date_1 else '' }}
+                            {% if cargo.end_date_2 %}
+                                (+{{ (cargo.end_date_2 - cargo.end_date_1).days }})
+                            {% endif %}
+                        </td>
+                        <td>{{ cargo.destination_country }}<br>{{ cargo.destination_postcode }}<br>{{ cargo.destination_city }}</td>
+                        <td>{{ cargo.size }}</td>
+                        <td>{{ cargo.weight }}</td>
+                        <td>{{ cargo.vehicle_type or '-' }}</td>
+                        <td>{{ cargo.stucture or '-' }}</td>
+                        <td>{{ cargo.equipment or '-' }}</td>
+                        <td>{{ cargo.cargo_securement or '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>Ez a felhasználó még nem hirdetett fuvarokat.</p>
+        {% endif %}
+
     </main>
 </div>
 
@@ -69,6 +118,22 @@
 
 .btn:hover {
     background-color: #0056b3;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+th, td {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    text-align: left;
+}
+
+th {
+    background-color: #f4f4f4;
 }
 
 /* Reszponzív */
