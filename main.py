@@ -14,9 +14,9 @@ import pillow_heif
 from sqlalchemy.orm import joinedload
 from sqlalchemy import or_, func
 import requests
-import pycountry
 
 
+GEONAMES_USERNAME = "kammazu12"  # ide jön a GeoNames felhasználód
 def save_uploaded_image(file, subfolder, prefix="file_", allowed_extensions=None):
     """
     Feltöltött kép mentése egy adott mappába.
@@ -156,11 +156,15 @@ class Cargo(db.Model):
     origin_postcode = db.Column(db.String(20))
     origin_city = db.Column(db.String(100))
     is_hidden_from = db.Column(db.Boolean, default=False)  # indulás bújtatott?
+    masked_origin_city = db.Column(db.String(100), nullable=True)
+    masked_origin_postcode = db.Column(db.String(20), nullable=True)
 
     destination_country = db.Column(db.String(100))
     destination_postcode = db.Column(db.String(20))
     destination_city = db.Column(db.String(100))
     is_hidden_to = db.Column(db.Boolean, default=False)    # érkezés bújtatott?
+    masked_destination_city = db.Column(db.String(100), nullable=True)
+    masked_destination_postcode = db.Column(db.String(20), nullable=True)
 
     # Időpontok (intervallumokkal)
     start_date_1 = db.Column(db.Date)
@@ -186,9 +190,20 @@ class Cargo(db.Model):
 
     # Egyéb
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
+    last_republished_at = db.Column(db.DateTime, nullable=True)
     offers = db.relationship("Offer", backref="cargo", lazy=True)
 
+    def display_origin(self):
+        if self.is_hidden_from:
+            new_city, _ = get_nearby_major_city(self.origin_city, self.origin_country)
+            return new_city
+        return self.origin_city
+
+    def display_destination(self):
+        if self.is_hidden_to:
+            new_city, _ = get_nearby_major_city(self.destination_city, self.destination_country)
+            return new_city
+        return self.destination_city
 
 
 class Offer(db.Model):
@@ -583,10 +598,55 @@ def change_password():
 # -------------------------
 # DASHBOARD ROUTES WITH SIDEBAR
 # -------------------------
+
 @app.route('/home')
 @login_required
 def home():
-    return render_template('home.html', user=current_user)
+    cargos = Cargo.query.filter_by(user_id=current_user.user_id).all()
+    return render_template('home.html', cargos=cargos)
+
+
+@app.route('/delete_cargos', methods=['POST'])
+def delete_cargos():
+    data = request.get_json()
+    ids_to_delete = data.get('ids', [])
+
+    if not ids_to_delete:
+        return jsonify({'error': 'Nincs kiválasztva sor!'}), 400
+
+    try:
+        cargos = Cargo.query.filter(Cargo.cargo_id.in_(ids_to_delete)).all()
+        for cargo in cargos:
+            db.session.delete(cargo)
+        db.session.commit()
+        return jsonify({'success': True, 'deleted_ids': ids_to_delete})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/republish_cargos', methods=['POST'])
+def republish_cargos():
+    data = request.get_json()
+    ids = data.get('ids', [])
+    now = datetime.now()
+    cooldown = timedelta(seconds=30)
+
+    cargos = Cargo.query.filter(Cargo.cargo_id.in_(ids)).all()
+    republished = []
+
+    for cargo in cargos:
+        if cargo.last_republished_at and now - cargo.last_republished_at < cooldown:
+            continue  # kihagyjuk a fuvarokat, amelyek még cooldown alatt vannak
+        cargo.created_at = now
+        cargo.last_republished_at = now
+        republished.append(cargo.cargo_id)
+
+    db.session.commit()
+    return jsonify({
+        "success": True,
+        "republished": republished,
+        "now": now.strftime('%Y-%m-%d %H:%M:%S')
+    })
 
 
 @app.route('/shipments')
@@ -596,10 +656,10 @@ def shipments():
     return render_template('shipments.html', user=current_user, cargos=cargos)
 
 
-
 def get_nearby_major_city(city_name, country_code):
     params = {
         "q": city_name,
+        "country": country_code,  # <--- ország kód megadásaí
         "maxRows": 1,
         "username": GEONAMES_USERNAME
     }
@@ -613,16 +673,29 @@ def get_nearby_major_city(city_name, country_code):
     params = {
         "lat": lat,
         "lng": lng,
-        "cities": "cities23000",  # csak a nagyobb városok
+        "cities": "cities15000",  # csak a nagyobb városok
         "maxRows": 1,
         "username": GEONAMES_USERNAME
     }
     nearby = requests.get("http://api.geonames.org/findNearbyPlaceNameJSON", params=params).json()
     if nearby.get("geonames"):
         major = nearby['geonames'][0]
-        return major['name'], major.get('postalCode', None)
+        postcode = major.get('postalCode') or get_postcode(major['name'], country_code)
+        return major['name'], postcode
 
     return city_name, None
+
+def get_postcode(city_name, country_code):
+    params = {
+        "placename": city_name,
+        "country": country_code,
+        "maxRows": 1,
+        "username": GEONAMES_USERNAME
+    }
+    result = requests.get("http://api.geonames.org/postalCodeSearchJSON", params=params).json()
+    if result.get("postalCodes"):
+        return result["postalCodes"][0]["postalCode"]
+    return None
 
 
 @app.route('/cargo', methods=["GET", "POST"])
@@ -639,6 +712,23 @@ def cargo():
         destination_postcode = request.form.get("to_postcode")
         destination_city = request.form.get("to_city")
         is_hidden_to = request.form.get("is_hidden_to") == "on"
+        masked_origin_city = None
+        masked_origin_postcode = None
+        masked_destination_city = None
+        masked_destination_postcode = None
+
+        if is_hidden_from:
+            masked_origin_city, masked_origin_postcode = get_nearby_major_city(origin_city, origin_country)
+            print("Origin masked:", masked_origin_city, masked_origin_postcode)
+
+        if is_hidden_to:
+            masked_destination_city, masked_destination_postcode = get_nearby_major_city(destination_city, destination_country)
+            print("Destination masked:", masked_destination_city, masked_destination_postcode)
+
+        masked_origin_city = masked_origin_city or origin_city
+        masked_origin_postcode = masked_origin_postcode or origin_postcode
+        masked_destination_city = masked_destination_city or destination_city
+        masked_destination_postcode = masked_destination_postcode or destination_postcode
 
         # DÁTUM ÉS IDŐ
         start_date_1_str = request.form.get("departure_from")  # '2025-08-18'
@@ -684,10 +774,14 @@ def cargo():
             origin_postcode=origin_postcode,
             origin_city=origin_city,
             is_hidden_from=is_hidden_from,
+            masked_origin_city=masked_origin_city,
+            masked_origin_postcode=masked_origin_postcode,
             destination_country=destination_country,
             destination_postcode=destination_postcode,
             destination_city=destination_city,
             is_hidden_to=is_hidden_to,
+            masked_destination_city=masked_destination_city,
+            masked_destination_postcode=masked_destination_postcode,
             start_date_1=start_date_1,
             start_date_2=start_date_2,
             start_time_1=start_time_1,
@@ -717,19 +811,10 @@ def cargo():
     return render_template("cargo.html", user=current_user, vehicles=vehicles, cargos=cargos)
 
 
-
-GEONAMES_USERNAME = "kammazu12"  # ide jön a GeoNames felhasználód
-
 # Ország autocomplete
 @app.route('/autocomplete/country')
 def autocomplete_country():
     term = request.args.get('term', '')
-    params = {
-        'q': term,
-        'maxRows': 20,
-        'username': GEONAMES_USERNAME,
-        'style': 'full'
-    }
     response = requests.get('http://api.geonames.org/countryInfoJSON', params={'username': GEONAMES_USERNAME})
     countries = response.json().get('geonames', [])
 
@@ -737,19 +822,18 @@ def autocomplete_country():
     for c in countries:
         if term.lower() in c['countryName'].lower():
             results.append({
-                'label': c['countryName'],  # amit a felhasználó lát
-                'value': c['countryCode'],  # amit az inputba kerül
-                'fips': c.get('fipsCode', ''),  # FIPS kód
-                'iso': c.get('countryCode', '')  # ISO kód, ha inkább ez kell
+                'label': c['countryName'],
+                'value': c['countryCode'],
+                'fips': c.get('fipsCode', ''),
+                'iso': c.get('countryCode', '')
             })
     return jsonify(results)
 
-
-# Város autocomplete (opcionális: ország szűréssel)
+# Város autocomplete (opcionális ország szűréssel)
 @app.route('/autocomplete/city')
 def autocomplete_city():
     term = request.args.get('term', '')
-    country = request.args.get('country', '')  # ez a FIPS kód
+    country = request.args.get('country', '')
 
     params = {
         'q': term,
@@ -757,9 +841,8 @@ def autocomplete_city():
         'username': GEONAMES_USERNAME,
         'style': 'json'
     }
-
     if country:
-        params['country'] = country  # itt FIPS kódot vár a Geonames
+        params['country'] = country
 
     cities = requests.get('http://api.geonames.org/searchJSON', params=params).json()
     results = [c['name'] for c in cities.get('geonames', [])]
@@ -778,8 +861,48 @@ def zipcode_lookup():
     }
     res = requests.get('http://api.geonames.org/postalCodeSearchJSON', params=params).json()
     if res.get('postalCodes'):
-        return jsonify({'city': res['postalCodes'][0]['placeName']})
-    return jsonify({'city': ''})
+        return jsonify({'city': res['postalCodes'][0]['placeName'], 'country': country})
+    return jsonify({'city': '', 'country': ''})
+
+# Város alapján visszaadjuk az országot és irányítószámokat
+@app.route('/cityinfo')
+def city_info():
+    term = request.args.get('term', '')
+    country = request.args.get('country', '')  # opcionális szűrés
+
+    params = {
+        'q': term,
+        'maxRows': 10,
+        'username': GEONAMES_USERNAME,
+        'style': 'JSON'
+    }
+    if country:
+        params['country'] = country
+
+    response = requests.get('http://api.geonames.org/searchJSON', params=params)
+    data = response.json().get('geonames', [])
+
+    results = []
+    for c in data:
+        city_name = c.get('name')
+        country_code = c.get('countryCode')
+        # irányítószámok lekérése a városhoz
+        postal_params = {
+            'placename': city_name,
+            'country': country_code,
+            'maxRows': 5,
+            'username': GEONAMES_USERNAME
+        }
+        postal_res = requests.get('http://api.geonames.org/postalCodeSearchJSON', params=postal_params)
+        postal_codes = [p['postalCode'] for p in postal_res.json().get('postalCodes', [])]
+
+        results.append({
+            'city': city_name,
+            'country': country_code,
+            'postalCodes': postal_codes
+        })
+
+    return jsonify(results)
 
 
 @app.route("/cargo/<int:cargo_id>/offer", methods=["POST"])
