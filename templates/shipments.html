@@ -11,17 +11,14 @@
         <table id="shipmentsTable" class="display" style="font-size: 0.9em; width:100%;">
             <thead>
                 <tr>
-                    <th>Felvétel dátuma</th>
-                    <th>Felvétel helye</th>
-                    <th>Letétel dátuma</th>
-                    <th>Letétel helye</th>
-                    <th>Hossza (m)</th>
-                    <th>Tömege (t)</th>
-                    <th>Jármű típusa</th>
-                    <th>Felépítmény</th>
-                    <th>Felszereltség</th>
-                    <th>Rakomány rögzítés</th>
-                    <th>Hirdető cég</th>
+                    <th class="felvet"><img src="{{ url_for('static', filename='icons/calendar_up.png') }}" style="width: 24px"></th>
+                    <th class="felvet" colspan="3">Rakomány felvétel</th>
+                    <th class="letet"><img src="{{ url_for('static', filename='icons/calendar_done.png') }}" style="width: 24px"></th>
+                    <th class="letet" colspan="3">Rakomány letétel</th>
+                    <th class="arujarmu">Hossza (m)</th>
+                    <th class="arujarmu">Tömege (t)</th>
+                    <th class="arujarmu" colspan="5">Jármű tulajdonságok</th>
+                    <th class="hirdeto">Hirdető cég</th>
                     <th style="display:none;">created_at</th> <!-- rejtett oszlop a csökkenő rendezéshez -->
                 </tr>
             </thead>
@@ -44,11 +41,9 @@
                         {% endif %}
                     </td>
 
-                    <td>
-                        {{ cargo.origin_country }}<br>
-                        {{ cargo.origin_postcode }}<br>
-                        {{ cargo.origin_city }}
-                    </td>
+                    <td>{{ cargo.origin_country.upper()}}</td>
+                    <td>{{ cargo.masked_origin_postcode or cargo.origin_postcode }}</td>
+                    <td>{{ cargo.masked_origin_city or cargo.origin_city }}</td>
 
                     <td>
                         {% if cargo.end_date_1 %}
@@ -66,11 +61,9 @@
                         {% endif %}
                     </td>
 
-                    <td>
-                        {{ cargo.destination_country }}<br>
-                        {{ cargo.destination_postcode }}<br>
-                        {{ cargo.destination_city }}
-                    </td>
+                    <td>{{ cargo.destination_country.upper()}}</td>
+                    <td>{{ cargo.masked_destination_postcode or cargo.destination_postcode }}</td>
+                    <td>{{ cargo.masked_destination_city or cargo.destination_city }}</td>
 
                     <td>{{ cargo.size }}</td>
                     <td>{{ cargo.weight }}</td>
@@ -78,6 +71,7 @@
                     <td>{{ cargo.stucture or '-' }}</td>
                     <td>{{ cargo.equipment or '-' }}</td>
                     <td>{{ cargo.cargo_securement or '-' }}</td>
+                    <td>{{ cargo.certificates or '-' }}</td>
                     <td>
                         {% if cargo.company %}
                             <a href="{{ url_for('company_profile', slug=cargo.company.slug) }}">
@@ -110,15 +104,19 @@ $(document).ready(function() {
         "pageLength": 25,        // alapértelmezett sorok száma
         "columnDefs": [
             { "orderable": false, "targets": [] } // ide teheted, ha van olyan oszlop, amit ne lehessen rendezni
-        ]
+        ],
+
+        stripeClasses: ['odd-row', 'even-row']
     });
 });
 </script>
 
-
 <style>
-    #shipmentsTable_wrapper{
-        margin-right: 20px;
+    .odd-row { background-color: #fff !important; color: black }
+    .even-row { background-color: #f9f9f9 !important; color: black}
+    #shipmentsTable{
+        border: 1px solid black;
     }
 </style>
+
 {% endblock %}
