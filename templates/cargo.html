@@ -22,14 +22,14 @@
                 <div class="grid-top">
                     <fieldset>
                         <legend>Honnan</legend>
-                        <label for="from-country">Ország</label>
+                        <label for="from-country">Ország<span class="required">*</span></label>
                         <input type="text" id="from-country" name="from_country" list="country-list" autocomplete="off" required>
                         <datalist id="country-list"></datalist>
 
-                        <label for="from-postcode">Irányítószám</label>
+                        <label for="from-postcode">Irányítószám<span class="required">*</span></label>
                         <input type="text" id="from-postcode" name="from_postcode" required>
 
-                        <label for="from-city">Város</label>
+                        <label for="from-city">Város<span class="required">*</span></label>
                         <input type="text" id="from-city" name="from_city" required>
                         <div class="toggle-row">
                             <span>Bújtatott fuvar</span>
@@ -47,11 +47,11 @@
 
                     <fieldset>
                         <legend>Hová</legend>
-                        <label for="to-country">Ország</label>
+                        <label for="to-country">Ország<span class="required">*</span></label>
                         <input type="text" id="to-country" name="to_country" required>
-                        <label for="to-postcode">Irányítószám</label>
+                        <label for="to-postcode">Irányítószám<span class="required">*</span></label>
                         <input type="text" id="to-postcode" name="to_postcode" required>
-                        <label for="to-city">Város</label>
+                        <label for="to-city">Város<span class="required">*</span></label>
                         <input type="text" id="to-city" name="to_city"  required>
                         <div class="toggle-row">
                             <span>Bújtatott fuvar</span>
@@ -65,7 +65,7 @@
                     <fieldset class="date-container">
                         <legend>Mikor</legend>
                         <div class="datetime-row">
-                            <label>Indulás kezdő</label>
+                            <label>Felvétel kezdő dátum</label>
                             <div class="datetime-inputs">
                                 <input type="date" name="departure_from" required class="date-input">
                                 <input type="time" name="departure_from_time_start" placeholder="08:00" class="time-input">
@@ -74,7 +74,7 @@
                         </div>
 
                         <div class="datetime-row">
-                            <label>Indulás záró</label>
+                            <label>Felvétel záró dátum<span class="required">*</span></label>
                             <div class="datetime-inputs">
                                 <input type="date" name="departure_end_date" required class="date-input">
                                 <input type="time" name="departure_end_time_start" placeholder="08:00" class="time-input">
@@ -84,7 +84,7 @@
 
                         <hr>
                         <div class="datetime-row">
-                            <label>Kezdő dátum</label>
+                            <label>Rakodás kezdő dátum<span class="required">*</span></label>
                             <div class="datetime-inputs">
                                 <input type="date" name="arrival_start_date" required class="date-input">
                                 <input type="time" name="arrival_start_time_start" placeholder="08:00" class="time-input">
@@ -93,7 +93,7 @@
                         </div>
 
                         <div class="datetime-row">
-                            <label>Záró dátum</label>
+                            <label>Rakodás záró dátum<span class="required">*</span></label>
                             <div class="datetime-inputs">
                                 <input type="date" name="arrival_end_date" required class="date-input">
                                 <input type="time" name="arrival_end_time_start" placeholder="08:00" class="time-input">
@@ -101,7 +101,6 @@
                             </div>
                         </div>
                     </fieldset>
-
                 </div>
 
                 <!-- Áru és Jármű alatta -->
@@ -111,6 +110,7 @@
                         <div class="vehicle-odd-row">
                             <label for="vehicle_type">Típus<span class="required">*</span></label>
                             <select id="vehicle_type" name="vehicle_type" required>
+                                <option value="" disabled selected>Válassz jármű típust</option>
                                 <option value="Jármű 3,5 t-ig">Jármű 3,5 t-ig</option>
                                 <option value="Nyerges szerelvény">Nyerges szerelvény</option>
                                 <option value="Pótos szerelvény">Pótos szerelvény</option>
@@ -120,6 +120,7 @@
 
                             <label for="superstructure">Felépítmény<span class="required">*</span></label>
                             <select id="superstructure" name="superstructure" required>
+                                <option value="" disabled selected>Válassz felépítményt</option>
                                 <option value="Autószállító">Autószállító</option>
                                 <option value="Billenős konténer">Billenős konténer</option>
                                 <option value="Cserefelépítmény-Chassis">Cserefelépítmény-Chassis</option>
@@ -150,6 +151,7 @@
                                 <option value="Tele">Tele</option>
                                 <option value="Vontató">Vontató</option>
                             </select>
+                        </div>
 
                             <div class="vehicle-even-row">
                                 <label for="equipment">Felszereltség</label>
@@ -200,7 +202,6 @@
                                 </select>
                             </div>
 
-
                         <div class="vehicle-odd-row">
                             <label for="certificates">Tanúsítványok</label>
                             <input type="text" id="certificates" name="certificates">
@@ -210,11 +211,11 @@
                     </fieldset>
 
                     <fieldset>
-                        <legend>Áru</legend>
-                        <label for="length">Hossz (m)</label>
-                        <input type="number" id="length" name="length" step="0.1" min="0">
-                        <label for="weight">Tömeg (t)</label>
-                        <input type="number" id="weight" name="weight" step="0.5" min="0">
+                        <legend>Áru<span class="required">*</span></legend>
+                        <label for="length">Hossz (m)<span class="required">*</span></label>
+                        <input type="number" id="length" name="length" step="0.1" min="0" required>
+                        <label for="weight">Tömeg (t)<span class="required">*</span></label>
+                        <input type="number" id="weight" name="weight" step="0.5" min="0" required>
                         <label for="description">Leírás</label>
                         <input type="text" id="description" name="description">
                     </fieldset>
@@ -811,28 +812,31 @@ let expanded = false;
     expanded = !expanded;
   }
 
-  // Szinkronizálás a hidden selecttel
-  const checkboxes = document.querySelectorAll('#equipment-checkboxes input');
-  const hiddenSelect = document.getElementById("equipment");
-  const displaySpan = document.getElementById("equipment-selected");
+// Szinkronizálás a hidden selecttel
+const checkboxes = document.querySelectorAll('#equipment-checkboxes input[type="checkbox"]');
+const hiddenSelect = document.getElementById('equipment');
+const selectedSpan = document.getElementById('equipment-selected');
 
-  checkboxes.forEach(cb => {
-    cb.addEventListener('change', () => {
-      hiddenSelect.querySelectorAll("option").forEach(opt => {
-        opt.selected = false;
-      });
-      const selectedValues = [];
-      checkboxes.forEach(c => {
-        if (c.checked) {
-          hiddenSelect.querySelector(`option[value="${c.value}"]`).selected = true;
-          selectedValues.push(c.parentElement.textContent.trim());
-        }
-      });
-      displaySpan.textContent = selectedValues.length > 0
-        ? selectedValues.join(", ")
-        : "Válassz felszereltséget";
+checkboxes.forEach(checkbox => {
+    checkbox.addEventListener('change', () => {
+        // Először minden option selected false
+        Array.from(hiddenSelect.options).forEach(option => option.selected = false);
+
+        // Most minden checked checkbox-hoz selected=true
+        const checkedValues = [];
+        checkboxes.forEach(cb => {
+            if(cb.checked){
+                const option = Array.from(hiddenSelect.options).find(o => o.value === cb.value);
+                if(option) option.selected = true;
+                checkedValues.push(cb.value);
+            }
+        });
+
+        // Frissítjük a span szövegét
+        selectedSpan.textContent = checkedValues.length ? checkedValues.join(', ') : 'Válassz felszereltséget';
     });
-  });
+});
+
 
   // kattintás máshova → bezár
   document.addEventListener('click', function(event) {
@@ -843,6 +847,47 @@ let expanded = false;
     }
   });
 
+window.addEventListener('DOMContentLoaded', () => {
+    function nextWeekday(date, n = 1) {
+        let result = new Date(date);
+        let added = 0;
+        while (added < n) {
+            result.setDate(result.getDate() + 1);
+            const day = result.getDay();
+            if (day !== 0 && day !== 6) { // 0 = vasárnap, 6 = szombat
+                added++;
+            }
+        }
+        return result;
+    }
+
+    function formatDate(date) {
+        const yyyy = date.getFullYear();
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const dd = String(date.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    }
+
+    const dateInputs = document.querySelectorAll('input[type="date"]');
+    const today = new Date();
+
+    if(dateInputs.length >= 4){
+        dateInputs[0].value = formatDate(today); // Ma
+        dateInputs[1].value = formatDate(nextWeekday(today, 1)); // Következő munkanap
+        dateInputs[2].value = formatDate(nextWeekday(today, 2)); // Következő munkanap
+        dateInputs[3].value = formatDate(nextWeekday(today, 3)); // Következő utáni munkanap
+    }
+
+    // document.querySelector('input[name="departure_from_time_start"]').value = "08:00";
+    // document.querySelector('input[name="departure_from_time_end"]').value = "16:00";
+    // document.querySelector('input[name="departure_end_time_start"]').value = "08:00";
+    // document.querySelector('input[name="departure_end_time_end"]').value = "16:00";
+    // document.querySelector('input[name="arrival_start_time_start"]').value = "08:00";
+    // document.querySelector('input[name="arrival_start_time_end"]').value = "16:00";
+    // document.querySelector('input[name="arrival_end_time_start"]').value = "08:00";
+    // document.querySelector('input[name="arrival_end_time_end"]').value = "16:00";
+
+});
 
 </script>
 {% endblock %}

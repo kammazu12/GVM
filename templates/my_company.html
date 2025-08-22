@@ -44,188 +44,532 @@
                 <p><strong>Adószám:</strong> {{ company.tax_number }}</p>
                 <p><strong>Tagság kezdete:</strong> {{ company.created_at.strftime('%Y-%m-%d') if company.created_at else '' }}</p>
             </div>
+
         </div>
 
         <!-- Alkalmazottak listája -->
-
-        <h2>Alkalmazottak</h2>
-        <div class="employees-list">
-            {% if company.users %}
-                {% for employee in company.users %}
-                    <div class="employee-card relative">
-                        <!-- Jobb felső ikonok -->
-                        {% if is_company_admin or current_user_role == 'owner' %}
-                        <div class="employee-actions">
-                            {% if current_user_role == 'owner' and employee.role !='owner'%}
-                                {% if employee.user_id != current_user_id %}
-                                    <button class="action-btn promote-btn" title="Admin jog megadása / megvonása" data-user-id="{{ employee.user_id }}">👑</button>
-                                    <button class="action-btn remove-btn" title="Törlés a cégből" data-user-id="{{ employee.user_id }}">❌</button>
-                                {% endif %}
-                            {% else %}
-                                {% if not employee.is_company_admin and employee.user_id != current_user_id %}
-                                    <button class="action-btn promote-btn" title="Admin jog megadása" data-user-id="{{ employee.user_id }}">👑</button>
-                                    <button class="action-btn remove-btn" title="Törlés a cégből" data-user-id="{{ employee.user_id }}">❌</button>
-                                {% endif %}
-                            {% endif %}
-                        </div>
-                        {% endif %}
-
-                        <div class="employee-left">
-                            <img src="{{ url_for('static', filename='uploads/profile_pictures/' + employee.profile_picture) if employee.profile_picture else url_for('static', filename='icons/user.png') }}"
-                                 alt="{{ employee.first_name }}"
-                                 class="emp-avatar">
-                        </div>
-
-                        <div class="employee-right">
-                            <p class="emp-name"><strong>{{ employee.first_name }} {{ employee.last_name }}</strong></p>
-                            <p class="emp-role">{{ employee.role }}</p>
-                            <p class="emp-email">{{ employee.email }}</p>
-                        </div>
-                    </div>
-                {% endfor %}
+        <h2 style="display:flex; justify-content:space-between; align-items:center;">
+            Alkalmazottak
+            {% if is_company_admin %}
+            <button id="invite-toggle-btn" class="invite-btn" aria-expanded="false" aria-controls="invite-panel">
+                <img src="{{ url_for('static', filename='icons/envelope_plus.png') }}" class="invite-icon" alt="Meghívó">
+                Meghívás
+            </button>
             {% endif %}
+        </h2>
+
+        <div id="invite-panel" class="invite-panel hidden" aria-hidden="true">
+            <h2>Meghívók kezelése</h2>
+
+            <!-- SZÁM BEÁLLÍTÓ: mennyi sort szeretnél -->
+            <div style="margin-bottom:10px;">
+                <label for="num_invites" style="margin-right:8px;">Meghívók száma:</label>
+                <input type="number" id="num_invites" min="1" max="20" value="1" style="width:70px; padding:6px;">
+            </div>
+
+            <form method="POST" action="{{ url_for('generate_invite') }}" class="invite-form space-y-6 max-w-md bg-white p-6 rounded-xl shadow-md" id="invite-form">
+                <div id="invite-rows" class="invite-rows" aria-live="polite">
+                    <!-- Sorok ide lesznek beszúrva JS-sel -->
+                </div>
+
+                <div style="margin-top:12px;">
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200">Meghívók generálása</button>
+                </div>
+            </form>
+
+            <h3 style="margin-top:16px;">Aktív meghívók:</h3>
+            <p>
+                {% set active_invites = company.invite_codes | selectattr("is_used", "equalto", False) | selectattr("expires_at", "gt", now) | list %}
+                {{ active_invites | length }} db
+            </p>
         </div>
 
+        <div class="employees-list">
+                    {% if company.users %}
+                        {% for employee in company.users %}
+                            <a id="employee_card" href="{{ url_for('user_profile', company_slug=company.slug, email=employee.email) }}">
+                                <div class="employee-card relative">
 
+                                    <!-- Jobb felső ikonok -->
+                                    {% if is_company_admin or current_user_role == 'owner' %}
+                                    <div class="employee-actions">
+                                        {% if not employee.is_company_admin %}
+                                            {% if current_user_role == 'owner' and employee.role !='owner'%}
+                                                {% if employee.user_id != current_user_id %}
+                                                    <button class="action-btn promote-btn" title="Admin jog megadása" data-user-id="{{ employee.user_id }}">
+                                                        <img src="{{ url_for('static', filename='icons/crown.png') }}" class="invite-icon" alt="Korona">
+                                                    </button>
+                                                    <button class="action-btn remove-btn" title="Törlés a cégből" data-user-id="{{ employee.user_id }}">
+                                                        <img src="{{ url_for('static', filename='icons/kick.png') }}" class="invite-icon" alt="Kick">
+                                                    </button>
+                                                {% endif %}
+                                            {% else %}
+                                                {% if not employee.is_company_admin and employee.user_id != current_user_id %}
+                                                    <button class="action-btn promote-btn" title="Admin jog megadása" data-user-id="{{ employee.user_id }}">
+                                                        <img src="{{ url_for('static', filename='icons/crown.png') }}" class="invite-icon" alt="Korona">
+                                                    </button>
+                                                    <button class="action-btn remove-btn" title="Törlés a cégből" data-user-id="{{ employee.user_id }}">
+                                                        <img src="{{ url_for('static', filename='icons/kick.png') }}" class="invite-icon" alt="Kick">
+                                                    </button>
+                                                {% endif %}
+                                            {% endif %}
+                                        {% else %}
+                                            {% if current_user_role == 'owner' and employee.role !='owner'%}
+                                                {% if employee.user_id != current_user_id %}
+                                                    <button class="action-btn promote-btn" title="Admin jog megvonása" data-user-id="{{ employee.user_id }}">
+                                                        <img src="{{ url_for('static', filename='icons/crown_down.png') }}" class="invite-icon" alt="Nem korona">
+                                                    </button>
+                                                    <button class="action-btn remove-btn" title="Törlés a cégből" data-user-id="{{ employee.user_id }}">
+                                                        <img src="{{ url_for('static', filename='icons/kick.png') }}" class="invite-icon" alt="Kick">
+                                                    </button>
+                                                {% endif %}
+                                            {% else %}
+                                                {% if not employee.is_company_admin and employee.user_id != current_user_id %}
+                                                    <button class="action-btn promote-btn" title="Admin jogmegvonása" data-user-id="{{ employee.user_id }}">
+                                                        <img src="{{ url_for('static', filename='icons/crown_down.png') }}" class="invite-icon" alt="Nem korona">
+                                                    </button>
+                                                    <button class="action-btn remove-btn" title="Törlés a cégből" data-user-id="{{ employee.user_id }}">
+                                                        <img src="{{ url_for('static', filename='icons/kick.png') }}" class="invite-icon" alt="Kick">
+                                                    </button>
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endif %}
 
-        <!-- Meghívók kezelése (csak admin) -->
-        {% if is_company_admin %}
-        <hr>
-        <h2>Meghívók kezelése</h2>
-        <form method="POST" action="{{ url_for('generate_invite') }}" class="invite-form space-y-6 max-w-md mx-auto bg-white p-6 rounded-xl shadow-md">
+                                    </div>
+                                    {% endif %}
 
-            <!-- Szerepkör -->
-            <div>
-                <label for="role" class="block text-gray-700 font-medium mb-1">Szerepkör</label>
-                <select name="role" id="role" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                    <option value="freight_forwarder">Speditőr</option>
-                    <option value="manager">Manager</option>
-                    <option value="accountant">Pénzügy</option>
-                    <option value="owner">Tulaj</option>
-                </select>
+                                    <div class="employee-left">
+                                        <img src="{% if employee.profile_picture %}
+                                                    {{ url_for('static', filename='uploads/profile_pictures/' + employee.profile_picture) }}
+                                                 {% else %}
+                                                    {{ url_for('static', filename='icons/user.png') }}
+                                                 {% endif %}"
+                                             alt="{{ employee.first_name }}" class="emp-avatar">
+                                    </div>
+                                    <div class="employee-right">
+                                        <p class="emp-name"><strong>{{ employee.first_name }} {{ employee.last_name }}</strong></p>
+                                        <p class="emp-role">{{ employee.role }}</p>
+                                        <p class="emp-email">{{ employee.email }}</p>
+                                    </div>
+                                </div>
+                            </a>
+                        {% endfor %}
+                    {% else %}
+                        <p>Nincsenek alkalmazottak.</p>
+                    {% endif %}
+                </div>
+
+        <h2>Hirdetett fuvarok</h2>
+            {% if cargos %}
+            <div class="table-wrapper">
+                <table id="companyCargos" class="display" style="width:100%; font-size:0.9em;">
+                    <thead>
+                        <tr>
+                            <th class="felvet"><img src="{{ url_for('static', filename='icons/calendar_up.png') }}" style="width: 24px"></th>
+                            <th class="felvet" colspan="3">Rakomány felvétel</th>
+                            <th class="letet"><img src="{{ url_for('static', filename='icons/calendar_done.png') }}" style="width: 24px"></th>
+                            <th class="letet" colspan="3">Rakomány letétel</th>
+                            <th class="arujarmu">Hossza (m)</th>
+                            <th class="arujarmu">Tömege (t)</th>
+                            <th class="arujarmu" colspan="5">Jármű tulajdonságok</th>
+                            <th class="hirdeto">Hirdető</th>
+                            <th style="display:none;">created_at</th> <!-- rejtett oszlop a csökkenő rendezéshez -->
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cargo in cargos %}
+                        <tr>
+                            <td>
+                                {{ cargo.start_date_1.strftime('%Y.%m.%d.') if cargo.start_date_1 else '' }}
+                                {% if cargo.start_date_2 %}
+                                    (+{{ (cargo.start_date_2 - cargo.start_date_1).days }})
+                                {% endif %}
+                            </td>
+
+                            <td>{{ cargo.origin_country.upper()}}</td>
+                            <td>{{ cargo.masked_origin_postcode if cargo.is_hidden_from else cargo.origin_postcode }}</td>
+                            <td>{{ cargo.masked_origin_city if cargo.is_hidden_from else cargo.origin_city }}</td>
+
+                            <td>
+                                {{ cargo.end_date_1.strftime('%Y.%m.%d.') if cargo.end_date_1 else '' }}
+                                {% if cargo.end_date_2 %}
+                                    (+{{ (cargo.end_date_2 - cargo.end_date_1).days }})
+                                {% endif %}
+                            </td>
+                            <td>{{ cargo.destination_country.upper()}}</td>
+                            <td>{{ cargo.masked_destination_postcode if cargo.is_hidden_to else cargo.destination_postcode }}</td>
+                            <td>{{ cargo.masked_destination_city if cargo.is_hidden_to else cargo.destination_city }}</td>
+
+                            <td>{{ cargo.size }}</td>
+                            <td>{{ cargo.weight }}</td>
+                            <td>{{ cargo.vehicle_type or '-' }}</td>
+                            <td>{{ cargo.stucture or '-' }}</td>
+                            <td>{{ cargo.equipment or '-' }}</td>
+                            <td>{{ cargo.cargo_securement or '-' }}</td>
+                            <td>{{ cargo.certificates or '-' }}</td>
+                            <td>
+                                {% if cargo.posted_by %}
+                                    <a href="{{ url_for('user_profile', company_slug=cargo.company.slug, email=cargo.posted_by.email) }}">
+                                        {{ cargo.posted_by.first_name }} {{ cargo.posted_by.last_name }}
+                                    </a>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td style="display:none;">{{ cargo.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p>Ez a cég még nem hirdetett fuvarokat.</p>
+                {% endif %}
             </div>
 
-            <!-- Admin jog toggle -->
-            <div class="flex items-center" id="admin-toggle-container">
-                <span style="margin-bottom:50px;">Admin jog</span>
-                <label class="toggle-switch">
-                    <input type="checkbox" name="for_admin" value="1" id="admin-toggle">
-                    <span class="slider"></span>
-                </label>
-            </div>
-
-            <!-- Submit gomb -->
-            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200">
-                Új meghívó kód generálása
-            </button>
-        </form>
-
-        <h3>Aktív meghívók:</h3>
-        <ul class="invite-list">
-            {% for invite in company.invite_codes if not invite.is_used and invite.expires_at > now %}
-                <li>
-                    <strong>{{ invite.code }}</strong> - szerep: {{ invite.role }} - lejár: {{ invite.expires_at }}
-                </li>
-            {% else %}
-                <li>Nincsenek aktív meghívók.</li>
-            {% endfor %}
-        </ul>
-        {% endif %}
     </main>
 </div>
 
 {% if is_company_admin %}
 <script>
-const logoContainer = document.querySelector('.company-logo-container');
-const overlay = document.getElementById('logo-overlay');
-const input = document.getElementById('logo-input');
-const logoImg = document.getElementById('company-logo');
+document.addEventListener('DOMContentLoaded', function () {
+    // safe DOM queries
+    const inviteBtn = document.getElementById('invite-toggle-btn');
+    const invitePanel = document.getElementById('invite-panel');
+    const numInput = document.getElementById('num_invites');
+    const rowsContainer = document.getElementById('invite-rows');
 
-const roleSelect = document.getElementById('role');
-const adminToggleContainer = document.getElementById('admin-toggle-container');
-const adminToggle = document.getElementById('admin-toggle');
+    // create a single invite card (index i) — returns a DOM node styled as employee-card
+    function createInviteCard(i) {
+        // card uses same class as employee-card so it visually matches
+        const card = document.createElement('div');
+        card.className = 'employee-card invite-card';
+        // make card content flexible
+        card.style.flexDirection = 'column';
+        card.style.height = 'auto';
+        card.style.padding = '12px';
 
-function updateAdminToggle() {
-    if(roleSelect.value === 'owner') {
-        // Ha Owner-t választott, checkbox be van pipálva és elrejtjük
-        adminToggle.checked = true;
-        adminToggleContainer.style.display = 'none';
-    } else {
-        // Más szerepkör esetén toggle látható és módosítható
-        adminToggle.checked = false;
-        adminToggleContainer.style.display = 'flex';
+        // top area: email and role
+        const top = document.createElement('div');
+        top.style.display = 'flex';
+        top.style.flexDirection = 'row'; // sorban
+        top.style.flex = '1';
+        top.style.gap = '12px'; // rés az inputok között
+
+        // --- Email ---
+        const emailWrapper = document.createElement('div'); // oszlop a label + input számára
+        emailWrapper.style.display = 'flex';
+        emailWrapper.style.flexDirection = 'column';
+        emailWrapper.style.flex = '1'; // kitöltő a rendelkezésre álló helyen
+
+        const emailLabel = document.createElement('label');
+        emailLabel.textContent = 'E-mail';
+        emailLabel.style.fontSize = '13px';
+        emailLabel.style.fontWeight = '600';
+        emailLabel.style.marginBottom = '4px';
+
+        const emailInput = document.createElement('input');
+        emailInput.type = 'email';
+        emailInput.name = `invites[${i}][email]`;
+        emailInput.placeholder = 'email@example.com';
+        emailInput.required = true;
+        emailInput.style.padding = '6px';
+        emailInput.style.border = '1px solid #ddd';
+        emailInput.style.borderRadius = '6px';
+        emailInput.style.width = '100%';
+
+        emailWrapper.appendChild(emailLabel);
+        emailWrapper.appendChild(emailInput);
+
+        // --- Role ---
+        const roleWrapper = document.createElement('div'); // oszlop a label + select számára
+        roleWrapper.style.display = 'flex';
+        roleWrapper.style.flexDirection = 'column';
+        roleWrapper.style.flex = '1';
+
+        const roleLabel = document.createElement('label');
+        roleLabel.textContent = 'Szerepkör';
+        roleLabel.style.fontSize = '13px';
+        roleLabel.style.fontWeight = '600';
+        roleLabel.style.marginBottom = '4px';
+
+        const roleSelect = document.createElement('select');
+        roleSelect.name = `invites[${i}][role]`;
+        roleSelect.style.padding = '6px';
+        roleSelect.style.border = '1px solid #ddd';
+        roleSelect.style.borderRadius = '6px';
+        roleSelect.style.width = '100%';
+        roleSelect.innerHTML = `
+            <option value="freight_forwarder">Speditőr</option>
+            <option value="manager">Manager</option>
+            <option value="accountant">Pénzügy</option>
+            <option value="owner">Tulaj</option>
+        `;
+
+        roleWrapper.appendChild(roleLabel);
+        roleWrapper.appendChild(roleSelect);
+
+        // --- Assemble top row ---
+        top.appendChild(emailWrapper);
+        top.appendChild(roleWrapper);
+
+
+        // bottom area: admin toggle and optional actions
+        const bottom = document.createElement('div');
+        bottom.style.display = 'flex';
+        bottom.style.justifyContent = 'space-between';
+        bottom.style.alignItems = 'center';
+        bottom.style.marginTop = '8px';
+        bottom.style.width = '100%';
+
+        // Admin toggle: keep exact structure for toggle-switch + slider
+        const adminWrapper = document.createElement('div');
+        adminWrapper.style.display = 'flex';
+        adminWrapper.style.alignItems = 'center';
+        adminWrapper.style.gap = '8px';
+
+        const adminText = document.createElement('span');
+        adminText.textContent = 'Admin jog';
+        adminText.style.fontSize = '14px';
+
+        const adminLabel = document.createElement('label');
+        adminLabel.className = 'toggle-switch'; // reuse CSS
+
+        const adminCheckbox = document.createElement('input');
+        adminCheckbox.type = 'checkbox';
+        adminCheckbox.name = `invites[${i}][for_admin]`;
+        adminCheckbox.value = '1';
+
+        const sliderSpan = document.createElement('span');
+        sliderSpan.className = 'slider';
+
+        adminLabel.appendChild(adminCheckbox);
+        adminLabel.appendChild(sliderSpan);
+
+        adminWrapper.appendChild(adminText);
+        adminWrapper.appendChild(adminLabel);
+
+        bottom.appendChild(adminWrapper);
+
+        // Optionally, include a small remove button for the card (client-side)
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.textContent = 'Töröl';
+        removeBtn.style.background = 'transparent';
+        removeBtn.style.border = 'none';
+        removeBtn.style.color = '#d9534f';
+        removeBtn.style.cursor = 'pointer';
+        removeBtn.style.fontWeight = '600';
+        removeBtn.addEventListener('click', function () {
+            card.remove();
+            // after removing, reindex remaining cards so names are sequential
+            reindexInviteCards();
+        });
+        bottom.appendChild(removeBtn);
+
+        // assemble
+        card.appendChild(top);
+        card.appendChild(bottom);
+
+        return card;
     }
-}
 
-// Betöltéskor is ellenőrizzük az alapértelmezett értéket
-updateAdminToggle();
+    // reindex names (invites[0].. ) after removal to keep server-side loop working
+    function reindexInviteCards() {
+        const cards = Array.from(rowsContainer.querySelectorAll('.invite-card'));
+        cards.forEach((card, idx) => {
+            // find inputs/selects inside card and update names
+            const email = card.querySelector('input[type="email"]');
+            if (email) email.name = `invites[${idx}][email]`;
+            const select = card.querySelector('select');
+            if (select) select.name = `invites[${idx}][role]`;
+            const checkbox = card.querySelector('input[type="checkbox"]');
+            if (checkbox) checkbox.name = `invites[${idx}][for_admin]`;
+        });
+        // also update number input to reflect count
+        if (numInput) numInput.value = Math.max(1, cards.length);
+    }
 
-// Select változására reagálunk
-roleSelect.addEventListener('change', updateAdminToggle);
+    function renderRows() {
+        if (!rowsContainer || !numInput) return;
+        let num = parseInt(numInput.value, 10);
+        if (isNaN(num) || num < 1) num = 1;
+        if (num > 20) num = 20;
+        // write back sanitized value
+        numInput.value = num;
 
-logoContainer.addEventListener('mouseenter', () => overlay.style.opacity = 1);
-logoContainer.addEventListener('mouseleave', () => overlay.style.opacity = 0);
+        // ensure rows container layout: flex with wrapping so 3 cards per row (employee-card width ~30%)
+        rowsContainer.style.display = 'flex';
+        rowsContainer.style.flexWrap = 'wrap';
+        rowsContainer.style.gap = '20px';
 
-overlay.addEventListener('click', () => input.click());
+        // preserve existing values: only add or remove cards as necessary
+        const existingCards = Array.from(rowsContainer.querySelectorAll('.invite-card'));
+        const existingCount = existingCards.length;
 
-input.addEventListener('change', () => {
-    const file = input.files[0];
-    if (!file) return;
-
-    const formData = new FormData();
-    formData.append('logo', file);
-
-    fetch("{{ url_for('upload_company_logo') }}", {
-        method: 'POST',
-        body: formData,
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Frissítjük a képet azonnal
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                logoImg.src = e.target.result;
+        if (existingCount < num) {
+            // add new cards without touching existing ones
+            for (let i = existingCount; i < num; i++) {
+                const card = createInviteCard(i);
+                rowsContainer.appendChild(card);
             }
-            reader.readAsDataURL(file);
-        } else {
-            alert(data.error);
+        } else if (existingCount > num) {
+            // remove excess cards (from the end) but keep the first `num` cards and their values
+            for (let i = existingCount - 1; i >= num; i--) {
+                existingCards[i].remove();
+            }
         }
-    })
-    .catch(err => {
-        alert("Hiba történt a feltöltés során.");
-        console.error(err);
-    });
-});
+        // reindex names so they are sequential and correct after changes
+        reindexInviteCards();
+    }
 
-document.querySelectorAll('.promote-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        const userId = btn.dataset.userId;
-        fetch(`/company/{{ company.company_id }}/promote/${userId}`, { method: 'POST' })
+    // initial render (only create if empty to avoid wiping user input)
+    if (rowsContainer && rowsContainer.children.length === 0) {
+        renderRows();
+    }
+
+    // update whenever number changes (preserve inputs)
+    if (numInput) {
+        numInput.addEventListener('input', function () {
+            renderRows();
+        });
+    }
+
+    // toggle panel
+    if (inviteBtn && invitePanel) {
+        inviteBtn.addEventListener('click', function () {
+            const wasHidden = invitePanel.classList.contains('hidden');
+            invitePanel.classList.toggle('hidden');
+            invitePanel.setAttribute('aria-hidden', String(!wasHidden));
+            inviteBtn.setAttribute('aria-expanded', String(wasHidden));
+            // if showing and no rows (edge), render
+            if (!invitePanel.classList.contains('hidden') && (!rowsContainer || rowsContainer.children.length === 0)) {
+                renderRows();
+            }
+        });
+    }
+
+    // --- logo upload overlay (safe) ---
+    const logoContainer = document.querySelector('.company-logo-container');
+    const overlay = document.getElementById('logo-overlay');
+    const input = document.getElementById('logo-input');
+    const logoImg = document.getElementById('company-logo');
+
+    if (logoContainer && overlay) {
+        logoContainer.addEventListener('mouseenter', () => overlay.style.opacity = 1);
+        logoContainer.addEventListener('mouseleave', () => overlay.style.opacity = 0);
+        overlay.addEventListener('click', () => input && input.click());
+    }
+
+    if (input) {
+        input.addEventListener('change', () => {
+            const file = input.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('logo', file);
+
+            fetch("{{ url_for('upload_company_logo') }}", {
+                method: 'POST',
+                body: formData,
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        if (logoImg) logoImg.src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    alert(data.error || 'Hiba történt a feltöltés során.');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Hiba történt a feltöltés során.');
+            });
+        });
+    }
+
+    // promote/remove buttons
+    document.querySelectorAll('.promote-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();   // <<< link navigáció tiltása
+            e.stopPropagation();  // <<< click nem megy fel a <a>-nak
+            const userId = btn.dataset.userId;
+            if (!userId) return;
+
+            const isAdmin = btn.title.includes('megvonása');
+            const msg = isAdmin ? "Biztosan megvonod az admin jogot?" : "Biztosan admin jogot adsz?";
+            if(!confirm(msg)) return;
+
+            fetch(`/company/{{ company.company_id }}/promote/${userId}`, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
             .then(res => res.json())
             .then(data => {
-                if (data.success) location.reload();
-                else alert(data.error);
-            });
+                if (data.success) {
+                    // --- Frissítjük az ikont ---
+                    if (btn.tagName === 'BUTTON') {
+                        const img = btn.querySelector('img');
+                        if (img) {
+                            if (isAdmin) {
+                                img.src = "{{ url_for('static', filename='icons/crown.png') }}"; // megvonás után
+                                btn.title = "Admin jog megadása";
+                            } else {
+                                img.src = "{{ url_for('static', filename='icons/crown_down.png') }}"; // megadás után
+                                btn.title = "Admin jog megvonása";
+                            }
+                        }
+                    }
+                } else {
+                    alert(data.error || 'Hiba a promóció során.');
+                }
+            })
+        });
     });
-});
 
-document.querySelectorAll('.remove-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        const userId = btn.dataset.userId;
-        if (!confirm("Biztosan törlöd ezt a felhasználót a cégtől?")) return;
-        fetch(`/company/{{ company.company_id }}/remove/${userId}`, { method: 'POST' })
+    // Remove gomb
+    document.querySelectorAll('.remove-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();   // <<< link navigáció tiltása
+            e.stopPropagation();  // <<< click nem megy fel a <a>-nak
+
+            const userId = btn.dataset.userId;
+            if (!userId) return;
+
+            if (!confirm("Biztosan törlöd ezt a felhasználót a cégtől?")) return;
+
+            fetch(`/company/{{ company.company_id }}/remove/${userId}`, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
             .then(res => res.json())
             .then(data => {
-                if (data.success) location.reload();
-                else alert(data.error);
+                if (data.success) {
+                    // törlés a DOM-ból
+                    const card = btn.closest('.employee-card');
+                    if (card) card.remove();
+                } else {
+                    alert(data.error || 'Hiba a törlés során.');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Hiba a törlés során.');
             });
+        });
     });
-});
 
+});
 </script>
 {% endif %}
+
 <style>
+.home-container{
+    width: 100%;
+}
 
 .company-title {
     font-size: 28px;
@@ -249,6 +593,36 @@ document.querySelectorAll('.remove-btn').forEach(btn => {
 .company-info p {
     margin: 5px 0;
     font-size: 16px;
+}
+
+.invite-btn {
+    background-color: #4a90e2;
+    color: white;
+    font-weight: 600;
+    padding: 10px 16px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    border: none;
+    transition: background 0.2s;
+}
+.invite-btn:hover {
+    background-color: #357fBD;
+}
+.invite-icon {
+    width: 20px;
+    height: 20px;
+}
+.invite-button-container {
+    margin-left: auto; /* jobbra tolja */
+}
+.invite-panel {
+    margin-top: 20px;
+}
+.hidden {
+    display: none;
 }
 
 /* Alkalmazott kártyák */
@@ -287,12 +661,12 @@ document.querySelectorAll('.remove-btn').forEach(btn => {
     cursor: pointer;
     font-size: 18px;
     transition: transform 0.2s;
+    padding: 10px 10px;
 }
 
 .action-btn:hover {
     transform: scale(1.2);
 }
-
 
 .employee-left {
     flex-shrink: 0;
