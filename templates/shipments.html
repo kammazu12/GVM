@@ -8,7 +8,8 @@
         <h1 class="cim">Rakományok</h1>
 
         {% if cargos %}
-        <table id="shipmentsTable" class="display" style="font-size: 0.9em; width:100%;">
+        <div class="table-wrapper">
+            <table id="shipmentsTable" class="display" style="font-size: 0.9em; width:100%;">
             <thead>
                 <tr>
                     <th class="felvet"><img src="{{ url_for('static', filename='icons/calendar_up.png') }}" style="width: 24px"></th>
@@ -42,9 +43,8 @@
                     </td>
 
                     <td>{{ cargo.origin_country.upper()}}</td>
-                    <td>{{ cargo.masked_origin_postcode or cargo.origin_postcode }}</td>
-                    <td>{{ cargo.masked_origin_city or cargo.origin_city }}</td>
-
+                    <td>{{ cargo.masked_origin_postcode if cargo.is_hidden_from else cargo.origin_postcode }}</td>
+                    <td>{{ cargo.masked_origin_city if cargo.is_hidden_from else cargo.origin_city }}</td>
                     <td>
                         {% if cargo.end_date_1 %}
                             {{ cargo.end_date_1.strftime('%Y.%m.%d.') }}
@@ -60,11 +60,9 @@
                             – {{ cargo.end_time_2.strftime('%H:%M') if cargo.end_time_2 else '' }}
                         {% endif %}
                     </td>
-
                     <td>{{ cargo.destination_country.upper()}}</td>
-                    <td>{{ cargo.masked_destination_postcode or cargo.destination_postcode }}</td>
-                    <td>{{ cargo.masked_destination_city or cargo.destination_city }}</td>
-
+                    <td>{{ cargo.masked_destination_postcode if cargo.is_hidden_to else cargo.destination_postcode }}</td>
+                    <td>{{ cargo.masked_destination_city if cargo.is_hidden_to else cargo.destination_city }}</td>
                     <td>{{ cargo.size }}</td>
                     <td>{{ cargo.weight }}</td>
                     <td>{{ cargo.vehicle_type or '-' }}</td>
@@ -90,6 +88,7 @@
         {% else %}
         <p>Nincs még rakomány.</p>
         {% endif %}
+        </div>
     </main>
 </div>
 
@@ -110,13 +109,5 @@ $(document).ready(function() {
     });
 });
 </script>
-
-<style>
-    .odd-row { background-color: #fff !important; color: black }
-    .even-row { background-color: #f9f9f9 !important; color: black}
-    #shipmentsTable{
-        border: 1px solid black;
-    }
-</style>
 
 {% endblock %}

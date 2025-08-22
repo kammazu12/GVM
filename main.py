@@ -3,7 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user, UserMixin
 from flask_mail import Mail, Message
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta, date, time
 import re
 import secrets
 import unicodedata
@@ -51,18 +51,27 @@ def save_uploaded_image(file, subfolder, prefix="file_", allowed_extensions=None
 
     return True, filename
 
+MAIL_SERVER = 'smtp.gmail.com'       # SMTP szerver címe
+MAIL_PORT = 587                         # Port (pl. 587 TLS-hez)
+MAIL_USE_TLS = True
+MAIL_USE_SSL = False
+MAIL_USERNAME = 'alex@gvmszallitmanyozas.hu'     # SMTP felhasználó
+MAIL_PASSWORD = 'jxow dezy evws fxuo'             # SMTP jelszó
+MAIL_DEFAULT_SENDER = ('GVM Europe', 'alex@gvmszallitmanyozas.hu')
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
 
-# ---------- Flask-Mail konfiguráció (helyi tesztelésnél üres jelszó OK) ----------
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'alex.toth99@gmail.com'  # ide a saját gmail címed
-app.config['MAIL_PASSWORD'] = ''  # ide az app password - most hagyjuk üresen
+app.config['MAIL_SERVER'] = MAIL_SERVER
+app.config['MAIL_PORT'] = MAIL_PORT
+app.config['MAIL_USE_TLS'] = MAIL_USE_TLS
+app.config['MAIL_USE_SSL'] = MAIL_USE_SSL
+app.config['MAIL_USERNAME'] = MAIL_USERNAME
+app.config['MAIL_PASSWORD'] = MAIL_PASSWORD
+app.config['MAIL_DEFAULT_SENDER'] = MAIL_DEFAULT_SENDER
 
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
@@ -171,11 +180,15 @@ class Cargo(db.Model):
     start_date_2 = db.Column(db.Date)
     start_time_1 = db.Column(db.Time)
     start_time_2 = db.Column(db.Time)
+    start_time_3 = db.Column(db.Time)
+    start_time_4 = db.Column(db.Time)
 
     end_date_1 = db.Column(db.Date)
     end_date_2 = db.Column(db.Date)
     end_time_1 = db.Column(db.Time)
     end_time_2 = db.Column(db.Time)
+    end_time_3 = db.Column(db.Time)
+    end_time_4 = db.Column(db.Time)
 
     # Rakomány adatok
     weight = db.Column(db.Float)
@@ -297,7 +310,6 @@ def slugify(value: str) -> str:
     value = value.strip('-')
     return value
 
-
 def make_unique_slug(name, company_id=None):
     base = slugify(name)
     if company_id:
@@ -324,6 +336,25 @@ def send_email(to_email, subject, body):
         mail.send(msg)
     except Exception as e:
         print(f"Email küldési hiba: {e}")
+
+def send_invite_email(email, code):
+    """
+    Küld egy e-mailt a meghívó kóddal.
+    """
+    msg = Message(
+        subject="LogiAI cégmeghívó",
+        recipients=[email],
+    )
+    msg.body = f"""
+Szia!
+
+Meghívást kaptál a LogiAI oldalra a cégedhez. Használd az alábbi kódot a regisztrációhoz:
+
+Meghívó kód: {code}
+
+A kód 1 órán belül lejár.
+"""
+    mail.send(msg)
 
 # -------------------------
 # ROUTES
@@ -607,6 +638,7 @@ def home():
 
 
 @app.route('/delete_cargos', methods=['POST'])
+@login_required
 def delete_cargos():
     data = request.get_json()
     ids_to_delete = data.get('ids', [])
@@ -623,6 +655,21 @@ def delete_cargos():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
+@app.route('/delete_cargo/<int:cargo_id>', methods=['DELETE'])
+def delete_cargo(cargo_id):
+    cargo = db.session.get(Cargo, cargo_id)
+    if not cargo:
+        return jsonify({"success": False, "error": "Cargo not found"}), 404
+
+    try:
+        db.session.delete(cargo)
+        db.session.commit()
+        return jsonify({"success": True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+
 
 @app.route('/republish_cargos', methods=['POST'])
 def republish_cargos():
@@ -745,21 +792,34 @@ def cargo():
         end_date_2 = datetime.strptime(request.form.get("arrival_end_date"), "%Y-%m-%d").date() if request.form.get(
             "arrival_end_date") else None
 
-        start_time_1 = datetime.strptime(request.form.get("arrival_start_time_start"),
+        start_time_1 = datetime.strptime(request.form.get("departure_from_time_start"),
                                          "%H:%M").time() if request.form.get("arrival_start_time_start") else None
-        start_time_2 = datetime.strptime(request.form.get("arrival_start_time_start"),
+        start_time_2 = datetime.strptime(request.form.get("departure_end_time_start"),
                                          "%H:%M").time() if request.form.get("arrival_start_time_end") else None
-        end_time_1 = datetime.strptime(request.form.get("arrival_start_time_start"),
+        start_time_3 = datetime.strptime(request.form.get("arrival_start_time_start"),
+                                         "%H:%M").time() if request.form.get("arrival_start_time_start") else None
+        start_time_4 = datetime.strptime(request.form.get("arrival_end_time_start"),
+                                         "%H:%M").time() if request.form.get("arrival_start_time_end") else None
+
+        end_time_1 = datetime.strptime(request.form.get("departure_from_time_end"),
                                          "%H:%M").time() if request.form.get("arrival_end_time_start") else None
-        end_time_2 = datetime.strptime(request.form.get("arrival_start_time_start"),
+        end_time_2 = datetime.strptime(request.form.get("departure_end_time_end"),
+                                         "%H:%M").time() if request.form.get("arrival_end_time_end") else None
+        end_time_3 = datetime.strptime(request.form.get("arrival_start_time_end"),
+                                         "%H:%M").time() if request.form.get("arrival_end_time_start") else None
+        end_time_4 = datetime.strptime(request.form.get("arrival_end_time_end"),
                                          "%H:%M").time() if request.form.get("arrival_end_time_end") else None
 
         # JÁRMŰ
         vehicle_type = request.form.get("vehicle_type")
         stucture = request.form.get("superstructure")
-        equipment = request.form.get("equipment")
-        certificates = request.form.get("certificates")
-        cargo_securement = request.form.get("cargo_securement")
+
+        equipment_list = request.form.getlist("equipment")
+        equipment_str = ",".join(equipment_list)
+        certificates_list = request.form.getlist("certificates")
+        certificates_str = ",".join(certificates_list)
+        securement_list = request.form.getlist("cargo_securement")
+        securement_str = ",".join(securement_list)
 
         # ÁRU
         description = request.form.get("description")
@@ -786,17 +846,21 @@ def cargo():
             start_date_2=start_date_2,
             start_time_1=start_time_1,
             start_time_2=start_time_2,
+            start_time_3=start_time_3,
+            start_time_4=start_time_4,
             end_date_1=end_date_1,
             end_date_2=end_date_2,
             end_time_1=end_time_1,
             end_time_2=end_time_2,
+            end_time_3=end_time_3,
+            end_time_4=end_time_4,
             weight=weight,
             size=size,
             vehicle_type=vehicle_type,
             stucture=stucture,
-            equipment=equipment,
-            certificates=certificates,
-            cargo_securement=cargo_securement,
+            equipment=equipment_str,
+            certificates=certificates_str,
+            cargo_securement=securement_str,
             created_at=datetime.now()
         )
 
@@ -810,6 +874,271 @@ def cargo():
 
     return render_template("cargo.html", user=current_user, vehicles=vehicles, cargos=cargos)
 
+@app.route('/get_cargo/<int:cargo_id>')
+@login_required
+def get_cargo(cargo_id):
+    cargo = Cargo.query.get(cargo_id)
+    if not cargo:
+        return jsonify({'error': 'Nem található rakomány'}), 404
+
+    cargo_data = {
+        'cargo_id': cargo.cargo_id or 0,
+        'company_id': cargo.company_id or 0,
+        'user_id': cargo.user_id or 0,
+        'description': cargo.description or "",
+        'origin_country': cargo.origin_country or "",
+        'origin_postcode': cargo.origin_postcode or "",
+        'origin_city': cargo.origin_city or "",
+        'is_hidden_from': cargo.is_hidden_from or False,
+        'masked_origin_city': cargo.masked_origin_city or "",
+        'masked_origin_postcode': cargo.masked_origin_postcode or "",
+        'destination_country': cargo.destination_country or "",
+        'destination_postcode': cargo.destination_postcode or "",
+        'destination_city': cargo.destination_city or "",
+        'is_hidden_to': cargo.is_hidden_to or False,
+        'masked_destination_city': cargo.masked_destination_city or "",
+        'masked_destination_postcode': cargo.masked_destination_postcode or "",
+        'start_date_1': str(cargo.start_date_1) if cargo.start_date_1 else "",
+        'start_date_2': str(cargo.start_date_2) if cargo.start_date_2 else "",
+        'start_time_1': str(cargo.start_time_1) if cargo.start_time_1 else "",
+        'start_time_2': str(cargo.start_time_2) if cargo.start_time_2 else "",
+        'start_time_3': str(cargo.start_time_3) if cargo.start_time_3 else "",
+        'start_time_4': str(cargo.start_time_4) if cargo.start_time_4 else "",
+        'end_date_1': str(cargo.end_date_1) if cargo.end_date_1 else "",
+        'end_date_2': str(cargo.end_date_2) if cargo.end_date_2 else "",
+        'end_time_1': str(cargo.end_time_1) if cargo.end_time_1 else "",
+        'end_time_2': str(cargo.end_time_2) if cargo.end_time_2 else "",
+        'end_time_3': str(cargo.end_time_3) if cargo.end_time_3 else "",
+        'end_time_4': str(cargo.end_time_4) if cargo.end_time_4 else "",
+        'weight': cargo.weight or 0,
+        'size': cargo.size or 0,
+        'vehicle_type': cargo.vehicle_type or "",
+        'structure': cargo.stucture or "",
+        'equipment': cargo.equipment or "",
+        'certificates': cargo.certificates or "",
+        'cargo_securement': cargo.cargo_securement or "",
+        'created_at': cargo.created_at.isoformat() if cargo.created_at else ""
+    }
+
+    return jsonify(cargo_data)
+
+
+@app.route('/update_cargo/<int:cargo_id>', methods=['POST'])
+@login_required
+def update_cargo(cargo_id):
+    # Ne használd silent=True, mert elrejtheti a JSON hibákat
+    try:
+        data = request.get_json(force=True)
+    except Exception as e:
+        app.logger.exception("JSON parse error in update_cargo")
+        return jsonify({'error': 'Nem sikerült JSON-t olvasni a kérés törzséből.', 'details': str(e)}), 400
+
+    if data is None:
+        app.logger.debug("Üres payload update_cargo hívásnál")
+        return jsonify({'error': 'Nincs vagy nem JSON a kérés törzse.'}), 400
+
+    app.logger.debug("update_cargo payload: %s", data)
+
+    cargo = Cargo.query.get(cargo_id)
+    if not cargo:
+        app.logger.debug("Cargo nem található id=%s", cargo_id)
+        return jsonify({'error': 'Nem található rakomány'}), 404
+
+    # mapping: frontend mezőnev -> model attribútum
+    field_map = {
+        # helyszínek
+        'from_country': 'origin_country',
+        'from_postcode': 'origin_postcode',
+        'from_city': 'origin_city',
+        'to_country': 'destination_country',
+        'to_postcode': 'destination_postcode',
+        'to_city': 'destination_city',
+
+        # dátum/idő (frontend nevei) -> model attribútumok
+        'departure_from': 'start_date_1',
+        'departure_from_time_start': 'start_time_1',
+        'departure_from_time_end': 'start_time_2',
+        'departure_end_date': 'start_date_2',
+        'departure_end_time_start': 'end_time_1',
+        'departure_end_time_end': 'end_time_2',
+        'arrival_start_date': 'end_date_1',
+        'arrival_start_time_start': 'start_time_3',
+        'arrival_start_time_end': 'start_time_4',
+        'arrival_end_date': 'end_date_2',
+        'arrival_end_time_start': 'end_time_3',
+        'arrival_end_time_end': 'end_time_4',
+
+        # jármű/áru
+        'length': 'size',
+        'weight': 'weight',
+        'vehicle_type': 'vehicle_type',
+        'superstructure': 'stucture',
+        'structure': 'stucture',
+        'certificates': 'certificates',
+        'cargo_securement': 'cargo_securement',
+        'description': 'description',
+    }
+
+    # Helperok
+    def to_date(s):
+        if s is None or s == '':
+            return None
+        if isinstance(s, date) and not isinstance(s, datetime):
+            return s
+        if isinstance(s, datetime):
+            return s.date()
+        try:
+            return date.fromisoformat(str(s))
+        except Exception:
+            try:
+                # ha pl. '2025-08-21 00:00:00'
+                return datetime.fromisoformat(str(s)).date()
+            except Exception:
+                return None
+
+    def to_time(s):
+        if s is None or s == '':
+            return None
+        if isinstance(s, time):
+            return s
+        try:
+            return time.fromisoformat(str(s))
+        except Exception:
+            return None
+
+    def to_float_or_none(s):
+        if s is None or s == '':
+            return None
+        try:
+            return float(s)
+        except Exception:
+            return None
+
+    updated = []
+    errors = []
+
+    # kezeljük külön az equipmentet (mivel tömb vagy string lehet)
+    equipment_value = None
+    if 'equipment' in data:
+        ev = data.get('equipment')
+        if isinstance(ev, list):
+            equipment_value = ', '.join(ev)
+        elif isinstance(ev, str):
+            equipment_value = ev
+        else:
+            # próbáljuk str formára hozni
+            equipment_value = str(ev)
+
+    # Feldolgozás
+    for key, value in data.items():
+        # equipment külön
+        if key == 'equipment':
+            continue
+
+        if key not in field_map:
+            # kihagyjuk az ismeretlen mezőket (biztonság)
+            app.logger.debug("Ismeretlen mező érkezett és kihagyva: %s", key)
+            continue
+
+        model_attr = field_map[key]
+
+        # típuskonverziók a model_attr alapján
+        if model_attr in ('start_date_1','start_date_2','end_date_1','end_date_2'):
+            val = to_date(value)
+        elif model_attr.startswith('start_time') or model_attr.startswith('end_time'):
+            val = to_time(value)
+        elif model_attr in ('size','weight'):
+            val = to_float_or_none(value)
+        elif model_attr in ('is_hidden_from','is_hidden_to'):
+            if isinstance(value, bool):
+                val = False
+            elif str(value).lower() in ('1','true','on','yes'):
+                val = False
+            else:
+                val = False
+        else:
+            val = value
+
+        if hasattr(cargo, model_attr):
+            try:
+                setattr(cargo, model_attr, val)
+                updated.append(model_attr)
+                app.logger.debug("Beállítva %s = %r", model_attr, val)
+            except Exception as ex:
+                app.logger.exception("Hiba setattr közben: %s", model_attr)
+                errors.append(f"Hiba a '{model_attr}' beállításakor: {str(ex)}")
+        else:
+            app.logger.debug("Cargo modell nem tartalmazza az attribútumot: %s", model_attr)
+
+    # equipment utolsó lépésben
+    if equipment_value is not None:
+        if hasattr(cargo, 'equipment'):
+            try:
+                cargo.equipment = equipment_value
+                updated.append('equipment')
+                app.logger.debug("Beállítva equipment = %r", equipment_value)
+            except Exception as ex:
+                app.logger.exception("Hiba equipment beállításakor")
+                errors.append("Hiba az equipment mentésekor: " + str(ex))
+        else:
+            app.logger.debug("Cargo modell nem tartalmaz 'equipment' attribútumot")
+
+    if errors:
+        app.logger.error("Update errors: %s", errors)
+        return jsonify({'error': 'Hiba a mezők feldolgozásakor', 'details': errors}), 400
+
+    # commit
+    try:
+        cargo.is_hidden_from = False
+        cargo.is_hidden_to = False
+        db.session.commit()
+    except Exception as ex:
+        db.session.rollback()
+        app.logger.exception("Adatbázis mentés sikertelen update_cargo")
+        return jsonify({'error': 'Adatbázis mentés sikertelen', 'details': str(ex)}), 500
+
+    # Frissített teljes objektum visszaküldése (ugyanaz a struktúra, mint a get_cargo)
+    cargo_data = {
+        'cargo_id': cargo.cargo_id or 0,
+        'company_id': cargo.company_id or 0,
+        'user_id': cargo.user_id or 0,
+        'description': cargo.description or "",
+        'origin_country': cargo.origin_country or "",
+        'origin_postcode': cargo.origin_postcode or "",
+        'origin_city': cargo.origin_city or "",
+        'is_hidden_from': False,
+        'masked_origin_city': cargo.origin_city or "",
+        'masked_origin_postcode': cargo.origin_postcode or "",
+        'destination_country': cargo.destination_country or "",
+        'destination_postcode': cargo.destination_postcode or "",
+        'destination_city': cargo.destination_city or "",
+        'is_hidden_to': False,
+        'masked_destination_city': cargo.destination_city or "",
+        'masked_destination_postcode': cargo.destination_postcode or "",
+        'start_date_1': str(cargo.start_date_1) if cargo.start_date_1 else "",
+        'start_date_2': str(cargo.start_date_2) if cargo.start_date_2 else "",
+        'start_time_1': str(cargo.start_time_1) if cargo.start_time_1 else "",
+        'start_time_2': str(cargo.start_time_2) if cargo.start_time_2 else "",
+        'start_time_3': str(cargo.start_time_3) if cargo.start_time_3 else "",
+        'start_time_4': str(cargo.start_time_4) if cargo.start_time_4 else "",
+        'end_date_1': str(cargo.end_date_1) if cargo.end_date_1 else "",
+        'end_date_2': str(cargo.end_date_2) if cargo.end_date_2 else "",
+        'end_time_1': str(cargo.end_time_1) if cargo.end_time_1 else "",
+        'end_time_2': str(cargo.end_time_2) if cargo.end_time_2 else "",
+        'end_time_3': str(cargo.end_time_3) if cargo.end_time_3 else "",
+        'end_time_4': str(cargo.end_time_4) if cargo.end_time_4 else "",
+        'weight': cargo.weight or 0,
+        'size': cargo.size or 0,
+        'vehicle_type': cargo.vehicle_type or "",
+        'structure': cargo.stucture or "",
+        'equipment': cargo.equipment or "",
+        'certificates': cargo.certificates or "",
+        'cargo_securement': cargo.cargo_securement or "",
+        'created_at': cargo.created_at.isoformat() if cargo.created_at else ""
+    }
+
+    app.logger.debug("update_cargo sikeres, updated mezők: %s", updated)
+    return jsonify({'success': True, 'updated': updated, 'cargo': cargo_data})
 
 # Ország autocomplete
 @app.route('/autocomplete/country')
@@ -863,47 +1192,6 @@ def zipcode_lookup():
     if res.get('postalCodes'):
         return jsonify({'city': res['postalCodes'][0]['placeName'], 'country': country})
     return jsonify({'city': '', 'country': ''})
-
-# Város alapján visszaadjuk az országot és irányítószámokat
-@app.route('/cityinfo')
-def city_info():
-    term = request.args.get('term', '')
-    country = request.args.get('country', '')  # opcionális szűrés
-
-    params = {
-        'q': term,
-        'maxRows': 10,
-        'username': GEONAMES_USERNAME,
-        'style': 'JSON'
-    }
-    if country:
-        params['country'] = country
-
-    response = requests.get('http://api.geonames.org/searchJSON', params=params)
-    data = response.json().get('geonames', [])
-
-    results = []
-    for c in data:
-        city_name = c.get('name')
-        country_code = c.get('countryCode')
-        # irányítószámok lekérése a városhoz
-        postal_params = {
-            'placename': city_name,
-            'country': country_code,
-            'maxRows': 5,
-            'username': GEONAMES_USERNAME
-        }
-        postal_res = requests.get('http://api.geonames.org/postalCodeSearchJSON', params=postal_params)
-        postal_codes = [p['postalCode'] for p in postal_res.json().get('postalCodes', [])]
-
-        results.append({
-            'city': city_name,
-            'country': country_code,
-            'postalCodes': postal_codes
-        })
-
-    return jsonify(results)
-
 
 @app.route("/cargo/<int:cargo_id>/offer", methods=["POST"])
 @login_required
@@ -1029,41 +1317,50 @@ def my_company():
         flash("A céged nem található.", "danger")
         return redirect(url_for('companies'))
 
+    # Cég összes hirdetett fuvara
+    cargos = Cargo.query.filter_by(company_id=current_user.company_id).order_by(Cargo.start_date_1.desc()).all()
+
     return render_template(
         'my_company.html',
         company=company,
         is_company_admin=current_user.is_company_admin,
         now=datetime.now(),
         current_user_role = current_user.role,  # ez kell az Owner feltételhez
-        current_user_id = current_user.user_id  # ez kell az Owner feltételhez
+        current_user_id = current_user.user_id,  # ez kell az Owner feltételhez
+        cargos=cargos
     )
 
+# feltételezve: from flask import jsonify
+# és a szükséges modellek: Company, User, db, current_user, login_required
 
-company_bp = Blueprint('company', __name__)
 @app.route("/company/<int:company_id>/promote/<int:user_id>", methods=["POST"])
 @login_required
 def promote_user(company_id, user_id):
     company = Company.query.get(company_id)
     if not company:
-        return {"success": False, "error": "Cég nem található."}, 404
+        return jsonify({"success": False, "error": "Cég nem található."}), 404
 
-    # Csak adminok vagy Owner
-    if (not current_user.is_company_admin and current_user.role != "Owner") or current_user.company_id != company_id:
+    if current_user.company_id != company_id:
+        return jsonify({"success": False, "error": "Nincs jogosultságod."}), 403
+
+    is_owner = bool(getattr(current_user, "role", None)) and str(current_user.role).lower() == "owner"
+    is_company_admin = bool(getattr(current_user, "is_company_admin", False))
+
+    if not (is_owner or is_company_admin):
         return jsonify({"success": False, "error": "Nincs jogosultságod."}), 403
 
     user = User.query.get(user_id)
-    if not user or user not in company.users:
-        return {"success": False, "error": "Felhasználó nem található."}, 404
+    if not user or user.company_id != company_id:
+        return jsonify({"success": False, "error": "Felhasználó nem található."}), 404
 
-    # Ha Owner, át tudja adni vagy elvenni az admin jogot
-    if current_user.role == "owner":
-        user.is_company_admin = not user.is_company_admin
+    if is_owner:
+        user.is_company_admin = not bool(user.is_company_admin)
     else:
-        # Simán csak admin tudja adni
         user.is_company_admin = True
 
     db.session.commit()
-    return jsonify({"success": True})
+    return jsonify({"success": True, "redirect": url_for("my_company")})
+
 
 @app.route("/company/<int:company_id>/remove/<int:user_id>", methods=["POST"])
 @login_required
@@ -1072,8 +1369,7 @@ def remove_user(company_id, user_id):
     if not company:
         return jsonify({"success": False, "error": "Cég nem található."}), 404
 
-    # Csak adminok vagy Owner
-    if (not current_user.is_company_admin and current_user.role != "Owner") or current_user.company_id != company_id:
+    if (not current_user.is_company_admin and current_user.role.lower() != "owner") or current_user.company_id != company_id:
         return jsonify({"success": False, "error": "Nincs jogosultságod."}), 403
 
     user = User.query.get(user_id)
@@ -1083,7 +1379,7 @@ def remove_user(company_id, user_id):
     user.company_id = None
     user.is_company_admin = False
     db.session.commit()
-    return jsonify({"success": True})
+    return jsonify({"success": True, "redirect": url_for("my_company")})
 
 
 @app.route('/upload_company_logo', methods=['POST'])
@@ -1116,28 +1412,47 @@ def generate_invite():
         flash("Nincs jogosultságod meghívó létrehozásához.", "danger")
         return redirect(url_for('my_company'))
 
-    # Kód generálása és ellenőrzés
-    while True:
-        code = secrets.token_urlsafe(8)  # kb. 11 karakter
-        if not InviteCode.query.filter_by(code=code).first():
-            break  # kilép a while-ból, kód már egyedi
+    i = 0
+    invites_created = []
 
-    role = request.form.get('role', 'user')  # alapértelmezett: user
-    for_admin = bool(request.form.get('for_admin'))  # checkbox értéke
+    # Dinamikus form feldolgozása
+    while f"invites[{i}][email]" in request.form:
+        email = request.form.get(f"invites[{i}][email]")
+        if not email:
+            i += 1
+            continue
 
-    invite = InviteCode(
-        code=code,
-        company_id=current_user.company_id,
-        role=role,
-        for_admin=for_admin,
-        expires_at=datetime.now() + timedelta(hours=1),  # 1 óráig érvényes
-        is_used=False
-    )
+        role = request.form.get(f"invites[{i}][role]", "user")
+        for_admin = bool(request.form.get(f"invites[{i}][for_admin]"))
 
-    db.session.add(invite)
+        # Egyedi kód generálása
+        while True:
+            code = secrets.token_urlsafe(8)
+            if not InviteCode.query.filter_by(code=code).first():
+                break
+
+        # Meghívó objektum létrehozása
+        invite = InviteCode(
+            code=code,
+            company_id=current_user.company_id,
+            role=role,
+            for_admin=for_admin,
+            expires_at=datetime.now() + timedelta(hours=1),
+            is_used=False
+        )
+        db.session.add(invite)
+        invites_created.append((email, code))
+        i += 1
+
     db.session.commit()
 
-    flash(f"Meghívó létrehozva: {code}", "success")
+    for email, code in invites_created:
+        try:
+            send_invite_email(email, code)
+        except Exception as e:
+            print(f"Hiba az e-mail küldéskor {email}: {e}")
+
+    flash(f"{len(invites_created)} meghívó létrehozva.", "success")
     return redirect(url_for('my_company'))
 
 

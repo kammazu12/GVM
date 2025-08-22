@@ -7,6 +7,7 @@ body {
     color: #333;
     display: flex; /* sidebar + main content */
     min-height: 100vh;
+    width: 100%;
 }
 
 /* Minden h1 sticky */
@@ -211,9 +212,10 @@ h1 {
 
 /* --------- Main content --------- */
 .main-content {
-    margin-left: 18vw; /* sidebar szélessége */
+    margin-left: 17vw; /* sidebar szélessége */
     flex-grow: 1;
     box-sizing: border-box;
+    max-width: 80%;
 }
 
 .main-content > h1{
@@ -225,15 +227,15 @@ h1 {
 /* --------- Container / Form --------- */
 .container, .register-choice-container, form {
     background: #fff;
-    padding: 20px 30px;
+    padding: 10px 10px;
     border-radius: 12px;
     box-shadow: 0 8px 20px rgba(0,0,0,0.1);
     margin: 20px auto;
-    max-width: 90%;
+    max-width: 100%;
 }
 
 h1, h2 {
-    text-align: center;
+    text-align: left;
     color: #4a90e2;
 }
 
@@ -533,6 +535,52 @@ input, select {
 }
 
 /* Táblázat középre */
+
+.home-container{
+    max-width: 100%;
+}
+
+.table-wrapper {
+    max-width: 100%;
+    text-align: center;      /* középre igazítás */
+    margin-top: 20px;
+    overflow-x: auto;        /* vízszintes görgetés kicsi képernyőn */
+}
+
+
+/* Searchbar balra helyezése */
+.dataTables_filter {
+    text-align: left !important; /* balra */
+    float: left !important;       /* alapértelmezett float felülírása */
+    margin-bottom: 10px;          /* opcionális: térköz a táblázat felett */
+    margin-left: 10px;          /* opcionális: térköz a táblázat felett */
+}
+
+.dataTables_wrapper .dataTables_filter {
+    float: left;
+    text-align: left;
+}
+
+.dataTables_wrapper .dataTables_scroll { margin-right: 20px; margin-left: 20px; }
+.dataTables_scroll{ border: 1px solid black; overflow: auto; }
+.table-outer { max-width: 100%; }
+
+.table-wrapper .dataTable {
+    display: inline-block;   /* text-align működik */
+    width: auto !important;  /* ne vegyen 100%-ot a JS miatt */
+    min-width: 600px;        /* opcionális minimum szélesség */
+    max-width: 100%;
+    border-collapse: collapse;
+}
+
+.table-wrapper table {
+    display: inline-block;   /* text-align működik */
+    width: auto !important;  /* ne vegyen 100%-ot a JS miatt */
+    min-width: 600px;        /* opcionális minimum szélesség */
+    max-width: 100%;
+    border-collapse: collapse;
+}
+
 .table-container {
     background: #fff;
     padding: 25px 35px;
@@ -559,7 +607,6 @@ table th, table td {
 .dataTables_length {
     display: none !important;
 }
-
 
 table th {
     background: #4a90e2;
@@ -602,24 +649,24 @@ table tr:nth-child(even) {
     }
 }
 
-.felvet{
-    background-color: #111;
-}
-
-.letet{
+.letet, .hirdeto{
     background-color: red;
 }
 
-.arujarmu{
+.arujarmu, .felvet{
     background-color: #111;
     color: white;
 }
 
-.hirdeto{
-    background-color: red;
-
+#employee_card{
+    text-decoration: none;
+    color: inherit;
 }
 
+.employee-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+}
 
 @media (max-width: 600px) {
     .container, .register-choice-container, form {
