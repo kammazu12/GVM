@@ -21,11 +21,12 @@
                     <th class="arujarmu" colspan="5">Jármű tulajdonságok</th>
                     <th class="hirdeto">Hirdető cég</th>
                     <th style="display:none;">created_at</th> <!-- rejtett oszlop a csökkenő rendezéshez -->
+                    <th class="action-column letet"></th>
                 </tr>
             </thead>
             <tbody>
                 {% for cargo in cargos %}
-                <tr>
+                <tr data-cargo-id="{{ cargo.cargo_id }}">
                     <td>
                         {% if cargo.start_date_1 %}
                             {{ cargo.start_date_1.strftime('%Y.%m.%d.') }}
@@ -79,7 +80,9 @@
                             -
                         {% endif %}
                     </td>
-
+                    <td class="action-column-right">
+                        <button class="action-btn offer-btn" id="" title="Ajánlattétel">🤝</button>
+                    </td>
                     <td style="display:none;">{{ cargo.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
                 </tr>
                 {% endfor %}
@@ -92,22 +95,140 @@
     </main>
 </div>
 
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-
+{% block scripts %}
 <script>
 $(document).ready(function() {
-    $('#shipmentsTable').DataTable({
-        "order": [[11, "desc"], [0, "asc"]], // a rejtett created_at oszlop szerint alapértelmezett rendezés
-        "pageLength": 25,        // alapértelmezett sorok száma
-        "columnDefs": [
-            { "orderable": false, "targets": [] } // ide teheted, ha van olyan oszlop, amit ne lehessen rendezni
-        ],
+    var table;
+    if (! $.fn.DataTable.isDataTable('#shipmentsTable')) {
+        table = $('#shipmentsTable').DataTable({
+            "order": [[16, "desc"], [1, "asc"]],
+            "pageLength": 5,
+            // scrollX: true,
+            "stripeClasses": ['odd-row', 'even-row'],
+            "columnDefs": [{ "orderable": false, "targets": 17 }]
+        });
+    } else {
+        table = $('#shipmentsTable').DataTable(); // létező példányt használjuk
+    }
 
-        stripeClasses: ['odd-row', 'even-row']
+
+    // Offer gomb click esemény
+    $('#shipmentsTable').on('click', '.offer-btn', function(e) {
+        e.stopPropagation();
+        var tr = $(this).closest('tr');
+        var row = table.row(tr); // table változó már léteznie kell
+
+        const cargoId = tr.data('cargo-id');
+
+        if (row.child.isShown()) {
+            row.child.hide();
+            tr.removeClass('shown');
+            return;
+        }
+
+        table.rows().every(function() {
+            if (this.child.isShown()) this.child.hide();
+            $(this.node()).removeClass('shown');
+        });
+
+        const formHtml = `
+            <div class="offer-child-wrapper">
+                <form class="offer-form">
+                    <input type="hidden" name="cargo_id" value="${cargoId}">
+                    <label>Felvét dátuma: <input type="date" name="pickup_date" required></label>
+                    <label>Letét dátuma: <input type="date" name="delivery_date" required></label>
+                    <label>Ár: <input type="number" name="price" step="1" required></label>
+                    <label>Valuta:
+                        <select name="currency">
+                            <option value="eur">€</option>
+                            <option value="huf">Ft</option>
+                        </select>
+                    </label>
+                    <label>Megjegyzés: <input type="text" name="note"></label>
+                    <button type="submit">Küldés</button>
+                </form>
+            </div>
+        `;
+        row.child(formHtml).show();
+        tr.addClass('shown');
+    });
+
+
+    // Offer form submit
+    $('#shipmentsTable').on('submit', '.offer-form', function(e) {
+        e.preventDefault();
+        const $form = $(this);
+        const data = $form.serialize();
+
+        $.post('/offer', data)
+            .done(function(response) {
+                alert('Ajánlat elküldve!');
+                $form.closest('.offer-child-wrapper').remove();
+            })
+            .fail(function(xhr) {
+                alert('Hiba: ' + (xhr.responseJSON?.message || 'Ismeretlen hiba'));
+            });
+    });
+
+    // Child row-ok bezárása újrarenderkor
+    table.on('draw', function() {
+        table.rows().every(function() {
+            if (this.child && this.child.isShown && this.child.isShown()) {
+                this.child.hide();
+            }
+        });
+        $('#shipmentsTable tbody tr').removeClass('shown');
     });
 });
+
 </script>
+{% endblock %}
+<style>
+    /* A sticky action oszlop ne takarja el a child tartalmat: adjunk alacsonyabb z-indexet neki */
+.action-column-right {
+    position: sticky;
+    right: 0;
+    z-index: 1; /* alacsonyabb, hogy a child (z-index 5) látszódjon fölötte */
+    background: #fff;
+}
+
+/* DataTables által beszúrt child sor td-jeire és a wrapperre biztos háttér és magasabb z-index */
+table.dataTable tr.child td, .offer-child-wrapper {
+    background: #fff;
+    position: relative;
+    z-index: 51;
+    padding: 10px;
+}
+
+/* Form stílus (kényelmes sorban) */
+.offer-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+}
+.offer-form label { display: flex; flex-direction: column; font-size: 0.9em; }
+.offer-form button { padding: 6px 10px; cursor: pointer; }
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateX(100%); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+.offer-notification a.open-chat {
+    display: inline-block;
+    margin-left: 10px;
+    color: #0066cc;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.offer-notification a.open-chat:hover {
+    text-decoration: underline;
+}
+
+
+</style>
+
 
 {% endblock %}

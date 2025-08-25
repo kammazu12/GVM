@@ -61,7 +61,7 @@
 </main>
 </div>
 
-
+{% block scripts %}
 <script>
 const profileImageContainer = document.querySelector('.profile-image');
 const profileOverlay = document.getElementById('profile-overlay');
@@ -102,7 +102,7 @@ profileInput.addEventListener('change', () => {
     });
 });
 </script>
-
+{% endblock %}
 
 <!-- Flash animáció stílus -->
 <style>

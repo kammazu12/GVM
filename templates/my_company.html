@@ -228,7 +228,23 @@
 
     </main>
 </div>
-
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    var table;
+    if (! $.fn.DataTable.isDataTable('#companyCargos')) {
+        table = $('#companyCargos').DataTable({
+            "order": [[16, "desc"], [1, "asc"]],
+            "pageLength": 5,
+            "stripeClasses": ['odd-row', 'even-row'],
+            "columnDefs": [{ "orderable": false, "targets": 0 }]
+        });
+    } else {
+        table = $('#companyCargos').DataTable(); // létező példányt használjuk
+    }
+});
+</script>
+{% endblock %}
 {% if is_company_admin %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -373,7 +389,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return card;
     }
 
-    // reindex names (invites[0].. ) after removal to keep server-side loop working
+    // reindex names (invites[0]... ) after removal to keep server-side loop working
     function reindexInviteCards() {
         const cards = Array.from(rowsContainer.querySelectorAll('.invite-card'));
         cards.forEach((card, idx) => {
