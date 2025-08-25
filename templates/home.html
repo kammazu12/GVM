@@ -91,20 +91,22 @@
 
     </main>
 </div>
-
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-
+{% block scripts %}
 <script>
 $(document).ready(function() {
-    var table = $('#homeTable').DataTable({
-        "order": [[16, "desc"], [1, "asc"]],
-        "pageLength": 5,
-        scrollX: true,
-        "stripeClasses": ['odd-row', 'even-row'],
-        "columnDefs": [{ "orderable": false, "targets": 0 }] // checkbox ne legyen rendezhető
-    });
+    var table;
+    if (! $.fn.DataTable.isDataTable('#homeTable')) {
+        table = $('#homeTable').DataTable({
+            "order": [[16, "desc"], [1, "asc"]],
+            "pageLength": 5,
+            scrollX: true,
+            "stripeClasses": ['odd-row', 'even-row'],
+            "columnDefs": [{ "orderable": false, "targets": 0 }]
+        });
+    } else {
+        table = $('#homeTable').DataTable(); // létező példányt használjuk
+    }
+
 
     $('#selectAll').on('click', function() {
         var rows = table.rows({ 'search': 'applied' }).nodes();
@@ -184,6 +186,7 @@ $(document).ready(function() {
 
     function positionPanel($row) {
         if (!$row || !$row.length) return;
+
         var rowOffset = $row.offset();
         var containerOffset = $scrollBody.offset();
 
@@ -836,7 +839,7 @@ $(document).ready(function() {
 
 }); // $(document).ready
 </script>
-
+{% endblock %}
 <style>
 .home-container { display: flex; flex-wrap: wrap; max-width: 100%}
 .sidebar { flex: 1 1 200px; }

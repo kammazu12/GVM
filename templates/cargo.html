@@ -29,8 +29,8 @@
                         <label for="from-postcode">Irányítószám<span class="required">*</span></label>
                         <input type="text" id="from-postcode" name="from_postcode" required>
 
-                        <label for="from-city">Város<span class="required">*</span></label>
-                        <input type="text" id="from-city" name="from_city" required>
+                        <label for="from-city">Település<span class="required">*</span></label>
+                        <input type="text" id="from-city" name="from_city" required readonly>
                         <div class="toggle-row">
                             <span>Bújtatott fuvar</span>
                             <label class="switch">
@@ -51,8 +51,8 @@
                         <input type="text" id="to-country" name="to_country" required>
                         <label for="to-postcode">Irányítószám<span class="required">*</span></label>
                         <input type="text" id="to-postcode" name="to_postcode" required>
-                        <label for="to-city">Város<span class="required">*</span></label>
-                        <input type="text" id="to-city" name="to_city"  required>
+                        <label for="to-city">Település<span class="required">*</span></label>
+                        <input type="text" id="to-city" name="to_city" required readonly>
                         <div class="toggle-row">
                             <span>Bújtatott fuvar</span>
                             <label class="switch">
@@ -719,9 +719,6 @@ tr:nth-child(even) {
 
 </style>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
-<link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -806,11 +803,11 @@ $(function() {
 
 let expanded = false;
 
-  function toggleCheckboxes() {
+function toggleCheckboxes() {
     const checkboxes = document.getElementById("equipment-checkboxes");
     checkboxes.style.display = expanded ? "none" : "grid";
     expanded = !expanded;
-  }
+}
 
 // Szinkronizálás a hidden selecttel
 const checkboxes = document.querySelectorAll('#equipment-checkboxes input[type="checkbox"]');
@@ -839,7 +836,7 @@ checkboxes.forEach(checkbox => {
 
 
   // kattintás máshova → bezár
-  document.addEventListener('click', function(event) {
+document.addEventListener('click', function(event) {
     const multiselect = document.querySelector('.multiselect');
     if (!multiselect.contains(event.target)) {
       document.getElementById("equipment-checkboxes").style.display = "none";
@@ -874,8 +871,8 @@ window.addEventListener('DOMContentLoaded', () => {
     if(dateInputs.length >= 4){
         dateInputs[0].value = formatDate(today); // Ma
         dateInputs[1].value = formatDate(nextWeekday(today, 1)); // Következő munkanap
-        dateInputs[2].value = formatDate(nextWeekday(today, 2)); // Következő munkanap
-        dateInputs[3].value = formatDate(nextWeekday(today, 3)); // Következő utáni munkanap
+        dateInputs[2].value = formatDate(nextWeekday(today, 1)); // Következő munkanap
+        dateInputs[3].value = formatDate(nextWeekday(today, 2)); // Következő utáni munkanap
     }
 
     // document.querySelector('input[name="departure_from_time_start"]').value = "08:00";
@@ -886,8 +883,136 @@ window.addEventListener('DOMContentLoaded', () => {
     // document.querySelector('input[name="arrival_start_time_end"]').value = "16:00";
     // document.querySelector('input[name="arrival_end_time_start"]').value = "08:00";
     // document.querySelector('input[name="arrival_end_time_end"]').value = "16:00";
+});
+
+window.addEventListener('DOMContentLoaded', () => {
+    const dateInputs = document.querySelectorAll('input[type="date"]');
+
+    dateInputs.forEach(input => {
+        input.addEventListener("input", () => validateDates(dateInputs));
+    });
+
+    function validateDates(inputs) {
+    const depStart = new Date(inputs[0].value);
+    const depEnd   = new Date(inputs[1].value);
+    const arrStart = new Date(inputs[2].value);
+    const arrEnd   = new Date(inputs[3].value);
+
+    // pickup vége >= pickup kezdete
+    if (depEnd < depStart) {
+        inputs[1].setCustomValidity("A felvétel vége nem lehet a kezdete előtt.");
+    } else {
+        inputs[1].setCustomValidity("");
+    }
+
+    // delivery kezdete >= pickup kezdete
+    if (arrStart < depStart) {
+        inputs[2].setCustomValidity("A letétel nem lehet korábbi, mint a felvétel kezdete.");
+    } else {
+        inputs[2].setCustomValidity("");
+    }
+
+    // delivery vége >= pickup vége
+    if (arrEnd < depEnd) {
+        inputs[3].setCustomValidity("A letétel vége nem lehet korábbi, mint a felvétel vége.");
+    } else {
+        inputs[3].setCustomValidity("");
+    }
+
+    // delivery vége >= delivery eleje
+    if (arrEnd < arrStart) {
+        inputs[3].setCustomValidity("A letétel vége nem lehet korábbi, mint a letétel eleje.");
+    } else {
+        inputs[3].setCustomValidity("");
+    }
+
+}
 
 });
+
+document.addEventListener("DOMContentLoaded", () => {
+    const form = document.querySelector(".freight-form");
+    const inputs = form.querySelectorAll("input[required], select[required]");
+
+    inputs.forEach(input => {
+        // ha elhagyta a mezőt, jelzi a hibát
+        input.addEventListener("blur", () => {
+            input.dataset.touched = "true";
+            validateInput(input);
+        });
+
+        // ha ír bele valamit, újra ellenőriz
+        input.addEventListener("input", () => {
+            if (input.dataset.touched === "true") {
+                validateInput(input);
+            }
+        });
+    });
+
+    form.addEventListener("submit", (e) => {
+        let valid = true;
+        inputs.forEach(input => {
+            if (!validateInput(input)) {
+                valid = false;
+            }
+        });
+        if (!valid) {
+            e.preventDefault(); // ne küldje el
+        }
+    });
+
+    function validateInput(input) {
+        let isValid = true;
+        if (input.hasAttribute("required") && !input.value) {
+            isValid = false;
+            input.classList.add("invalid");
+        } else {
+            input.classList.remove("invalid");
+        }
+        return isValid;
+    }
+});
+
+window.addEventListener('DOMContentLoaded', () => {
+    const form = document.querySelector('.freight-form');
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault(); // megállítja a normál submitot
+
+        // töröljük a korábbi hibákat
+        form.querySelectorAll('.error').forEach(el => el.classList.remove('error'));
+        form.querySelectorAll('.error-msg').forEach(el => el.remove());
+
+        // adatgyűjtés
+        const formData = new FormData(form);
+
+        // AJAX POST
+        const response = await fetch(form.action, {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if(data.success){
+            // sikeres mentés, átirányítás vagy üzenet
+            window.location.reload();
+        } else {
+            // hibák feldolgozása
+            for(const [fieldName, msg] of Object.entries(data.errors)){
+                const field = form.querySelector(`[name="${fieldName}"]`);
+                if(field){
+                    field.classList.add('error');
+                    const errorSpan = document.createElement('span');
+                    errorSpan.classList.add('error-msg');
+                    errorSpan.textContent = msg;
+                    field.parentNode.appendChild(errorSpan);
+                }
+            }
+        }
+    });
+});
+
 
 </script>
 {% endblock %}
