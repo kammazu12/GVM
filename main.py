@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user, UserMixin
 from flask_mail import Mail, Message
+from flask_socketio import SocketIO, join_room
 from datetime import datetime, timedelta, date, time
 import re
 import secrets
@@ -15,13 +16,12 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy import or_, func
 import requests
 
-
 GEONAMES_USERNAME = "kammazu12"  # ide jön a GeoNames felhasználód
 def save_uploaded_image(file, subfolder, prefix="file_", allowed_extensions=None):
     """
     Feltöltött kép mentése egy adott mappába.
 
-    :param file: Feltöltött fájl objektum (werkzeug.datastructures.FileStorage)
+    :param file: Feltöltött fájl objektum (werkzeug.datastuctures.FileStorage)
     :param subfolder: Mappa neve a static/uploads alatt (pl. 'company_logos', 'profile_pictures')
     :param prefix: Fájlnév előtag
     :param allowed_extensions: Engedélyezett kiterjesztések listája
@@ -78,6 +78,7 @@ bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 mail = Mail(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'heic'}
 
 # -------------------------
@@ -101,7 +102,6 @@ class Company(db.Model):
     invite_codes = db.relationship('InviteCode', backref='company', lazy=True)
     users = db.relationship('User', back_populates='company')
     logo_filename = db.Column(db.String(200), nullable=True)
-
 
 class User(db.Model, UserMixin):
     user_id = db.Column(db.Integer, primary_key=True)
@@ -131,7 +131,6 @@ class InviteCode(db.Model):
     is_used = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.Date, default=date.today)
 
-
 class PasswordResetToken(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     token = db.Column(db.String(128), unique=True, nullable=False)
@@ -156,7 +155,7 @@ class Cargo(db.Model):
     cargo_id = db.Column(db.Integer, primary_key=True)
     company_id = db.Column(db.Integer, db.ForeignKey('company.company_id'))
     company = db.relationship("Company", backref="cargos")
-    user_id = db.Column(db.Integer, db.ForeignKey('user.user_id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.user_id'))      # hirdető ID-ja
     posted_by = db.relationship("User", backref="posted_cargos")  # <-- ide jön a kapcsolat
     description = db.Column(db.Text, nullable=False, default="Nincs leírás")
 
@@ -204,7 +203,7 @@ class Cargo(db.Model):
     # Egyéb
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_republished_at = db.Column(db.DateTime, nullable=True)
-    offers = db.relationship("Offer", backref="cargo", lazy=True)
+    offers = db.relationship("Offer", backref="cargo", lazy=True, cascade="all, delete-orphan")
 
     def display_origin(self):
         if self.is_hidden_from:
@@ -218,38 +217,19 @@ class Cargo(db.Model):
             return new_city
         return self.destination_city
 
-
 class Offer(db.Model):
     offer_id = db.Column(db.Integer, primary_key=True)
-    cargo_id = db.Column(db.Integer, db.ForeignKey('cargo.cargo_id'))
-    company_id = db.Column(db.Integer, db.ForeignKey('company.company_id'))
-    user_id = db.Column(db.Integer, db.ForeignKey('user.user_id'))
+    cargo_id = db.Column(db.Integer, db.ForeignKey('cargo.cargo_id', ondelete='CASCADE'))
+    offer_user_id = db.Column(db.Integer, db.ForeignKey('user.user_id'))        # ajánlattevő ID-ja
 
     price = db.Column(db.Float, nullable=False)
     currency = db.Column(db.String(10), default="EUR")
     status = db.Column(db.String(20), default="pending")
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now)
 
-    conversation = db.relationship("ChatConversation", backref="offer", uselist=False)
-
-
-class ChatConversation(db.Model):
-    conversation_id = db.Column(db.Integer, primary_key=True)
-    cargo_id = db.Column(db.Integer, db.ForeignKey('cargo.cargo_id'))
-    offer_id = db.Column(db.Integer, db.ForeignKey('offer.offer_id'))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    messages = db.relationship("ChatMessage", backref="conversation", lazy=True)
-
-
-class ChatMessage(db.Model):
-    message_id = db.Column(db.Integer, primary_key=True)
-    conversation_id = db.Column(db.Integer, db.ForeignKey('chat_conversation.conversation_id'))
-    sender_id = db.Column(db.Integer, db.ForeignKey('user.user_id'))
-    text = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    is_read = db.Column(db.Boolean, default=False)
-
+    note = db.Column(db.Text, default="")
+    pickup_date = db.Column(db.DateTime, default=date.today)
+    arrival_date = db.Column(db.DateTime, default=date.today() + timedelta(days=1))
 
 class Vehicle(db.Model):
     vehicle_id = db.Column(db.Integer, primary_key=True)
@@ -271,6 +251,19 @@ class Vehicle(db.Model):
     is_available = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+class OfferMessage(db.Model):
+    message_id = db.Column(db.Integer, primary_key=True)
+    offer_id = db.Column(db.Integer, db.ForeignKey('offer.offer_id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.user_id'))
+    text = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+class Notification(db.Model):
+    notification_id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.user_id'))
+    offer_id = db.Column(db.Integer, db.ForeignKey('offer.offer_id'))
+    read = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.now)
 
 # -------------------------
 # LOGIN MANAGER
@@ -321,7 +314,6 @@ def make_unique_slug(name, company_id=None):
         i += 1
         candidate = f"{base}-{i}"
     return candidate
-
 
 # tegye elérhetővé Jinja-ban is
 app.jinja_env.globals['slugify'] = slugify
@@ -416,7 +408,6 @@ def check_tax_number():
         return jsonify({'exists': False})
     exists = Company.query.filter_by(tax_number=tax).first() is not None
     return jsonify({'exists': exists})
-
 
 @app.route('/reset_password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
@@ -525,7 +516,6 @@ def register_create():
 def register_choice():
     return render_template('register_choice.html')
 
-
 @app.route('/register/join', methods=['GET', 'POST'])
 def register_join():
     warning = None
@@ -591,7 +581,6 @@ def register_join():
 
     return render_template('register_join.html', warning=warning)
 
-
 # -------------------------
 # CHANGE PASSWORD (profile -> change)
 # -------------------------
@@ -636,7 +625,6 @@ def home():
     cargos = Cargo.query.filter_by(user_id=current_user.user_id).all()
     return render_template('home.html', cargos=cargos)
 
-
 @app.route('/delete_cargos', methods=['POST'])
 @login_required
 def delete_cargos():
@@ -670,7 +658,6 @@ def delete_cargo(cargo_id):
         db.session.rollback()
         return jsonify({"success": False, "error": str(e)}), 500
 
-
 @app.route('/republish_cargos', methods=['POST'])
 def republish_cargos():
     data = request.get_json()
@@ -695,13 +682,11 @@ def republish_cargos():
         "now": now.strftime('%Y-%m-%d %H:%M:%S')
     })
 
-
 @app.route('/shipments')
 @login_required
 def shipments():
     cargos = Cargo.query.order_by(Cargo.created_at.desc()).all()
     return render_template('shipments.html', user=current_user, cargos=cargos)
-
 
 def get_nearby_major_city(city_name, country_code):
     params = {
@@ -744,7 +729,6 @@ def get_postcode(city_name, country_code):
         return result["postalCodes"][0]["postalCode"]
     return None
 
-
 @app.route('/cargo', methods=["GET", "POST"])
 @login_required
 def cargo():
@@ -766,11 +750,9 @@ def cargo():
 
         if is_hidden_from:
             masked_origin_city, masked_origin_postcode = get_nearby_major_city(origin_city, origin_country)
-            print("Origin masked:", masked_origin_city, masked_origin_postcode)
 
         if is_hidden_to:
             masked_destination_city, masked_destination_postcode = get_nearby_major_city(destination_city, destination_country)
-            print("Destination masked:", masked_destination_city, masked_destination_postcode)
 
         masked_origin_city = masked_origin_city or origin_city
         masked_origin_postcode = masked_origin_postcode or origin_postcode
@@ -779,36 +761,36 @@ def cargo():
 
         # DÁTUM ÉS IDŐ
         start_date_1_str = request.form.get("departure_from")  # '2025-08-18'
-        if start_date_1_str:
-            start_date_1 = datetime.strptime(start_date_1_str, "%Y-%m-%d").date()
-        else:
-            start_date_1 = None
+        start_date_1 = datetime.strptime(start_date_1_str, "%Y-%m-%d").date() if start_date_1_str else None
+        start_date_2 = datetime.strptime(request.form.get("departure_end_date"), "%Y-%m-%d").date() if request.form.get("departure_end_date") else None
+        end_date_1 = datetime.strptime(request.form.get("arrival_start_date"), "%Y-%m-%d").date() if request.form.get("arrival_start_date") else None
+        end_date_2 = datetime.strptime(request.form.get("arrival_end_date"), "%Y-%m-%d").date() if request.form.get("arrival_end_date") else None
 
-        # ugyanez minden dátum mezőre
-        start_date_2 = datetime.strptime(request.form.get("departure_end_date"), "%Y-%m-%d").date() if request.form.get(
-            "departure_end_date") else None
-        end_date_1 = datetime.strptime(request.form.get("arrival_start_date"), "%Y-%m-%d").date() if request.form.get(
-            "arrival_start_date") else None
-        end_date_2 = datetime.strptime(request.form.get("arrival_end_date"), "%Y-%m-%d").date() if request.form.get(
-            "arrival_end_date") else None
+        start_time_1 = datetime.strptime(request.form.get("departure_from_time_start"), "%H:%M").time() if request.form.get("departure_from_time_start") else None
+        start_time_2 = datetime.strptime(request.form.get("departure_end_time_start"), "%H:%M").time() if request.form.get("departure_end_time_start") else None
+        start_time_3 = datetime.strptime(request.form.get("arrival_start_time_start"), "%H:%M").time() if request.form.get("arrival_start_time_start") else None
+        start_time_4 = datetime.strptime(request.form.get("arrival_end_time_start"), "%H:%M").time() if request.form.get("arrival_end_time_start") else None
 
-        start_time_1 = datetime.strptime(request.form.get("departure_from_time_start"),
-                                         "%H:%M").time() if request.form.get("arrival_start_time_start") else None
-        start_time_2 = datetime.strptime(request.form.get("departure_end_time_start"),
-                                         "%H:%M").time() if request.form.get("arrival_start_time_end") else None
-        start_time_3 = datetime.strptime(request.form.get("arrival_start_time_start"),
-                                         "%H:%M").time() if request.form.get("arrival_start_time_start") else None
-        start_time_4 = datetime.strptime(request.form.get("arrival_end_time_start"),
-                                         "%H:%M").time() if request.form.get("arrival_start_time_end") else None
+        end_time_1 = datetime.strptime(request.form.get("departure_from_time_end"), "%H:%M").time() if request.form.get("departure_from_time_end") else None
+        end_time_2 = datetime.strptime(request.form.get("departure_end_time_end"), "%H:%M").time() if request.form.get("departure_end_time_end") else None
+        end_time_3 = datetime.strptime(request.form.get("arrival_start_time_end"), "%H:%M").time() if request.form.get("arrival_start_time_end") else None
+        end_time_4 = datetime.strptime(request.form.get("arrival_end_time_end"), "%H:%M").time() if request.form.get("arrival_end_time_end") else None
 
-        end_time_1 = datetime.strptime(request.form.get("departure_from_time_end"),
-                                         "%H:%M").time() if request.form.get("arrival_end_time_start") else None
-        end_time_2 = datetime.strptime(request.form.get("departure_end_time_end"),
-                                         "%H:%M").time() if request.form.get("arrival_end_time_end") else None
-        end_time_3 = datetime.strptime(request.form.get("arrival_start_time_end"),
-                                         "%H:%M").time() if request.form.get("arrival_end_time_start") else None
-        end_time_4 = datetime.strptime(request.form.get("arrival_end_time_end"),
-                                         "%H:%M").time() if request.form.get("arrival_end_time_end") else None
+        # === BACKEND DÁTUM VALIDÁCIÓ ===
+        errors = []
+        if start_date_1 and start_date_2 and start_date_2 < start_date_1:
+            errors.append("A felvétel vége nem lehet a kezdete előtt.")
+        if start_date_1 and end_date_1 and end_date_1 < start_date_1:
+            errors.append("A letétel nem lehet korábbi, mint a felvétel kezdete.")
+        if start_date_2 and end_date_2 and end_date_2 < start_date_2:
+            errors.append("A letétel vége nem lehet korábbi, mint a felvétel vége.")
+        if end_date_1 and end_date_2 and end_date_2 < end_date_1:
+            errors.append("A letétel vége nem lehet korábbi, mint a letétel eleje.")
+
+        if errors:
+            for e in errors:
+                flash(e, "error")
+            return jsonify({"success": False, "errors": errors})
 
         # JÁRMŰ
         vehicle_type = request.form.get("vehicle_type")
@@ -826,6 +808,7 @@ def cargo():
         weight = request.form.get("weight")
         size = request.form.get("length")
 
+        # === CARGO MENTÉSE ===
         new_cargo = Cargo(
             company_id=current_user.company_id,
             user_id=current_user.user_id,
@@ -867,12 +850,61 @@ def cargo():
         db.session.add(new_cargo)
         db.session.commit()
         flash("Új rakomány sikeresen hozzáadva!", "success")
-        return redirect(url_for("cargo"))
+        return jsonify({"success": True})
 
     vehicles = Vehicle.query.filter_by(is_available=True).all()
     cargos = Cargo.query.filter_by(company_id=current_user.company_id).all()
 
     return render_template("cargo.html", user=current_user, vehicles=vehicles, cargos=cargos)
+
+@app.route('/offer', methods=['POST'])
+@login_required
+def offer_create():
+    cargo_id = request.form.get('cargo_id')
+    price = request.form.get('price')
+    pickup_date = request.form.get('pickup_date')
+    arrival_date = request.form.get('delivery_date')
+
+    if not cargo_id or not price:
+        return jsonify(success=False, message="Hiányzó adat"), 400
+
+    try:
+        cargo_id_int = int(cargo_id)
+        price_val = float(price)
+    except (ValueError, TypeError):
+        return jsonify(success=False, message="Érvénytelen adat"), 400
+
+    cargo = Cargo.query.get(cargo_id_int)
+    if not cargo:
+        return jsonify(success=False, message="A rakomány nem található"), 404
+
+    offer = Offer(
+        cargo_id=cargo.cargo_id,
+        offer_user_id=current_user.user_id,
+        price=price_val,
+        currency=request.form.get('currency', 'EUR'),
+        note=request.form.get('note', ''),
+        pickup_date=datetime.strptime(pickup_date, "%Y-%m-%d"),
+        arrival_date=datetime.strptime(arrival_date, "%Y-%m-%d"),
+        created_at=datetime.now()
+    )
+    db.session.add(offer)
+    db.session.commit()
+
+    # ---- valós idejű értesítés ----
+    notification_data = {
+        'offer_id': offer.offer_id,
+        'cargo_id': cargo.cargo_id,
+        'from_user': f"{current_user.first_name} {current_user.last_name}",
+        'price': offer.price,
+        'currency': offer.currency,
+        'origin': cargo.origin_city,
+        'destination': cargo.destination_city
+    }
+    room = f'user_{cargo.user_id}'
+    socketio.emit('new_offer', notification_data, room=f'user_{cargo.user_id}')
+
+    return jsonify(success=True, offer_id=offer.offer_id), 201
 
 @app.route('/get_cargo/<int:cargo_id>')
 @login_required
@@ -886,15 +918,15 @@ def get_cargo(cargo_id):
         'company_id': cargo.company_id or 0,
         'user_id': cargo.user_id or 0,
         'description': cargo.description or "",
-        'origin_country': cargo.origin_country or "",
-        'origin_postcode': cargo.origin_postcode or "",
-        'origin_city': cargo.origin_city or "",
+        'from_country': cargo.origin_country or "",
+        'from_postcode': cargo.origin_postcode or "",
+        'from_city': cargo.origin_city or "",
         'is_hidden_from': cargo.is_hidden_from or False,
         'masked_origin_city': cargo.masked_origin_city or "",
         'masked_origin_postcode': cargo.masked_origin_postcode or "",
-        'destination_country': cargo.destination_country or "",
-        'destination_postcode': cargo.destination_postcode or "",
-        'destination_city': cargo.destination_city or "",
+        'to_country': cargo.destination_country or "",
+        'to_postcode': cargo.destination_postcode or "",
+        'to_city': cargo.destination_city or "",
         'is_hidden_to': cargo.is_hidden_to or False,
         'masked_destination_city': cargo.masked_destination_city or "",
         'masked_destination_postcode': cargo.masked_destination_postcode or "",
@@ -911,9 +943,9 @@ def get_cargo(cargo_id):
         'end_time_3': str(cargo.end_time_3) if cargo.end_time_3 else "",
         'end_time_4': str(cargo.end_time_4) if cargo.end_time_4 else "",
         'weight': cargo.weight or 0,
-        'size': cargo.size or 0,
+        'length': cargo.size or 0,
         'vehicle_type': cargo.vehicle_type or "",
-        'structure': cargo.stucture or "",
+        'superstucture': cargo.stucture or "",
         'equipment': cargo.equipment or "",
         'certificates': cargo.certificates or "",
         'cargo_securement': cargo.cargo_securement or "",
@@ -921,7 +953,6 @@ def get_cargo(cargo_id):
     }
 
     return jsonify(cargo_data)
-
 
 @app.route('/update_cargo/<int:cargo_id>', methods=['POST'])
 @login_required
@@ -972,8 +1003,8 @@ def update_cargo(cargo_id):
         'length': 'size',
         'weight': 'weight',
         'vehicle_type': 'vehicle_type',
-        'superstructure': 'stucture',
-        'structure': 'stucture',
+        'superstucture': 'stucture',
+        'struture': 'stucture',
         'certificates': 'certificates',
         'cargo_securement': 'cargo_securement',
         'description': 'description',
@@ -1130,7 +1161,7 @@ def update_cargo(cargo_id):
         'weight': cargo.weight or 0,
         'size': cargo.size or 0,
         'vehicle_type': cargo.vehicle_type or "",
-        'structure': cargo.stucture or "",
+        'stucture': cargo.stucture or "",
         'equipment': cargo.equipment or "",
         'certificates': cargo.certificates or "",
         'cargo_securement': cargo.cargo_securement or "",
@@ -1193,101 +1224,11 @@ def zipcode_lookup():
         return jsonify({'city': res['postalCodes'][0]['placeName'], 'country': country})
     return jsonify({'city': '', 'country': ''})
 
-@app.route("/cargo/<int:cargo_id>/offer", methods=["POST"])
-@login_required
-def make_offer(cargo_id):
-    cargo = Cargo.query.get_or_404(cargo_id)
-    price = float(request.form.get("price"))
-    message_text = request.form.get("message")
-
-    offer = Offer(
-        cargo_id=cargo.cargo_id,
-        company_id=current_user.company_id,
-        user_id=current_user.user_id,
-        price=price
-    )
-    db.session.add(offer)
-    db.session.flush()  # kell, hogy legyen offer_id
-
-    # automatikus chat létrehozás
-    conversation = ChatConversation(cargo_id=cargo.cargo_id, offer_id=offer.offer_id)
-    db.session.add(conversation)
-    db.session.flush()
-
-    # első üzenet
-    if message_text:
-        msg = ChatMessage(
-            conversation_id=conversation.conversation_id,
-            sender_id=current_user.user_id,
-            text=message_text
-        )
-        db.session.add(msg)
-
-    db.session.commit()
-
-    flash("Ajánlat elküldve!", "success")
-    return redirect(url_for("cargo_detail", cargo_id=cargo.cargo_id))
-
-
-@app.route("/offer/<int:offer_id>/accept")
-@login_required
-def accept_offer(offer_id):
-    offer = Offer.query.get_or_404(offer_id)
-    cargo = offer.cargo
-
-    # csak a fuvar tulajdonosa fogadhat el
-    if cargo.user_id != current_user.user_id:
-        abort(403)
-
-    offer.status = "accepted"
-    # a többit rejected-re állítjuk
-    for o in cargo.offers:
-        if o.offer_id != offer_id:
-            o.status = "rejected"
-
-    db.session.commit()
-    flash("Ajánlat elfogadva!", "success")
-    return redirect(url_for("cargo_detail", cargo_id=cargo.cargo_id))
-
-
-@app.route("/offer/<int:offer_id>/reject")
-@login_required
-def reject_offer(offer_id):
-    offer = Offer.query.get_or_404(offer_id)
-    cargo = offer.cargo
-
-    if cargo.user_id != current_user.user_id:
-        abort(403)
-
-    offer.status = "rejected"
-    db.session.commit()
-    flash("Ajánlat elutasítva!", "info")
-    return redirect(url_for("cargo_detail", cargo_id=cargo.cargo_id))
-
-
-@app.route("/conversation/<int:conversation_id>/send", methods=["POST"])
-@login_required
-def send_message(conversation_id):
-    conv = ChatConversation.query.get_or_404(conversation_id)
-    text = request.form.get("text")
-
-    msg = ChatMessage(
-        conversation_id=conv.conversation_id,
-        sender_id=current_user.user_id,
-        text=text
-    )
-    db.session.add(msg)
-    db.session.commit()
-
-    return redirect(url_for("conversation_view", conversation_id=conv.conversation_id))
-
-
 @app.route('/vehicles')
 @login_required
 def vehicles():
     return render_template('vehicles.html', user=current_user)
 
-@app.route('/companies/')
 @app.route('/companies')
 @login_required
 def companies():
@@ -1361,7 +1302,6 @@ def promote_user(company_id, user_id):
     db.session.commit()
     return jsonify({"success": True, "redirect": url_for("my_company")})
 
-
 @app.route("/company/<int:company_id>/remove/<int:user_id>", methods=["POST"])
 @login_required
 def remove_user(company_id, user_id):
@@ -1380,7 +1320,6 @@ def remove_user(company_id, user_id):
     user.is_company_admin = False
     db.session.commit()
     return jsonify({"success": True, "redirect": url_for("my_company")})
-
 
 @app.route('/upload_company_logo', methods=['POST'])
 @login_required
@@ -1403,7 +1342,6 @@ def upload_company_logo():
     db.session.commit()
 
     return {"success": True, "filename": result}
-
 
 @app.route('/generate_invite', methods=['POST'])
 @login_required
@@ -1454,7 +1392,6 @@ def generate_invite():
 
     flash(f"{len(invites_created)} meghívó létrehozva.", "success")
     return redirect(url_for('my_company'))
-
 
 @app.route('/search_companies')
 @login_required
@@ -1513,7 +1450,6 @@ def company_profile(slug):
 
     return render_template('company_profile.html', company=company, cargos=cargos)
 
-
 @app.route("/company/<company_slug>/<email>")
 @login_required
 def user_profile(company_slug, email):
@@ -1555,6 +1491,7 @@ def edit_profile():
         return redirect(url_for("profile"))
 
     return render_template("edit_profile.html", user=user)
+
 @app.route('/upload_profile_picture', methods=['POST'])
 @login_required
 def upload_profile_picture():
@@ -1581,12 +1518,20 @@ def upload_profile_picture():
 
     return {"success": True, "filename": result}
 
-
-
 @app.route('/statistics')
 @login_required
 def statistics():
     return render_template('statistics.html', user=current_user)
+
+@socketio.on('join')
+def handle_join(data):
+    room = data['room']
+    join_room(room)
+
+@socketio.on('send_message')
+def handle_message(data):
+    room = f"user_{data['target_user_id']}"  # a chatpartner
+    socketio.emit('receive_message', data, to=room)
 
 # -------------------------
 # RUN APP
@@ -1594,4 +1539,4 @@ def statistics():
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
-    app.run(debug=True)
+    socketio.run(app, debug=True)

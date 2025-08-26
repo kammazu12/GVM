@@ -117,17 +117,24 @@
     </main>
 </div>
 
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+{% block scripts %}
 <script>
 $(document).ready(function() {
-    $('#companyCargos').DataTable({
-        "order": [[0, "desc"]],
-        "pageLength": 10
-    });
+    var table;
+    if (! $.fn.DataTable.isDataTable('#companyCargos')) {
+        table = $('#companyCargos').DataTable({
+            "order": [[16, "desc"], [1, "asc"]],
+            "pageLength": 5,
+            "stripeClasses": ['odd-row', 'even-row'],
+            "columnDefs": [{ "orderable": false, "targets": 0 }]
+        });
+    } else {
+        table = $('#companyCargos').DataTable(); // létező példányt használjuk
+    }
 });
 </script>
+{% endblock %}
+
 <style>
 .company-title {
     font-size: 28px;
