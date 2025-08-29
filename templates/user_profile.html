@@ -8,7 +8,10 @@
     </aside>
 
     <main class="main-content">
-        <h1 class="profile-title">{{ user.first_name }} {{ user.last_name }}</h1>
+            <h1 class="profile-title">{{ user.first_name }} {{ user.last_name }}</h1>
+        <div class="profile-company">
+            <h2 class="profile-title">{{ user.company.name if user.company else 'Nincs cég' }}</h2>
+        </div>
 
         <div class="profile-header">
             <div class="profile-avatar">
@@ -19,7 +22,6 @@
                 <p><strong>Telefon:</strong> {{ user.phone_number }}</p>
                 <p><strong>Szerep:</strong> {{ user.role }}</p>
                 <p><strong>Tagság kezdete:</strong> {{ user.created_at.strftime('%Y-%m-%d') if user.created_at else '' }}</p>
-                <p><strong>Cég:</strong> {{ user.company.name if user.company else 'Nincs cég' }}</p>
 
                 {% if user.company %}
                     <a href="{{ url_for('company_profile', slug=user.company.slug) }}" class="btn">Vissza a céghez</a>
@@ -108,13 +110,19 @@ $(document).ready(function() {
 <style>
 .profile-title {
     font-size: 28px;
-    margin-bottom: 20px;
+    margin-bottom: 0;
+    margin-top: 0;
+}
+
+.profile-company{
+    margin-top: 0;
 }
 
 .profile-header {
     display: flex;
     gap: 20px;
     margin-bottom: 30px;
+    margin-top: 30px;
     align-items: center;
 }
 

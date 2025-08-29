@@ -10,12 +10,17 @@
 
     <div class="cargo-container">
 
-        <!-- Accordion gomb -->
         <button class="accordion-btn">Áru keresése/feltöltése ▼</button>
-
         <!-- Lenyíló form -->
         <div class="accordion-content">
-            <form action="{{ url_for('cargo') }}" method="POST" class="freight-form">
+            <!-- Tabs gombok -->
+            <div class="tabs">
+                <button type="button" class="tab-btn active" data-tab="form-tab">Form</button>
+                <button type="button" class="tab-btn" data-tab="emails-tab">Emails</button>
+            </div>
+
+            <div id="form-tab" class="tab-content" style="display:block;">
+                <form action="{{ url_for('cargo') }}" method="POST" class="freight-form">
 
               <!-- Honnan és Hová blokk egymás mellett -->
               <!-- Honnan-Hová + Mikor -->
@@ -30,7 +35,7 @@
                         <input type="text" id="from-postcode" name="from_postcode" required>
 
                         <label for="from-city">Település<span class="required">*</span></label>
-                        <input type="text" id="from-city" name="from_city" required readonly>
+                        <input type="text" id="from-city" name="from_city" required minlength="2">
                         <div class="toggle-row">
                             <span>Bújtatott fuvar</span>
                             <label class="switch">
@@ -48,11 +53,11 @@
                     <fieldset>
                         <legend>Hová</legend>
                         <label for="to-country">Ország<span class="required">*</span></label>
-                        <input type="text" id="to-country" name="to_country" required>
+                        <input type="text" id="to-country" name="to_country" list="country-list" autocomplete="off" required>
                         <label for="to-postcode">Irányítószám<span class="required">*</span></label>
                         <input type="text" id="to-postcode" name="to_postcode" required>
                         <label for="to-city">Település<span class="required">*</span></label>
-                        <input type="text" id="to-city" name="to_city" required readonly>
+                        <input type="text" id="to-city" name="to_city" required minlength="2">
                         <div class="toggle-row">
                             <span>Bújtatott fuvar</span>
                             <label class="switch">
@@ -215,7 +220,7 @@
                         <label for="length">Hossz (m)<span class="required">*</span></label>
                         <input type="number" id="length" name="length" step="0.1" min="0" required>
                         <label for="weight">Tömeg (t)<span class="required">*</span></label>
-                        <input type="number" id="weight" name="weight" step="0.5" min="0" required>
+                        <input type="number" id="weight" name="weight" step="0.1" min="0" required>
                         <label for="description">Leírás</label>
                         <input type="text" id="description" name="description">
                     </fieldset>
@@ -223,6 +228,18 @@
 
               <button type="submit">Áru feltölése és fuvar keresése</button>
             </form>
+            </div>
+
+            <div id="emails-tab" class="tab-content" style="display:none;">
+                <div id="email-container-wrapper" style="max-height: 400px; overflow-y: auto; border: 1px solid #ccc; padding: 10px;">
+                    <div id="email-container" class="email-container">
+                    <a href="{{ url_for('login_google') }}">Connect your Gmail</a>
+                    <button id="open-gmail">Open Gmail</button>
+                    <ul id="email-list"></ul>
+                </div>
+                </div>
+
+            </div>
         </div>
 
         <!-- Táblázat -->
@@ -255,6 +272,154 @@
 </div>
 
 <script>
+// Tab váltás
+const tabs = document.querySelectorAll('.tab-btn');
+tabs.forEach(btn => {
+    btn.addEventListener('click', () => {
+        tabs.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        document.querySelectorAll('.tab-content').forEach(tc => tc.style.display = 'none');
+        const activeTab = document.getElementById(btn.dataset.tab);
+        activeTab.style.display = 'block';
+    });
+});
+
+function decodeHTML(html) {
+    const txt = document.createElement("textarea");
+    txt.innerHTML = html;
+    return txt.value;
+}
+
+function fillCargoForm(data) {
+    // Honnan
+    // console.log('Form tab:', document.querySelector('[data-tab="form-tab"]'));
+    // console.log("fillCargoForm data:", data);
+
+    document.querySelector('input[name="from_country"]').value = data.from_country || '';
+    document.querySelector('input[name="from_postcode"]').value = data.from_postcode || '';
+    document.querySelector('input[name="from_city"]').value = data.from_city || '';
+    document.querySelector('input[name="is_hidden_from"]').checked = data.is_hidden_from || false;
+
+    document.querySelector('input[name="to_country"]').value = data.to_country || '';
+    document.querySelector('input[name="to_postcode"]').value = data.to_postcode || '';
+    document.querySelector('input[name="to_city"]').value = data.to_city || '';
+    document.querySelector('input[name="is_hidden_to"]').checked = data.is_hidden_to || false;
+
+    document.querySelector('input[name="departure_from"]').value = data.departure_from || '';
+    document.querySelector('input[name="departure_from_time_start"]').value = data.departure_from_time_start || '';
+    document.querySelector('input[name="departure_from_time_end"]').value = data.departure_from_time_end || '';
+    document.querySelector('input[name="departure_end_date"]').value = data.departure_end_date || '';
+    document.querySelector('input[name="departure_end_time_start"]').value = data.departure_end_time_start || '';
+    document.querySelector('input[name="departure_end_time_end"]').value = data.departure_end_time_end || '';
+
+    document.querySelector('input[name="arrival_start_date"]').value = data.arrival_start_date || '';
+    document.querySelector('input[name="arrival_start_time_start"]').value = data.arrival_start_time_start || '';
+    document.querySelector('input[name="arrival_start_time_end"]').value = data.arrival_start_time_end || '';
+    document.querySelector('input[name="arrival_end_date"]').value = data.arrival_end_date || '';
+    document.querySelector('input[name="arrival_end_time_start"]').value = data.arrival_end_time_start || '';
+    document.querySelector('input[name="arrival_end_time_end"]').value = data.arrival_end_time_end || '';
+
+    document.querySelector('input[name="length"]').value = data.length || '';
+    document.querySelector('input[name="weight"]').value = data.weight || '';
+    document.querySelector('input[name="description"]').value = data.description || '';
+
+    document.querySelector('select[name="vehicle_type"]').value = data.vehicle_type || '';
+    document.querySelector('select[name="superstructure"]').value = data.superstructure || '';
+    document.querySelector('input[name="certificates"]').value = data.certificates || '';
+    document.querySelector('input[name="cargo_securement"]').value = data.cargo_securement || '';
+
+    const equipmentSelect = document.querySelectorAll('#equipment-checkboxes input[type="checkbox"]');
+    equipmentSelect.forEach(cb => cb.checked = data.equipment?.includes(cb.value) || false);
+
+
+    // Automatikusan vált a form tabra
+    document.querySelector('[data-tab="form-tab"]').click();
+}
+
+const emailCache = {};
+
+document.getElementById('open-gmail').addEventListener('click', function() {
+    fetch('/api/gmail-emails')
+    .then(res => res.json())
+    .then(data => {
+        const container = document.getElementById('email-container');
+
+        data.forEach(email => {
+            if (document.getElementById(`email-${email.id}`)) return;
+
+            const card = document.createElement('div');
+            card.classList.add('email-card');
+            card.id = `email-${email.id}`;
+            card.style.borderBottom = "1px solid #ddd";
+            card.style.padding = "5px 0";
+
+            const title = document.createElement('h4');
+            title.textContent = `${decodeHTML(email.from)}  :  ${decodeHTML(email.subject)}`;
+            title.style.fontWeight = 'bold';
+            card.appendChild(title);
+
+            const bodyDiv = document.createElement('div');
+            bodyDiv.classList.add('email-body');
+            bodyDiv.style.display = 'none';
+            bodyDiv.style.marginTop = '5px';
+            card.appendChild(bodyDiv);
+
+            // Rakomány gomb
+            const button = document.createElement('button');
+            button.textContent = "Rakománnyá alakítás";
+            button.style.marginLeft = "10px";
+
+            button.addEventListener('click', (e) => {
+                e.stopPropagation(); // ne nyissa/csukja a body-t
+                fetch(`/api/gmail-email-ai/${email.id}`)
+                    .then(res => res.json())
+                    .then(data => fillCargoForm(data))
+                    .catch(console.error);
+            });
+
+            card.appendChild(button);
+
+            card.addEventListener('click', () => {
+                if (bodyDiv.style.display === 'none') {
+                    if (emailCache[email.id]) {
+                        bodyDiv.innerHTML = emailCache[email.id];
+                        bodyDiv.style.display = 'block';
+                        title.style.fontWeight = 'normal';
+                    } else {
+                        fetch(`/api/gmail-email/${email.id}`)
+                        .then(res => res.json())
+                        .then(full => {
+                            let content = '';
+                            if (/<[a-z][\s\S]*>/i.test(full.body)) {
+                                content = full.body;
+                            } else {
+                                content = `<pre>${full.body}</pre>`;
+                            }
+                            bodyDiv.innerHTML = content;
+                            bodyDiv.style.display = 'block';
+                            emailCache[email.id] = content;
+                            title.style.fontWeight = 'normal';
+                        })
+                        .catch(console.error);
+                    }
+                } else {
+                    bodyDiv.style.display = 'none';
+                    title.style.fontWeight = 'bold';
+                }
+            });
+
+            container.appendChild(card);
+        });
+
+        // Automatikusan vált az Emails tabra
+        document.querySelector('[data-tab="emails-tab"]').click();
+    })
+    .catch(console.error);
+});
+
+// -----------------------------------------------------------------------
+
 document.addEventListener('DOMContentLoaded', function() {
     const swapBtn = document.getElementById('swap-btn');
 
@@ -278,28 +443,54 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 document.addEventListener('DOMContentLoaded', function() {
-    function setupAutocomplete(inputId, url, extraParams = {}) {
+    function setupAutocomplete(inputId, url, extraParams = {}, nextFieldId = null) {
         const input = document.getElementById(inputId);
         const datalist = document.getElementById(input.getAttribute('list'));
+        const ISO_REGEX = /^[A-Z]{2}$/;
 
         input.addEventListener('input', () => {
+            // Ha már kiválasztottunk egy országot (ISO), ne töltsünk újra
+            if (ISO_REGEX.test(input.value)) {
+                return;
+            }
             let params = {...extraParams, term: input.value};
             fetch(url + '?' + new URLSearchParams(params))
                 .then(res => res.json())
                 .then(data => {
                     datalist.innerHTML = '';
                     data.forEach(item => {
-                        let option = document.createElement('option');
-                        option.value = item;
+                        const option = document.createElement('option');
+                        if (typeof item === 'string') {
+                            option.value = item;
+                            option.label = item;
+                            option.textContent = item;
+                        } else if (item && typeof item === 'object') {
+                            const iso = item.value || item.iso || '';
+                            const name = item.label || item.countryName || item.name || iso;
+                            option.value = iso; // submit ISO code only
+                            option.label = name; // show country name in dropdown
+                            option.textContent = name;
+                        }
                         datalist.appendChild(option);
                     });
                 });
         });
+
+        // Ha kiválasztottunk egy opciót, ürítsük a listát és fókuszáljunk a következő mezőre
+        input.addEventListener('change', () => {
+            if (ISO_REGEX.test(input.value)) {
+                datalist.innerHTML = '';
+                if (nextFieldId) {
+                    const next = document.getElementById(nextFieldId);
+                    if (next) next.focus();
+                }
+            }
+        });
     }
 
     // Ország autocomplete
-    setupAutocomplete('from-country', '/autocomplete/country');
-    setupAutocomplete('to-country', '/autocomplete/country');
+    setupAutocomplete('from-country', '/autocomplete/country', {}, 'from-postcode');
+    setupAutocomplete('to-country', '/autocomplete/country', {}, 'to-postcode');
 
 
     function setupCityAutocomplete(cityInputId, countryInputId) {
@@ -358,369 +549,57 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     });
 });
-</script>
 
-<style>
+document.addEventListener('DOMContentLoaded', function() {
+    const fromCity = document.getElementById('from-city');
+    const toCity = document.getElementById('to-city');
 
-.multiselect {
-    position: relative;
-    display: inline-block;
-}
+    // Megakadályozzuk a gépelést
+    function preventTyping(e) {
+        e.preventDefault();
+    }
 
-.selectBox {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    border: 1px solid #aaa;
-    padding: 8px;
-    border-radius: 5px;
-    background: #fff;
-    cursor: pointer;
-}
+    fromCity.addEventListener('keydown', preventTyping);
+    fromCity.addEventListener('paste', preventTyping);
+    fromCity.addEventListener('input', function() {
+        // Ha valaki valahogy beírta, visszaállítjuk az értéket
+        if (!fromCity.dataset.jsValue) fromCity.value = '';
+    });
 
-.checkboxes {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr); /* 4 oszlop */
-  gap: 0.5rem 1rem; /* sor és oszlop közti távolság */
-  padding: 0.5rem;
-}
+    toCity.addEventListener('keydown', preventTyping);
+    toCity.addEventListener('paste', preventTyping);
+    toCity.addEventListener('input', function() {
+        if (!toCity.dataset.jsValue) toCity.value = '';
+    });
 
-.checkboxes label {
-  display: grid;           /* checkbox és szöveg egysorban */
-  align-items: center;     /* checkbox középre */
-  gap: 0.4rem;             /* kis távolság */
-  cursor: pointer;
-  white-space: normal;     /* szöveg törhet, ha hosszú */
-}
+    // Például az irányítószám lekérés után a JS beírhatja:
+    function setCityValue(cityInput, value) {
+        cityInput.dataset.jsValue = value; // jelöljük, hogy JS írta
+        cityInput.value = value;
+    }
 
-.checkboxes input[type="checkbox"] {
-  margin: 0;
-  flex-shrink: 0; /* ne nyomódjon össze a checkbox */
-}
+    // Példa: irányítószám alapján
+    document.getElementById('from-postcode').addEventListener('blur', () => {
+        let country = document.getElementById('from-country').value;
+        let postcode = document.getElementById('from-postcode').value;
+        fetch(`/zipcode?postalcode=${postcode}&country=${country}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.city) setCityValue(fromCity, data.city);
+            });
+    });
 
+    document.getElementById('to-postcode').addEventListener('blur', () => {
+        let country = document.getElementById('to-country').value;
+        let postcode = document.getElementById('to-postcode').value;
+        fetch(`/zipcode?postalcode=${postcode}&country=${country}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.city) setCityValue(toCity, data.city);
+            });
+    });
+});
 
-.home-container {
-    display: flex;
-    min-height: 100vh;
-    min-width: 100vw;
-}
-
-.date-container{
-height: 85%;
-}
-
-.swap-container {
-    display: flex;
-    align-self: center;
-    justify-content: center;
-    text-align: left;
-}
-
-#swap-btn {
-    display: flex;
-    align-items: center;      /* függőlegesen középre */
-    justify-content: center;  /* vízszintesen középre */
-    border: none;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    font-size: 18px;
-    cursor: pointer;
-    padding: 0;               /* padding eltávolítása, hogy tényleg középen legyen */
-    line-height: 1;           /* sor magasság normalizálása */
-    text-align: center;
-    transition: background 0.2s;
-}
-
-.main-content {
-    display: flex;
-    flex-direction: column;
-    box-sizing: border-box;
-    margin-left: 10%;
-}
-
-.cim {
-    align-self: flex-start;
-    font-size: 28px;
-    margin-bottom: 20px;
-    margin-left: 10%;
-}
-
-.cargo-container {
-    min-width: 80%;
-    max-width: 80%;
-    margin: 10px auto;
-}
-
-.accordion-btn {
-    width: 50%;
-    background-color: #007bff;
-    color: white;
-    padding: 12px;
-    font-size: 16px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    text-align: left;
-    margin-bottom: 10px;
-    transition: background 0.2s;
-}
-
-
-.selected-items {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
-}
-
-.selected-item {
-  background: #e0ffe0;
-  border: 1px solid #00aa00;
-  color: #006600;
-  padding: 0.3rem 0.6rem;
-  border-radius: 15px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: background 0.2s;
-}
-
-.selected-item:hover {
-  background: #c4f5c4;
-}
-
-.accordion-btn:hover {
-    background-color: #0056b3;
-}
-
-.accordion-content {
-    display: none;
-}
-
-.datetime-row {
-    margin-top: 5px;
-}
-
-.datetime-row label {
-    display: block;
-    margin-bottom: 2px; /* kis tér a label és az inputok között */
-}
-
-.datetime-inputs {
-    display: grid;
-    grid-template-columns: 40% 25% 25%;
-    gap: 5px;
-}
-
-fieldset{
-    height: 80%;
-}
-
-.date-input,
-.time-input {
-    width: 100%;
-    box-sizing: border-box;
-}
-
-.freight-form {
-    min-width: 100%;
-    /*margin: auto;*/
-    padding: 20px;
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    font-family: sans-serif;
-    display: grid;
-}
-/* Honnan-Hová + Mikor */
-.grid-top {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr 1fr; /* Honnan, swap gomb, Hová, Mikor */
-    column-gap: 20px;
-    align-items: start;
-    width: 100%;
-    margin-bottom: 20px;
-}
-
-/* Swap gomb középre a két fieldset között */
-.swap-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-/* Áru és Jármű alatta, 45-45% */
-.grid-bottom {
-    display: grid;
-    align-items: end;
-    grid-template-columns: 63% 35%;
-    column-gap: 2%;
-    width: 100%;
-}
-
-.vehicle-grid {
-  display: grid;
-  grid-template-columns: 1fr 2fr 1fr 2fr; /* 2 oszlop */
-  gap: 1rem; /* sor és oszlop közti távolság */
-  align-items: start;
-}
-
-.vehicle-odd-row {
-  display: contents; /* a gyermek elemek közvetlenül a gridbe kerülnek */
-}
-
-.vehicle-even-row {
-  grid-column: 1 / -1; /* a teljes szélességet elfoglalja (1-2. oszlop) */
-  display: flex;
-  flex-direction: column; /* label + mező egymás alatt */
-}
-
-
-/* minden label+mező blokk függőlegesen egymás alatt */
-.vehicle-grid label {
-  display: block;
-  margin-bottom: 4px;
-}
-
-/* felszereltség mező teljes sorban */
-.multiselect,
-#equipment[hidden] {
-  grid-column: 1 / span 2; /* 2 oszlopot foglal */
-}
-
-
-fieldset {
-    border: 1px solid #ccc;
-    padding: 15px 20px;
-    margin-bottom: 20px;
-    border-radius: 8px;
-    max-width: 100%;
-}
-
-legend {
-    font-weight: bold;
-    padding: 0 10px;
-}
-
-label {
-    display: block;
-    margin-top: 10px;
-    font-size: 14px;
-    color: #333;
-}
-
-input {
-    width: 100%;
-    padding: 8px 10px;
-    margin-top: 4px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-    box-sizing: border-box;
-}
-
-button[type="submit"] {
-    background: #4a90e2;
-    color: #fff;
-    padding: 10px 15px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: background 0.2s;
-}
-
-button[type="submit"]:hover {
-    background: #3578c3;
-}
-
-.table-container {
-    overflow-x: auto;
-    margin-top: 15px;
-}
-
-table, th, td {
-    border: 1px solid #ddd;
-    padding: 10px;
-    text-align: center;
-    align-content: center;
-
-}
-
-.toggle-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: 10px;
-    font-size: 14px;
-    font-weight: 500;
-    color: #333;
-}
-
-.switch {
-    position: relative;
-    display: inline-block;
-    width: 50px;
-    height: 26px;
-}
-
-.switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-
-.slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #ccc;
-    transition: .4s;
-    border-radius: 26px;
-}
-
-.slider:before {
-    position: absolute;
-    content: "";
-    height: 20px;
-    width: 20px;
-    left: 3px;
-    bottom: 3px;
-    background-color: white;
-    transition: .4s;
-    border-radius: 50%;
-}
-
-input:checked + .slider {
-    background-color: #4a90e2;
-}
-
-input:checked + .slider:before {
-    transform: translateX(24px);
-}
-
-
-.table-container{
-    align-content: center;
-    min-width: 100%;
-}
-
-th {
-    background: #007bff;
-    color: white;
-}
-
-tr:nth-child(even) {
-    background: #f9f9f9;
-}
-
-
-</style>
-
-
-<script>
 document.addEventListener('DOMContentLoaded', function() {
     const accordionBtn = document.querySelector('.accordion-btn');
     const accordionContent = document.querySelector('.accordion-content');
@@ -735,26 +614,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 $(function() {
-    let selectedCountryISO = '';
-
-    $("#from-country").autocomplete({
-        source: "/autocomplete/country",
-        minLength: 1,
-        select: function(event, ui) {
-            // FIPS/ISO kód elmentése
-            selectedCountryISO = ui.item.iso;
-        }
-    });
-    $("#to-country").autocomplete({
-        source: "/autocomplete/country",
-        minLength: 1,
-        select: function(event, ui) {
-            // FIPS/ISO kód elmentése
-            selectedCountryISO = ui.item.iso;
-        }
-    });
-
-
     $("#from-city").autocomplete({
         source: function(request, response) {
             $.getJSON("/autocomplete/city", {
@@ -826,6 +685,10 @@ checkboxes.forEach(checkbox => {
                 const option = Array.from(hiddenSelect.options).find(o => o.value === cb.value);
                 if(option) option.selected = true;
                 checkedValues.push(cb.value);
+                // kártya kijelölés vizuálisan
+                if (cb.parentElement) cb.parentElement.classList.add('selected');
+            } else {
+                if (cb.parentElement) cb.parentElement.classList.remove('selected');
             }
         });
 
@@ -834,8 +697,16 @@ checkboxes.forEach(checkbox => {
     });
 });
 
+// Betöltéskor jelöljük a már kiválasztott kártyákat
+checkboxes.forEach(cb => {
+    if (cb.checked && cb.parentElement) {
+        cb.parentElement.classList.add('selected');
+    } else if (cb.parentElement) {
+        cb.parentElement.classList.remove('selected');
+    }
+});
 
-  // kattintás máshova → bezár
+// kattintás máshova → bezár
 document.addEventListener('click', function(event) {
     const multiselect = document.querySelector('.multiselect');
     if (!multiselect.contains(event.target)) {
@@ -1015,4 +886,432 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
 </script>
+
+<style>
+.tab-content {
+    display: none; /* alapból elrejtve, kivéve a form-tab */
+    padding: 10px 0;
+}
+
+.tab-content form {
+    width: 100%;
+}
+
+.email-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.email-card {
+    border: 1px solid #ddd;
+    padding: 10px 15px;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    font-family: monospace;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.email-card h4 {
+    margin: 0 0 5px 0;
+    font-size: 14px;
+    color: #333;
+}
+
+.email-card p {
+    margin: 0;
+    font-size: 12px;
+    color: #555;
+    white-space: pre-wrap;
+}
+
+.multiselect {
+    position: relative;
+    display: inline-block;
+}
+
+.selectBox {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    border: 1px solid #aaa;
+    padding: 8px;
+    border-radius: 5px;
+    background: #fff;
+    cursor: pointer;
+}
+
+.checkboxes {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* 4 kártya egy sorban */
+  gap: 0.75rem; /* kártyák közötti tér */
+  padding: 0.75rem;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+  max-height: 320px;
+  overflow: auto;
+}
+
+.checkboxes label {
+    display: flex;
+    flex-direction: row-reverse;
+    /*justify-content: space-between;*/
+    align-items: center;
+    text-align: center;
+     vertical-align: middle !important;
+    /*justify-content: center;*/
+    width: 75%;
+    padding: 10px 8px;
+    min-height: 35px; /* egységes magasság és középre zárás */
+    border: 1px solid #e6e6e6;
+    border-radius: 12px;
+    background: #fafafa;
+    cursor: pointer;
+    white-space: normal;
+    transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.checkboxes label:hover {
+  background: #f2f6ff;
+  border-color: #cfe0ff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+.checkboxes label.selected {
+  background: #e9f5ff;
+  border-color: #5aa3ff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+.checkboxes input[type="checkbox"] {
+  display: none;       /* checkbox eltüntetése, csak kártya marad */
+}
+
+
+.home-container {
+    display: flex;
+    min-height: 100vh;
+    min-width: 99vw;
+}
+
+.date-container{
+height: 85%;
+}
+
+.swap-container {
+    display: flex;
+    align-self: center;
+    justify-content: center;
+    text-align: left;
+}
+
+#swap-btn {
+    display: flex;
+    align-items: center;      /* függőlegesen középre */
+    justify-content: center;  /* vízszintesen középre */
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 0;               /* padding eltávolítása, hogy tényleg középen legyen */
+    line-height: 1;           /* sor magasság normalizálása */
+    text-align: center;
+    transition: background 0.2s;
+}
+
+.main-content {
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    margin-left: 10%;
+}
+
+.cim {
+    align-self: flex-start;
+    font-size: 28px;
+    margin-bottom: 20px;
+    margin-left: 10%;
+}
+
+.cargo-container {
+    min-width: 80%;
+    max-width: 80%;
+    margin: 10px auto;
+}
+
+.accordion-btn {
+    width: 50%;
+    background-color: #007bff;
+    color: white;
+    padding: 12px;
+    font-size: 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: left;
+    margin-bottom: 10px;
+    transition: background 0.2s;
+}
+
+
+.selected-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.selected-item {
+  background: #e0ffe0;
+  border: 1px solid #00aa00;
+  color: #006600;
+  padding: 0.3rem 0.6rem;
+  border-radius: 15px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+
+.selected-item:hover {
+  background: #c4f5c4;
+}
+
+.accordion-btn:hover {
+    background-color: #0056b3;
+}
+
+.accordion-content {
+    display: none;
+}
+
+.datetime-row {
+    margin-top: 5px;
+}
+
+.datetime-row label {
+    display: block;
+    margin-bottom: 2px; /* kis tér a label és az inputok között */
+}
+
+.datetime-inputs {
+    display: grid;
+    grid-template-columns: 40% 25% 25%;
+    gap: 5px;
+}
+
+fieldset{
+    height: 80%;
+}
+
+.date-input,
+.time-input {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.freight-form {
+    min-width: 100%;
+    /*margin: auto;*/
+    padding: 20px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    font-family: sans-serif;
+    display: grid;
+}
+/* Honnan-Hová + Mikor */
+.grid-top {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr 1fr; /* Honnan, swap gomb, Hová, Mikor */
+    column-gap: 20px;
+    align-items: start;
+    width: 100%;
+}
+
+/* Swap gomb középre a két fieldset között */
+.swap-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Áru és Jármű alatta, 45-45% */
+.grid-bottom {
+    display: grid;
+    align-items: end;
+    grid-template-columns: 63% 35%;
+    column-gap: 2%;
+    width: 100%;
+}
+
+.vehicle-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr 2fr; /* 2 oszlop */
+  gap: 1rem; /* sor és oszlop közti távolság */
+  align-items: start;
+}
+
+.vehicle-odd-row {
+  display: contents; /* a gyermek elemek közvetlenül a gridbe kerülnek */
+}
+
+.vehicle-even-row {
+  grid-column: 1 / -1; /* a teljes szélességet elfoglalja (1-2. oszlop) */
+  display: flex;
+  flex-direction: column; /* label + mező egymás alatt */
+}
+
+
+/* minden label+mező blokk függőlegesen egymás alatt */
+.vehicle-grid label {
+  display: block;
+  margin-bottom: 4px;
+}
+
+/* felszereltség mező teljes sorban */
+.multiselect,
+#equipment[hidden] {
+  grid-column: 1 / span 2; /* 2 oszlopot foglal */
+}
+
+
+fieldset {
+    border: 1px solid #ccc;
+    padding: 15px 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    max-width: 100%;
+}
+
+legend {
+    font-weight: bold;
+    padding: 0 10px;
+}
+
+label {
+    display: block;
+    margin-top: 10px;
+    font-size: 14px;
+    color: #333;
+}
+
+input {
+    width: 100%;
+    padding: 8px 10px;
+    margin-top: 4px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+}
+
+button[type="submit"] {
+    background: #4a90e2;
+    color: #fff;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background 0.2s;
+}
+
+button[type="submit"]:hover {
+    background: #3578c3;
+}
+
+.table-container {
+    overflow-x: auto;
+    margin-top: 15px;
+}
+
+table, th, td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: center;
+    align-content: center;
+
+}
+
+.toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 26px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 26px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: #4a90e2;
+}
+
+input:checked + .slider:before {
+    transform: translateX(24px);
+}
+
+
+.table-container{
+    align-content: center;
+    min-width: 100%;
+}
+
+th {
+    background: #007bff;
+    color: white;
+}
+
+tr:nth-child(even) {
+    background: #f9f9f9;
+}
+
+
+</style>
+
 {% endblock %}

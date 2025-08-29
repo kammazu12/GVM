@@ -160,78 +160,89 @@ window.buildEditorHtml = function(data) {
                         </fieldset>
                     </div>
 
-                    <!-- Dátum/idő mezők -->
+                    <!-- Dátum/idő mezők (REDESIGN) -->
                     <div class="editor-dates">
                         <fieldset class="inline-fieldset dates-fieldset">
                             <legend>Mikor</legend>
-                            <div class="inline-row datetime-row">
-                                <div class="inline-col">
-                                    <label>Felvétel kezdő dátum<span class="required">*</span></label>
-                                    <input type="date" name="departure_from" required>
+
+                            <!-- 2/1. row: Earliest pickup (left) / Earliest delivery (right) -->
+                            <div class="dates-row">
+                                <div class="dates-side">
+                                    <!-- 2/1 left: Earliest pickup -->
+                                    <div class="dates-side-block">
+                                        <label>Felvétel kezdő dátum<span class="required">*</span></label>
+                                        <input type="date" name="departure_from" required>
+                                    </div>
+                                    <div class="dates-side-block">
+                                        <label>Felvétel idő</label>
+                                        <input type="time" name="departure_from_time_start">
+                                    </div>
+                                    <div class="dates-side-block left-date">
+                                        <label></label>
+                                        <input type="time" name="departure_from_time_end">
+                                    </div>
                                 </div>
-                                <div class="inline-col">
-                                    <label>Felvétel - idő kezdő</label>
-                                    <input type="time" name="departure_from_time_start" >
-                                </div>
-                                <div class="inline-col">
-                                    <label>Felvétel - idő záró</label>
-                                    <input type="time" name="departure_from_time_end" >
+
+                                <div class="dates-side">
+                                    <!-- 2/1 right: Earliest delivery -->
+                                    <div class="dates-side-block">
+                                        <label>Lerakodás kezdő dátum<span class="required">*</span></label>
+                                        <input type="date" name="arrival_start_date" required>
+                                    </div>
+                                    <div class="dates-side-block">
+                                        <label>Lerakodás idő </label>
+                                        <input type="time" name="arrival_start_time_start">
+                                    </div>
+                                    <div class="dates-side-block">
+                                        <input type="time" name="arrival_start_time_end">
+                                    </div>
                                 </div>
                             </div>
 
-                            <div class="inline-row datetime-row">
-                                <div class="inline-col">
-                                    <label>Felvétel záró dátum<span class="required">*</span></label>
-                                    <input type="date" name="departure_end_date" required>
+                            <!-- 2/2. row: Latest pickup (left) / Latest delivery (right) -->
+                            <div class="dates-row">
+                                <div class="dates-side">
+                                    <!-- 2/2 left: Latest pickup -->
+                                    <div class="dates-side-block">
+                                        <label>Felvétel záró dátum<span class="required">*</span></label>
+                                        <input type="date" name="departure_end_date" required>
+                                    </div>
+                                    <div class="dates-side-block">
+                                        <label>Felvétel idő</label>
+                                        <input type="time" name="departure_end_time_start">
+                                    </div>
+                                    <div class="dates-side-block left-date">
+                                        <input type="time" name="departure_end_time_end">
+                                    </div>
                                 </div>
-                                <div class="inline-col">
-                                    <label>Felvétel - záró idő kezdő</label>
-                                    <input type="time" name="departure_end_time_start" >
-                                </div>
-                                <div class="inline-col">
-                                    <label>Felvétel - záró idő záró</label>
-                                    <input type="time" name="departure_end_time_end" >
+
+                                <div class="dates-side">
+                                    <!-- 2/2 right: Latest delivery -->
+                                    <div class="dates-side-block">
+                                        <label>Lerakodás záró dátum</label>
+                                        <input type="date" name="arrival_end_date">
+                                    </div>
+                                    <div class="dates-side-block">
+                                        <label>Lerakodás idő </label>
+                                        <input type="time" name="arrival_end_time_start">
+                                    </div>
+                                    <div class="dates-side-block">
+                                        <label>Lerakodás</label>
+                                        <input type="time" name="arrival_end_time_end">
+                                    </div>
                                 </div>
                             </div>
 
-                            <hr>
-
-                            <div class="inline-row datetime-row">
-                                <div class="inline-col">
-                                    <label>Rakodás kezdő dátum<span class="required">*</span></label>
-                                    <input type="date" name="arrival_start_date" required>
-                                </div>
-                                <div class="inline-col">
-                                    <label>Rakodás - idő kezdő</label>
-                                    <input type="time" name="arrival_start_time_start" >
-                                </div>
-                                <div class="inline-col">
-                                    <label>Rakodás - idő záró</label>
-                                    <input type="time" name="arrival_start_time_end" >
-                                </div>
-                            </div>
-
-                            <div class="inline-row datetime-row">
-                                <div class="inline-col">
-                                    <label>Rakodás záró dátum</label>
-                                    <input type="date" name="arrival_end_date" >
-                                </div>
-                                <div class="inline-col">
-                                    <label>Rakodás - záró idő kezdő</label>
-                                    <input type="time" name="arrival_end_time_start" >
-                                </div>
-                                <div class="inline-col">
-                                    <label>Rakodás - záró idő záró</label>
-                                    <input type="time" name="arrival_end_time_end" >
-                                </div>
-                            </div>
                         </fieldset>
                     </div>
+                    <!-- /Dátum/idő mezők (REDESIGN) -->
 
                     <!-- Jármű, felszereltség, áru mezők -->
                     <div class="editor-bottom">
                         <fieldset class="inline-fieldset vehicle-fieldset">
                             <legend>Jármű</legend>
+
+                            <!-- First row: vehicle type + structure -->
                             <div class="inline-row">
                                 <div class="inline-col">
                                     <label>Típus<span class="required">*</span></label>
@@ -282,6 +293,18 @@ window.buildEditorHtml = function(data) {
                                 </div>
 
                                 <div class="inline-col">
+                                    <label>Tanúsítványok</label>
+                                    <input type="text" name="certificates" placeholder="Tanúsítványok">
+                                </div>
+                                <div class="inline-col">
+                                    <label>Rakományrögzítés</label>
+                                    <input type="text" name="cargo_securement" placeholder="Rögzítés">
+                                </div>
+                            </div>
+
+                            <!-- Third row (separate): equipment full-width inside the same fieldset -->
+                            <div class="inline-row">
+                                <div class="inline-col" style="flex: 1 1 100%;">
                                     <label>Felszereltség</label>
                                     <div class="equipment-box">
                                         ${equipmentOptions.map(function(opt){
@@ -293,17 +316,6 @@ window.buildEditorHtml = function(data) {
                                             return `<option value="${opt}">${opt}</option>`;
                                         }).join('')}
                                     </select>
-                                </div>
-                            </div>
-
-                            <div class="inline-row">
-                                <div class="inline-col">
-                                    <label>Tanúsítványok</label>
-                                    <input type="text" name="certificates" placeholder="Tanúsítványok">
-                                </div>
-                                <div class="inline-col">
-                                    <label>Rakományrögzítés</label>
-                                    <input type="text" name="cargo_securement" placeholder="Rögzítés">
                                 </div>
                             </div>
                         </fieldset>
@@ -648,16 +660,15 @@ $(function() {
 </script>
 {% endblock %}
 
-
 <style>
-.home-container { display: flex; flex-wrap: wrap; max-width: 100%}
+.home-container { display: flex; flex-wrap: wrap; max-width: 100%; }
 .sidebar { flex: 1 1 200px; }
 .main-content { flex: 3 1 100%; padding: 15px; }
-.table-actions { margin-bottom: 10px; max-width: 80%}
+.table-actions { margin-bottom: 10px; max-width: 80%; }
 .table-outer { max-width: 100%; }
 .dataTables_wrapper .dataTables_scroll { margin-right: 20px; margin-left: 20px; }
-.dataTables_scroll{ border: 1px solid black; overflow: auto; }
-#rowActions { position: absolute; display: none; background: #f1f1f1; border: 1px solid #ccc; padding: 2px; border-radius: 4px; z-index: 10;}
+.dataTables_scroll { border: 1px solid black; overflow: auto; }
+#rowActions { position: absolute; display: none; background: #f1f1f1; border: 1px solid #ccc; padding: 2px; border-radius: 4px; z-index: 10; }
 #rowActions button { margin: 2px; padding: 2px 5px; cursor: pointer; border: none; background: #fff; border-radius: 4px; }
 .odd-row { background-color: #fafafa; }
 .even-row { background-color: #eee; }
@@ -665,53 +676,156 @@ $(function() {
 /* ---------------------------
    Editor (inline) stílusok
    --------------------------- */
+
+.editor-container {
+    position: sticky !important;
+    left: 40px;
+    align-self: flex-start;
+    padding: 6px;
+    background: #ffffff;
+    border-radius: 6px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    margin: 4px;
+    font-size: 0.82rem;
+    width: 80%;
+}
+
 .editor-row td {
     padding: 0;
     border-top: 1px solid #ddd;
     background: #fbfbfb;
 }
 
-.editor-container {
-    padding: 14px;
-    background: #ffffff;
-    border-radius: 6px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    margin: 8px;
-    font-size: 0.95rem;
+/* Fieldsets side-by-side for compact layout */
+.editor-top {
+    display: flex;
+    gap: 6px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+}
+.editor-top .inline-fieldset {
+    flex: 1 1;
+    min-width: 47%;
 }
 
-/* Form elrendezés: grid/flex komponensek */
-.inline-fieldset {
-    border: 1px solid #e0e0e0;
-    padding: 10px;
-    margin-bottom: 10px;
-    border-radius: 6px;
+/* Make pickup/delivery location inputs fit on one line */
+.editor-top .inline-fieldset .inline-row {
+    display: grid;
+    grid-template-columns: 25% 25% 50%;
+    gap: 4%;
+    align-items: end;
+}
+.editor-top .inline-fieldset .inline-col { min-width: 0; }
+
+.editor-container input[name="from_country"],
+.editor-container input[name="to_country"] {
+    width: 100%;
 }
 
-.inline-fieldset legend {
-    font-weight: bold;
-    padding: 0 6px;
+.editor-container input[name="from_city"],
+.editor-container input[name="to_city"] {
+    width: 70%;
+}
+
+.editor-bottom {
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+    align-items: stretch;
+}
+
+.vehicle-fieldset {
+    flex: 0 0 70%;
+    min-width: 100%;
+}
+
+.cargo-fieldset {
+    flex: 0 0 30%;
+    max-width: 230px;
+    align-items: center;
 }
 
 .inline-row {
     display: flex;
-    gap: 12px;
-    align-items: flex-end;
-    margin-bottom: 8px;
     flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.inline-row .inline-col {
+    flex: 1 1 0;
+    min-width: 140px;
+}
+
+.editor-bottom .inline-fieldset {
+    flex: 1 1 360px;
+    min-width: 320px;
+}
+
+.cargo-fieldset .cargo-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: start;
+}
+.cargo-fieldset .cargo-row .inline-col {
+    width: 100%;
+    max-height: 60px;
+}
+
+.inline-fieldset {
+    border: 1px solid #e0e0e0;
+    padding: 6px;
+    margin-bottom: 6px;
+    border-radius: 6px;
+}
+
+.dates-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+}
+
+.dates-col .inline-row {
+    margin-bottom: 4px;
+}
+
+.pickup-col { border-right: 1px dashed #e5e5e5; padding-right: 4px; width: 85%; }
+.delivery-col { padding-left: 4px; }
+
+.dates-col .inline-col input[type="date"] {
+    width: 100%;
+}
+
+.dates-col .inline-col input[type="time"] {
+    width: 45%;
+}
+
+.inline-fieldset legend {
+    font-weight: bold;
+    padding: 0 4px;
+    font-size: 0.8rem;
+}
+
+.inline-row {
+    display: flex;
+    gap: 6px;
+    align-items: flex-end;
+    margin-bottom: 4px;
+    flex-wrap: nowrap;
 }
 
 .inline-col {
-    flex: 1 1 220px;
-    min-width: 160px;
+    flex: 1 1 180px;
+    min-width: 120px;
     display: flex;
     flex-direction: column;
 }
 
 .inline-col label {
     font-weight: 600;
-    margin-bottom: 4px;
-    font-size: 0.88rem;
+    margin-bottom: 2px;
+    font-size: 0.78rem;
 }
 
 .inline-col input[type="text"],
@@ -719,60 +833,145 @@ $(function() {
 .inline-col input[type="time"],
 .inline-col input[type="number"],
 .inline-col select {
-    padding: 8px;
-    border-radius: 6px;
+    padding: 4px 6px;
+    border-radius: 4px;
     border: 1px solid #cfcfcf;
-    font-size: 0.95rem;
+    font-size: 0.82rem;
     background: #fff;
 }
 
-/* equipment lista */
+/* Make all date inputs half width */
+.inline-col input[type="date"] { width: 50%; }
+
+/* Make all time inputs narrow (fit same line under date) */
+.inline-col input[type="time"] { width: 40%; }
+
 .equipment-box {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    max-height: 120px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.4rem;
+    max-height: 100px;
     overflow: auto;
     padding: 6px;
     border: 1px solid #eee;
-    border-radius: 6px;
+    border-radius: 8px;
     background: #fafafa;
 }
-.equip-label { font-size:0.88rem; display:flex; align-items:center; gap:6px; padding:3px 6px; border-radius:4px;}
-.equip-checkbox { transform: scale(0.95); }
 
-/* Actions */
+.equip-label {
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: center;
+    text-align: center;
+    justify-content: center;
+    width: 80%;
+    padding: 4px 4px;
+    min-height: 26px;
+    border: 1px solid #e6e6e6;
+    border-radius: 10px;
+    background: #fff;
+    cursor: pointer;
+    white-space: normal;
+    transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    font-size: 0.75rem;
+}
+
+.equip-label:hover {
+    background: #f2f6ff;
+    border-color: #cfe0ff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+.equip-label:has(.equip-checkbox:checked) {
+    background: #e9f5ff;
+    border-color: #5aa3ff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+.equip-checkbox { display: none; }
+
 .editor-actions {
     display: flex;
-    gap: 8px;
+    gap: 4px;
     justify-content: flex-end;
     align-items: center;
-    margin-top: 8px;
+    margin-top: 4px;
 }
 
 .editor-save, .editor-cancel {
-    padding: 8px 12px;
+    padding: 4px 8px;
     border-radius: 6px;
     border: none;
     cursor: pointer;
     font-weight: 600;
+    font-size: 0.8rem;
 }
 
-.editor-save {
-    background: #0b7a3f;
-    color: white;
+.editor-save { background: #0b7a3f; color: white; }
+.editor-cancel { background: #f1f1f1; color: #333; }
+
+/* Dates redesign */
+.editor-dates .dates-fieldset { padding: 6px; }
+
+.dates-row {
+    display: flex;
+    gap: 12px;
+    position: relative;
+    margin-bottom: 6px;
 }
 
-.editor-cancel {
-    background: #f1f1f1;
-    color: #333;
+.dates-row::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 49.5%;
+    border-left: 2px dashed #aaa;
+    pointer-events: none;
+}
+
+.editor-dates .dates-side {
+    flex: 1 1 50%;
+    display: flex;
+    gap: 6px;
+    align-items: flex-end;
+}
+
+.editor-dates .dates-side .dates-side-block {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+
+.editor-dates .dates-side .dates-side-block:nth-child(1) { width: 45%; }
+.editor-dates .dates-side .dates-side-block:nth-child(2) { width: 25%; }
+.editor-dates .dates-side .dates-side-block:nth-child(3) { width: 25%; }
+
+.editor-dates .dates-side .dates-side-block input[type="date"],
+.editor-dates .dates-side .dates-side-block input[type="time"] {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 4px 6px;
+    border-radius: 4px;
+    border: 1px solid #cfcfcf;
+    font-size: 0.82rem;
+}
+
+.editor-dates .dates-side .dates-side-block label {
+    font-weight: 600;
+    font-size: 0.78rem;
+    margin-bottom: 2px;
 }
 
 /* Responsive adjustments */
 @media (max-width: 900px) {
-    .inline-row { flex-direction: column; }
+    .inline-row { flex-direction: column; gap: 6px; }
     .inline-col { min-width: auto; width: 100%; }
-    .editor-container { margin: 6px; padding: 10px; }
+    .editor-container { margin: 4px; padding: 6px; }
+    .editor-dates .dates-row { flex-direction: column; }
+    .editor-dates .dates-side { width: 100%; flex-direction: row; gap: 4px; }
+    .editor-dates .dates-side .dates-side-block { width: auto; flex: 1 1 0; }
 }
+
 </style>
 {% endblock %}

@@ -321,6 +321,26 @@ document.addEventListener('DOMContentLoaded', function () {
             <option value="owner">Tulaj</option>
         `;
 
+        // --- Role select esemény figyelés ---
+        roleSelect.addEventListener('change', function() {
+            if (roleSelect.value === 'owner') {
+                // ha owner, automatikusan admin, checkbox ne jelenjen meg
+                adminWrapper.style.display = 'none';
+                adminCheckbox.checked = true; // backendnek is küldje
+            } else {
+                // minden más esetben toggle látszik
+                adminWrapper.style.display = 'flex';
+                adminCheckbox.checked = false;
+            }
+        });
+
+        // ha alapértelmezetten owner van kiválasztva
+        if (roleSelect.value === 'owner') {
+            adminWrapper.style.display = 'none';
+            adminCheckbox.checked = true;
+        }
+
+
         roleWrapper.appendChild(roleLabel);
         roleWrapper.appendChild(roleSelect);
 

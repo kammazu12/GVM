@@ -80,9 +80,14 @@
                             -
                         {% endif %}
                     </td>
-                    <td class="action-column-right">
-                        <button class="action-btn offer-btn" id="" title="Ajánlattétel">🤝</button>
+                   <td class="action-column-right">
+                        {% if cargo.user_id == current_user.user_id %}
+                            <button class="action-btn offer-btn" disabled title="Saját rakományra nem adhatsz ajánlatot" style="background-color:#ccc; cursor:not-allowed;">🤝</button>
+                        {% else %}
+                            <button class="action-btn offer-btn" title="Ajánlattétel">🤝</button>
+                        {% endif %}
                     </td>
+
                     <td style="display:none;">{{ cargo.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
                 </tr>
                 {% endfor %}
@@ -110,7 +115,6 @@ $(document).ready(function() {
     } else {
         table = $('#shipmentsTable').DataTable(); // létező példányt használjuk
     }
-
 
     // Offer gomb click esemény
     $('#shipmentsTable').on('click', '.offer-btn', function(e) {
@@ -144,7 +148,7 @@ $(document).ready(function() {
                             <option value="huf">Ft</option>
                         </select>
                     </label>
-                    <label>Megjegyzés: <input type="text" name="note"></label>
+                    <label>Megjegyzés: <input type="text" name="note" maxlength="50"></label>
                     <button type="submit">Küldés</button>
                 </form>
             </div>
@@ -168,6 +172,11 @@ $(document).ready(function() {
             .fail(function(xhr) {
                 alert('Hiba: ' + (xhr.responseJSON?.message || 'Ismeretlen hiba'));
             });
+
+        table.rows().every(function() {
+            if (this.child.isShown()) this.child.hide();
+            $(this.node()).removeClass('shown');
+        });
     });
 
     // Child row-ok bezárása újrarenderkor
@@ -232,6 +241,5 @@ table.dataTable tr.child td, .offer-child-wrapper {
 
 
 </style>
-
 
 {% endblock %}

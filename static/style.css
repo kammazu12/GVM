@@ -259,7 +259,7 @@ button:hover {
 input, select {
     width: 100%;
     padding: 12px;
-    margin: 8px 0 20px 0;
+    /*margin: 8px 0 20px 0;*/
     border-radius: 8px;
     border: 1px solid #ccc;
     box-sizing: border-box;
@@ -530,8 +530,8 @@ input, select {
     padding: 25px 35px;
     border-radius: 12px;
     box-shadow: 0 6px 16px rgba(0,0,0,0.1);
-    width: 60%;          /* méret szabályozás */
-    max-width: 700px;
+    width: 100%;          /* méret szabályozás */
+    max-width: 100%;
 }
 
 /* Táblázat középre */
@@ -675,15 +675,21 @@ input.invalid, select.invalid {
 .offer-notification a.open-chat {
     display: inline-block;
     margin-left: 10px;
-    color: red;
+    color: black;
     text-decoration: none;
     font-weight: bold;
     float: right;
 }
 
-.offer-notification a.open-chat:hover {
-    text-decoration: underline;
+a.open-chat .offer-item{
+    display: inline-block;
+    margin-left: 10px;
+    text-decoration: none;
+    font-weight: bold;
+    width: 90%;
+    color: #3f3f3f;
 }
+
 .chat-window {
     position: fixed;
     bottom: 20px;
@@ -710,8 +716,29 @@ input.invalid, select.invalid {
     border-top-right-radius: 8px;
 }
 
-.chat-header .close-chat {
+.close-chat {
+    background-color: #ff4d4f; /* élénk piros */
+    color: #fff; /* fehér X */
+    border: none;
+    border-radius: 50%; /* teljesen kerek */
+    width: 24px;
+    height: 24px;
+    font-weight: bold;
+    font-size: 14px;
+    line-height: 1;
+    text-align: center;
     cursor: pointer;
+    padding: 0;
+    margin-left: 8px;
+    transition: background-color 0.2s;
+}
+
+.close-chat:hover {
+    background-color: #d9363e; /* sötétebb piros hover-re */
+}
+
+.chat-field{
+    margin: 5px;
 }
 
 .chat-messages {
@@ -740,7 +767,10 @@ input.invalid, select.invalid {
     cursor: pointer;
 }
 
-
+#accept-offer, #decline-offer{
+    padding: 7px;
+    margin-top: 7px;
+}
 /* Reszponzív: kisebb képernyőn a keresősáv alá kerül */
 @media (max-width: 800px) {
     .header-search {
