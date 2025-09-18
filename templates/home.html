@@ -1,4 +1,3 @@
-<!-- templates/home.html -->
 {% extends "base.html" %}
 {% block content %}
 <div class="home-container">
@@ -7,7 +6,964 @@
     </aside>
     <main class="main-content">
         <h1 class="cim">Kezdőlap</h1>
-        <p>Ez a főoldal tartalma.</p>
+        <h2>Saját rakományok</h2>
+        {% if cargos %}
+        <div class="table-actions">
+            <button id="deleteSelected" title="Törlés">
+                <img src="{{ url_for('static', filename='icons/trash.png') }}" style="width:20px">
+            </button>
+            <button id="republishSelected" title="Újraközlés">
+                <img src="{{ url_for('static', filename='icons/refresh.png') }}" style="width:20px">
+            </button>
+        </div>
+
+        <div class="table-outer">
+            <table id="homeTable" class="display" style="font-size: 0.9rem; width:80%;">
+                <thead>
+                    <tr>
+                        <th class="felvet"><input type="checkbox" id="selectAll"></th>
+                        <th class="felvet"><img src="{{ url_for('static', filename='icons/calendar_up.png') }}" style="width: 24px"></th>
+                        <th class="felvet">Felvét ország</th>
+                        <th class="felvet">Felvét ir.sz.</th>
+                        <th class="felvet">Felvét város</th>
+                        <th class="letet"><img src="{{ url_for('static', filename='icons/calendar_done.png') }}" style="width: 24px"></th>
+                        <th class="letet">Letét ország</th>
+                        <th class="letet">Letét ir.sz.</th>
+                        <th class="letet">Letét város</th>
+                        <th class="arujarmu">Hossz (m)</th>
+                        <th class="arujarmu">Tömeg (t)</th>
+                        <th class="arujarmu">Jármű típusa</th>
+                        <th class="arujarmu">Jármű szerkezete</th>
+                        <th class="arujarmu">Jármű felszereltsége</th>
+                        <th class="arujarmu">Rakomány rögzítése</th>
+                        <th class="arujarmu">Bizonyítványok</th>
+                        <th style="display:none;">created_at</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cargo in cargos %}
+                    <tr data-id="{{ cargo.cargo_id }}">
+                        <td><input type="checkbox" class="rowCheckbox"></td>
+                        <td>
+                            {% if cargo.start_date_1 %}{{ cargo.start_date_1.strftime('%Y.%m.%d.') }}
+                            {% if cargo.start_date_2 %} (+{{ (cargo.start_date_2 - cargo.start_date_1).days }}){% endif %}{% endif %}
+                            {% if cargo.start_time_1 or cargo.start_time_2 %}
+                            <br>{{ cargo.start_time_1.strftime('%H:%M') if cargo.start_time_1 else '' }}
+                            – {{ cargo.end_time_2.strftime('%H:%M') if cargo.end_time_2 else '' }}{% endif %}
+                        </td>
+                        <td>{{ cargo.origin_country.upper() }}</td>
+                        <td>{{ cargo.masked_origin_postcode if cargo.is_hidden_from else cargo.origin_postcode }}</td>
+                        <td>{{ cargo.masked_origin_city if cargo.is_hidden_from else cargo.origin_city }}</td>
+                        <td>
+                            {% if cargo.end_date_1 %}{{ cargo.end_date_1.strftime('%Y.%m.%d.') }}
+                            {% if cargo.end_date_2 %} (+{{ (cargo.end_date_2 - cargo.end_date_1).days }}){% endif %}{% endif %}
+                            {% if cargo.end_time_1 or cargo.end_time_2 %}
+                            <br>{{ cargo.start_time_3.strftime('%H:%M') if cargo.start_time_3 else '' }}
+                            – {{ cargo.end_time_4.strftime('%H:%M') if cargo.end_time_4 else '' }}{% endif %}
+                        </td>
+                        <td>{{ cargo.destination_country.upper() }}</td>
+                        <td>{{ cargo.masked_destination_postcode if cargo.is_hidden_to else cargo.destination_postcode }}</td>
+                        <td>{{ cargo.masked_destination_city if cargo.is_hidden_to else cargo.destination_city }}</td>
+                        <td>{{ cargo.size }}</td>
+                        <td>{{ cargo.weight }}</td>
+                        <td>{{ cargo.vehicle_type or '-' }}</td>
+                        <td>{{ cargo.stucture or '-' }}</td>
+                        <td>{{ cargo.equipment or '-' }}</td>
+                        <td>{{ cargo.cargo_securement or '-' }}</td>
+                        <td>{{ cargo.certificates or '-' }}</td>
+                        <td style="display:none;">{{ cargo.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div id="rowActions">
+                <button class="edit" title="Szerkesztés">✏️</button>
+                <button class="done" title="Teljesített fuvar">✅</button>
+                <button class="delete" title="Törlés"><img src="{{ url_for('static', filename='icons/red_trashbin.png') }}" style="width:16px"></button>
+            </div>
+        </div>
+        {% else %}
+        <p>Nincs még rakomány.</p>
+        {% endif %}
+
+        <!-- Inline editor template: beszúródó szerkesztő sor (kezdő állapot: rejtett) -->
+        <!-- A tényleges szerkesztő sort JS hozza létre dinamkusan az adott sor után. -->
+
     </main>
 </div>
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    var table;
+    if (! $.fn.DataTable.isDataTable('#homeTable')) {
+        table = $('#homeTable').DataTable({
+            "order": [[16, "desc"], [1, "asc"]],
+            "pageLength": 5,
+            scrollX: true,
+            "stripeClasses": ['odd-row', 'even-row'],
+            "columnDefs": [{ "orderable": false, "targets": 0 }]
+        });
+    } else {
+        table = $('#homeTable').DataTable(); // létező példányt használjuk
+    }
+
+
+    $('#selectAll').on('click', function() {
+        var rows = table.rows({ 'search': 'applied' }).nodes();
+        $('input.rowCheckbox', rows).prop('checked', this.checked);
+    });
+
+    $('#deleteSelected').on('click', function() {
+        var selectedIds = [];
+        table.$('input.rowCheckbox:checked').each(function() {
+            selectedIds.push($(this).closest('tr').data('id'));
+        });
+
+        if(selectedIds.length === 0) {
+            alert("Nincs kiválasztva sor!");
+            return;
+        }
+
+        if(confirm("Biztosan törölni szeretnéd a kiválasztott sorokat?")) {
+            $.ajax({
+                url: "{{ url_for('delete_cargos') }}",
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({ ids: selectedIds }),
+                success: function(response) {
+                    table.rows($('input.rowCheckbox:checked').parents('tr')).remove().draw();
+                },
+                error: function() {
+                    alert("Hiba történt a törlés során!");
+                }
+            });
+        }
+    });
+
+    var republishCooldown = false;
+
+    $('#republishSelected').on('click', function() {
+        if(republishCooldown) {
+            alert("Várj, az újraközlés csak 30 másodpercenként lehetséges!");
+            return;
+        }
+
+        var selectedIds = [];
+        table.$('input.rowCheckbox:checked').each(function() {
+            selectedIds.push($(this).closest('tr').data('id'));
+        });
+
+        if(selectedIds.length === 0) {
+            alert("Nincs kiválasztva sor!");
+            return;
+        }
+
+        if(confirm("Biztosan újraközölni szeretnéd a kiválasztott sorokat?")) {
+            $.ajax({
+                url: "{{ url_for('republish_cargos') }}",
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({ ids: selectedIds }),
+                success: function(response) {
+                    table.rows().every(function() {
+                        var id = $(this.node()).data('id');
+                        if(response.republished.includes(id)) {
+                            this.data()[17] = response.now; // updated
+                        }
+                    });
+                    table.draw(false);
+                },
+                error: function() {
+                    alert("Hiba történt az újraközlés során!");
+                }
+            });
+        }
+    });
+
+    var $actions = $('#rowActions');
+    var $scrollBody = $('.dataTables_scrollBody');
+    var lastRow = null;
+
+    function positionPanel($row) {
+        if (!$row || !$row.length) return;
+
+        var rowOffset = $row.offset();
+        var containerOffset = $scrollBody.offset();
+
+        $actions.css({
+            top: rowOffset.top + ($row.outerHeight()/2 - $actions.outerHeight()/2),
+            left: containerOffset.left + $scrollBody.innerWidth() - $actions.outerWidth() - 5
+        }).data('rowId', $row.data('id')).fadeIn(100);
+    }
+
+    $('#homeTable tbody').on('mouseenter', 'tr', function() {
+        var $row = $(this);
+        if (lastRow && lastRow.is($row)) return;
+        lastRow = $row;
+        positionPanel($row);
+    });
+
+    $scrollBody.on('scroll', function() {
+        if ($actions.is(':visible') && lastRow) positionPanel(lastRow);
+    });
+
+    // Delete gomb esemény
+    $actions.on('click', '.delete', function(e) {
+        e.preventDefault();
+        var rowId = $actions.data('rowId'); // itt tároltuk el az adott sor ID-ját
+
+        if (!rowId) return;
+
+        if (!confirm("Biztosan törlöd ezt a fuvart?")) return;
+
+        $.ajax({
+            url: '/delete_cargo/' + rowId,
+            type: 'DELETE',
+            success: function(resp) {
+                if (resp && resp.success) {
+                    var table = $('#homeTable').DataTable();
+                    var $row = $('#homeTable tbody tr[data-id="' + rowId + '"]');
+                    table.row($row).remove().draw();
+                } else {
+                    alert("Hiba történt törlés közben: " + (resp && resp.error ? resp.error : ""));
+                }
+            },
+            error: function(xhr, status, error) {
+                alert("Nem sikerült törölni: " + error);
+            }
+        });
+    });
+
+
+    // ---------------------------
+    // Inline szerkesztő logika
+    // ---------------------------
+    var openEditorRow = null; // a jelenleg megnyitott editor TR (jQuery objektum)
+    var openEditorCargoId = null; // id
+
+    // Equipment opciók (másold ide, ha bővíteni akarod)
+    var equipmentOptions = [
+        "2. sofőr","A-Schild","ADR","BF3 kísérőjármű","BF4 kísérőjármű","Béka",
+        "Emelőhátfal","Farönkszállító","GPS követő","Húskampó","Rakodódaru",
+        "Rámpa","Takaróponyva","Targonca","Válaszfal","Vámzsinór"
+    ];
+
+    // Ha a lebegő 'Szerkesztés' gomb megnyomva:
+    $actions.on('click', '.edit', function() {
+        var cargoId = $actions.data('rowId');
+
+        // Ha ugyanazt a szerkesztőt akarjuk bezárni -> bezárjuk
+        if (openEditorCargoId === cargoId) {
+            closeOpenEditor();
+            return;
+        }
+
+        // Ha másik szerkesztő van megnyitva -> zárjuk
+        closeOpenEditor();
+
+        // Lekérjük az adatokat a szerverről
+        $.getJSON("/get_cargo/" + cargoId, function(data) {
+            // Beszúrjuk az editor sort a megfelelő helyre (a táblasor után)
+            var $targetRow = $('#homeTable tbody tr').filter(function() { return $(this).data('id') == cargoId; }).first();
+            if (!$targetRow || !$targetRow.length) {
+                alert("Sikertelen adatkeresés: a sor nem található a táblában.");
+                return;
+            }
+
+            // Készítjük az editor HTML-t (colspan: 17 - a táblád oszlopszáma alapján)
+            var editorHtml = buildEditorHtml(data);
+            // beszúrás
+            var $editorRow = $(editorHtml).insertAfter($targetRow);
+            // slideDown animáció
+            $editorRow.find('.editor-container').hide().slideDown(180);
+
+            // először feltöltjük a mezőket - majd utána initeljük az autocomplete-okat
+            populateEditorFields($editorRow, data);
+
+            // event handler: equipment checkboxok (legyenek működők)
+            $editorRow.find('.equip-checkbox').on('change', function() {
+                syncEquipmentHidden($editorRow);
+            });
+
+            // Cancel button
+            $editorRow.on('click', '.editor-cancel', function(e) {
+                e.preventDefault();
+                closeOpenEditor();
+            });
+
+            // Form submit
+            $editorRow.on('submit', '.inline-edit-form', function(e) {
+                e.preventDefault();
+
+                // először serializeArray, de át is alakítjuk
+                var arr = $(this).serializeArray();
+                var tmp = {};
+                arr.forEach(function(f) {
+                    // Ha ugyanannak a névnek több értéke van (pl. multi select), akkor tömbbé alakítjuk
+                    if (tmp.hasOwnProperty(f.name)) {
+                        if (!Array.isArray(tmp[f.name])) tmp[f.name] = [tmp[f.name]];
+                        tmp[f.name].push(f.value);
+                    } else {
+                        tmp[f.name] = f.value;
+                    }
+                });
+
+                // equipment checkboxok kezelése (külön, mert serializeArray nem adja az unchecked-eket)
+                var selectedEquipment = [];
+                $editorRow.find('.equip-checkbox:checked').each(function() { selectedEquipment.push($(this).val()); });
+                if (selectedEquipment.length) tmp['equipment'] = selectedEquipment;
+                else tmp['equipment'] = []; // lehet üres tömb
+
+                // --- Map: frontend név -> backend mezőnév (ez a mapping egyezzen a Flask field_map-jével) ---
+                var map = {
+                    'from_country': 'from_country',
+                    'from_postcode': 'from_postcode',
+                    'from_city': 'from_city',
+                    'masked_from_city': 'from_city',
+                    'masked_from_postcode': 'from_postcode',
+                    'to_country': 'to_country',
+                    'to_postcode': 'to_postcode',
+                    'to_city': 'to_city',
+                    'masked_to_city': 'to_city',
+                    'masked_to_postcode': 'to_postcode',
+                    'departure_from': 'departure_from',
+                    'departure_from_time_start': 'departure_from_time_start',
+                    'departure_from_time_end': 'departure_from_time_end',
+                    'departure_end_date': 'departure_end_date',
+                    'departure_end_time_start': 'departure_end_time_start',
+                    'departure_end_time_end': 'departure_end_time_end',
+                    'arrival_start_date': 'arrival_start_date',
+                    'arrival_start_time_start': 'arrival_start_time_start',
+                    'arrival_start_time_end': 'arrival_start_time_end',
+                    'arrival_end_date': 'arrival_end_date',
+                    'arrival_end_time_start': 'arrival_end_time_start',
+                    'arrival_end_time_end': 'arrival_end_time_end',
+                    'length': 'length',
+                    'weight': 'weight',
+                    'vehicle_type': 'vehicle_type',
+                    'superstructure': 'superstructure',
+                    'certificates': 'certificates',
+                    'cargo_securement': 'cargo_securement',
+                    'equipment': 'equipment',
+                    'description': 'description',
+                };
+
+                // építsük a payload-ot, de konvertáljuk a típusokat helyben
+                var payload = {};
+                Object.keys(tmp).forEach(function(k) {
+                    if (!map[k]) return; // ismeretlen mező -> kihagyjuk (vagy bővítheted)
+
+                    var val = tmp[k];
+
+                    // számtípusok
+                    if (k === 'length' || k === 'weight') {
+                        // ha üres string -> null
+                        if (val === '' || val === undefined) {
+                            payload[map[k]] = null;
+                        } else {
+                            var fv = parseFloat(val);
+                            payload[map[k]] = isNaN(fv) ? null : fv;
+                        }
+                        return;
+                    }
+
+                    // equipment: ha tömb, hagyjuk tömbként, a backend kezeli
+                    if (k === 'equipment') {
+                        payload[map[k]] = Array.isArray(val) ? val : (val ? [val] : []);
+                        return;
+                    }
+
+                    // dátum/ido mezők: ha üres string -> ne küldjük vagy küldjünk üreset
+                    if (k.indexOf('date') !== -1 || k.indexOf('time') !== -1) {
+                        payload[map[k]] = val || '';
+                        return;
+                    }
+
+                    // alapértelmezett: string
+                    payload[map[k]] = val;
+                });
+
+                // DEBUG: a konzolban ellenőrizd a payload-ot, mielőtt küldöd
+                console.log('Küldendő payload:', payload);
+
+                $.ajax({
+                    url: "/update_cargo/" + cargoId,
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify(payload),
+                    success: function(resp) {
+                        if (resp && resp.success) {
+                            alert("Sikeres frissítés!");
+                            updateTableRowFromPayload($targetRow, payload);
+                            closeOpenEditor();
+                        } else {
+                            console.warn('Válasz:', resp);
+                            alert("A szerver válasza hibát jelez: " + JSON.stringify(resp));
+                        }
+                    },
+                    error: function(jqXHR) {
+                        var detail = null;
+                        try { detail = jqXHR.responseJSON || jqXHR.responseText; } catch(e) {}
+                        console.error('AJAX hiba:', jqXHR, detail);
+                        alert("Hiba történt a frissítés során! Nézd a konzolt (Network) és a szerver logot.");
+                    }
+                });
+            });
+
+            // beállítjuk a globális változókat
+            openEditorRow = $editorRow;
+            openEditorCargoId = cargoId;
+
+            // Scroll: ha a táblázat görgetve van, gördítsük a sorhoz
+            var scrollBody = $('.dataTables_scrollBody');
+            if (scrollBody.length) {
+                // görgessük úgy, hogy a target row látható legyen
+                var topPos = $targetRow.position().top + scrollBody.scrollTop();
+                scrollBody.animate({ scrollTop: topPos - 20 }, 200);
+            }
+        }).fail(function() {
+            alert("Nem sikerült lekérni a rakomány adatait.");
+        });
+    });
+
+    // bezárja az esetleg megnyitott editort
+    function closeOpenEditor() {
+        if (openEditorRow && openEditorRow.length) {
+            openEditorRow.find('.editor-container').slideUp(150, function() {
+                openEditorRow.remove();
+            });
+            openEditorRow = null;
+            openEditorCargoId = null;
+        }
+    }
+
+    // ha kattintunk, a lebegő panel eltűnik (eredeti viselkedés)
+    $(document).on('click', function(e) {
+        $actions.fadeOut(100);
+        lastRow = null;
+    });
+
+    // ---------------------------
+    // Helper: létrehozza a szerkesztő tr HTML-jét
+    // ---------------------------
+    function buildEditorHtml(data) {
+        // colspan: 17 (a táblád oszlopszáma) — szükség szerint módosítható
+        var colspan = 17;
+        var html = `
+        <tr class="editor-row" data-editor-for="${data.cargo_id || ''}">
+            <td colspan="${colspan}">
+                <div class="editor-container">
+                    <form class="inline-edit-form">
+                        <div class="editor-top">
+                            <!-- Honnan és Hová -->
+                            <fieldset class="inline-fieldset">
+                                <legend>Honnan</legend>
+                                <div class="inline-row">
+                                    <div class="inline-col">
+                                        <label>Ország<span class="required">*</span></label>
+                                        <input type="text" name="from_country" id="editor_from_country" list="editor_from_country_list" placeholder="Ország" required>
+                                        <datalist id="editor_from_country_list"></datalist>
+                                    </div>
+                                    <div class="inline-col">
+                                        <label>Irányítószám<span class="required">*</span></label>
+                                        <input type="text" name="from_postcode" id="editor_from_postcode" placeholder="Irányítószám" required>
+                                    </div>
+                                    <div class="inline-col">
+                                        <label>Város<span class="required">*</span></label>
+                                        <input type="text" name="from_city" id="editor_from_city" list="editor_from_city_list" placeholder="Város" required>
+                                        <datalist id="editor_from_city_list"></datalist>
+                                    </div>
+                                </div>
+                            </fieldset>
+
+                            <fieldset class="inline-fieldset">
+                                <legend>Hová</legend>
+                                <div class="inline-row">
+                                    <div class="inline-col">
+                                        <label>Ország<span class="required">*</span></label>
+                                        <input type="text" name="to_country" id="editor_to_country" list="editor_to_country_list" placeholder="Ország" required>
+                                        <datalist id="editor_to_country_list"></datalist>
+                                    </div>
+                                    <div class="inline-col">
+                                        <label>Irányítószám<span class="required">*</span></label>
+                                        <input type="text" name="to_postcode" id="editor_to_postcode" placeholder="Irányítószám" required>
+                                    </div>
+                                    <div class="inline-col">
+                                        <label>Város<span class="required">*</span></label>
+                                        <input type="text" name="to_city" id="editor_to_city" list="editor_to_city_list" placeholder="Város" required>
+                                        <datalist id="editor_to_city_list"></datalist>
+                                    </div>
+                                </div>
+                            </fieldset>
+                        </div>
+
+                        <div class="editor-dates">
+                            <fieldset class="inline-fieldset dates-fieldset">
+                                <legend>Mikor</legend>
+
+                                <div class="inline-row datetime-row">
+                                    <div class="inline-col">
+                                        <label>Felvétel kezdő dátum<span class="required">*</span></label>
+                                        <input type="date" name="departure_from" required>
+                                    </div>
+                                    <div class="inline-col">
+                                        <label>Felvétel - idő kezdő</label>
+                                        <input type="time" name="departure_from_time_start" >
+                                    </div>
+                                    <div class="inline-col">
+                                        <label>Felvétel - idő záró</label>
+                                        <input type="time" name="departure_from_time_end" >
+                                    </div>
+                                </div>
+
+                                <div class="inline-row datetime-row">
+                                    <div class="inline-col">
+                                        <label>Felvétel záró dátum<span class="required">*</span></label>
+                                        <input type="date" name="departure_end_date" required>
+                                    </div>
+                                    <div class="inline-col">
+                                        <label>Felvétel - záró idő kezdő</label>
+                                        <input type="time" name="departure_end_time_start" >
+                                    </div>
+                                    <div class="inline-col">
+                                        <label>Felvétel - záró idő záró</label>
+                                        <input type="time" name="departure_end_time_end" >
+                                    </div>
+                                </div>
+
+                                <hr>
+
+                                <div class="inline-row datetime-row">
+                                    <div class="inline-col">
+                                        <label>Rakodás kezdő dátum<span class="required">*</span></label>
+                                        <input type="date" name="arrival_start_date" required>
+                                    </div>
+                                    <div class="inline-col">
+                                        <label>Rakodás - idő kezdő</label>
+                                        <input type="time" name="arrival_start_time_start" >
+                                    </div>
+                                    <div class="inline-col">
+                                        <label>Rakodás - idő záró</label>
+                                        <input type="time" name="arrival_start_time_end" >
+                                    </div>
+                                </div>
+
+                                <div class="inline-row datetime-row">
+                                    <div class="inline-col">
+                                        <label>Rakodás záró dátum</label>
+                                        <input type="date" name="arrival_end_date" >
+                                    </div>
+                                    <div class="inline-col">
+                                        <label>Rakodás - záró idő kezdő</label>
+                                        <input type="time" name="arrival_end_time_start" >
+                                    </div>
+                                    <div class="inline-col">
+                                        <label>Rakodás - záró idő záró</label>
+                                        <input type="time" name="arrival_end_time_end" >
+                                    </div>
+                                </div>
+                            </fieldset>
+                        </div>
+
+                        <div class="editor-bottom">
+                            <fieldset class="inline-fieldset vehicle-fieldset">
+                                <legend>Jármű</legend>
+
+                                <div class="inline-row">
+                                    <div class="inline-col">
+                                        <label>Típus<span class="required">*</span></label>
+                                        <select name="vehicle_type" required>
+                                            <option value="" disabled selected>Válassz jármű típust</option>
+                                            <option value="Jármű 3,5 t-ig">Jármű 3,5 t-ig</option>
+                                            <option value="Nyerges szerelvény">Nyerges szerelvény</option>
+                                            <option value="Pótos szerelvény">Pótos szerelvény</option>
+                                            <option value="Tehergépjármű 7,5 t-ig">Tehergépjármű 7,5 t-ig</option>
+                                            <option value="Tehergépjármű 12 t-ig">Tehergépjármű 12 t-ig</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="inline-col">
+                                        <label>Felépítmény<span class="required">*</span></label>
+                                        <select name="superstructure" required>
+                                            <option value="" disabled selected>Válassz felépítményt</option>
+                                            <option value="Autószállító">Autószállító</option>
+                                            <option value="Billenős konténer">Billenős konténer</option>
+                                            <option value="Cserefelépítmény-Chassis">Cserefelépítmény-Chassis</option>
+                                            <option value="Dobozos">Dobozos</option>
+                                            <option value="Furgon">Furgon</option>
+                                            <option value="Dupla kabinos">Dupla kabinos</option>
+                                            <option value="Félpótkocsi">Félpótkocsi</option>
+                                            <option value="Hűtő">Hűtő</option>
+                                            <option value="Jumbo">Jumbo</option>
+                                            <option value="Klipper">Klipper</option>
+                                            <option value="Konténerszállító">Konténerszállító</option>
+                                            <option value="Kábeldobszálíltó">Kábeldobszálíltó</option>
+                                            <option value="Középrakodós">Középrakodós</option>
+                                            <option value="Mega">Mega</option>
+                                            <option value="Mozgópadlós">Mozgópadlós</option>
+                                            <option value="Mozgópadlós (ömlesztett áru)">Mozgópadlós (ömlesztett áru)</option>
+                                            <option value="Mélybölcsős">Mélybölcsős</option>
+                                            <option value="Nyitott tehergépkocsi">Nyitott tehergépkocsi</option>
+                                            <option value="Oldalrakodós">Oldalrakodós</option>
+                                            <option value="Ponyvás">Ponyvás</option>
+                                            <option value="Sasszé">Sasszé</option>
+                                            <option value="Siló">Siló</option>
+                                            <option value="Speciális jármű">Speciális jármű</option>
+                                            <option value="Szigetelt">Szigetelt</option>
+                                            <option value="Szállítószalagos">Szállítószalagos</option>
+                                            <option value="Tartálykocsi">Tartálykocsi</option>
+                                            <option value="Tautliner">Tautliner</option>
+                                            <option value="Tele">Tele</option>
+                                            <option value="Vontató">Vontató</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="inline-col">
+                                        <label>Felszereltség</label>
+                                        <div class="equipment-box">
+                                            ${equipmentOptions.map(function(opt){
+                                                return `<label class="equip-label"><input type="checkbox" class="equip-checkbox" value="${opt}"> ${opt}</label>`;
+                                            }).join('')}
+                                        </div>
+                                        <!-- hidden multiple select (formhoz) -->
+                                        <select name="equipment" multiple hidden>
+                                            ${equipmentOptions.map(function(opt){
+                                                return `<option value="${opt}">${opt}</option>`;
+                                            }).join('')}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="inline-row">
+                                    <div class="inline-col">
+                                        <label>Tanúsítványok</label>
+                                        <input type="text" name="certificates" placeholder="Tanúsítványok">
+                                    </div>
+                                    <div class="inline-col">
+                                        <label>Rakományrögzítés</label>
+                                        <input type="text" name="cargo_securement" placeholder="Rögzítés">
+                                    </div>
+                                </div>
+                            </fieldset>
+
+                            <fieldset class="inline-fieldset cargo-fieldset">
+                                <legend>Áru</legend>
+                                <div class="inline-row cargo-row">
+                                    <div class="inline-col">
+                                        <label>Hossz (m)<span class="required">*</span></label>
+                                        <input type="number" name="length" step="0.1" min="0" required>
+                                    </div>
+                                    <div class="inline-col">
+                                        <label>Tömeg (t)<span class="required">*</span></label>
+                                        <input type="number" name="weight" step="0.5" min="0" required>
+                                    </div>
+                                    <div class="inline-col">
+                                        <label>Leírás</label>
+                                        <input type="text" name="description" placeholder="Leírás">
+                                    </div>
+                                </div>
+                            </fieldset>
+                        </div>
+
+                        <div class="editor-actions">
+                            <button class="editor-save" type="submit">Mentés</button>
+                            <button class="editor-cancel" type="button">Mégse</button>
+                        </div>
+                    </form>
+                </div>
+            </td>
+        </tr>
+        `;
+        return html;
+    }
+
+    // ---------------------------
+    // Helper: kitölti a beszúrt editor mezőit a szerverről érkező 'data' alapján
+    // Megpróbálunk több névvariánst is kezelni (pl. origin_country -> from_country)
+    // ---------------------------
+    function populateEditorFields($editorRow, data) {
+        // console.log('populateEditorFields data', data);
+
+        // mapping - ha a backend más kulcsneveket ad, hozzárendeljük a form mezőkhöz
+        var map = {
+            'origin_country': ['from_country','origin_country'],
+            'origin_postcode': ['from_postcode','origin_postcode'],
+            'origin_city': ['from_city','origin_city'],
+            'destination_country': ['to_country','destination_country'],
+            'destination_postcode': ['to_postcode','destination_postcode'],
+            'destination_city': ['to_city','destination_city'],
+
+            // dátum/idő mezők — megpróbálunk több lehetséges kulcsot
+            'start_date_1': ['departure_from','start_date_1'],
+            'start_date_2': ['departure_end_date','start_date_2','departure_end_date'],
+            'end_date_1': ['arrival_start_date','end_date_1','arrival_start_date'],
+            'end_date_2': ['arrival_end_date','end_date_2','arrival_end_date'],
+
+            // vehicle / cargo
+            'size': ['length','size'],
+            'weight': ['weight'],
+            'vehicle_type': ['vehicle_type'],
+            'structure': ['superstructure','structure'],
+            'equipment': ['equipment'],
+            'cargo_securement': ['cargo_securement'],
+            'certificates': ['certificates'],
+            'description': ['description']
+        };
+
+        // egyszerű feltöltés: minden data kulcsot megpróbálunk beállítani
+        Object.keys(data || {}).forEach(function(k) {
+            var v = data[k];
+            // direct set: name equals key
+            var $direct = $editorRow.find('[name="'+k+'"]');
+            if ($direct.length) {
+                if ($direct.is(':checkbox')) {
+                    if (v === true || v === 1 || v === '1' || v === 'true') $direct.prop('checked', true);
+                    else $direct.prop('checked', false);
+                } else if ($direct.is('select[multiple]')) {
+                    if (Array.isArray(v)) $direct.val(v);
+                    else if (typeof v === 'string') $direct.val(v.split(','));
+                    else $direct.val([v]);
+                } else {
+                    $direct.val(v);
+                }
+            }
+
+            // mapping: névvariánsok
+            Object.keys(map).forEach(function(baseKey) {
+                var variants = map[baseKey];
+                if (variants.indexOf(k) !== -1) {
+                    // beállítjuk az összes lehetséges mezőt a value-val
+                    variants.forEach(function(nm) {
+                        var $el = $editorRow.find('[name="'+nm+'"]');
+                        if ($el.length) {
+                            if ($el.is(':checkbox')) {
+                                if (v === true || v === 1 || v === '1' || v === 'true') $el.prop('checked', true);
+                                else $el.prop('checked', false);
+                            } else if ($el.is('select[multiple]')) {
+                                if (Array.isArray(v)) $el.val(v);
+                                else if (typeof v === 'string') $el.val(v.split(','));
+                                else $el.val([v]);
+                            } else {
+                                $el.val(v);
+                                // ha van hozzá tartozó #editor_ id, állítsuk azt is (néha a name != id)
+                                var maybeId = $el.attr('id');
+                                if (maybeId) {
+                                    $('#' + maybeId).val(v);
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+        });
+
+        // Ha a backend adott 'equipment' mezőt stringként vagy tömbként, pipáljuk a checkboxokat
+        var equipmentVals = [];
+        if (data && data.equipment) {
+            if (Array.isArray(data.equipment)) equipmentVals = data.equipment;
+            else if (typeof data.equipment === 'string') equipmentVals = data.equipment.split(',').map(function(x){ return x.trim(); });
+        }
+        // pipáljuk a checkboxokat
+        $editorRow.find('.equip-checkbox').each(function(){
+            var val = $(this).val();
+            if (equipmentVals.indexOf(val) !== -1) $(this).prop('checked', true);
+            else $(this).prop('checked', false);
+        });
+
+        // Szinkronizáljuk a hidden select-et
+        syncEquipmentHidden($editorRow);
+
+        // ha vannak editor inputid-ek, állítsuk azok értékét is (robosztusabb beállítás)
+        if (data) {
+            if (data.origin_country) $('#editor_from_country').val(data.origin_country);
+            if (data.origin_postcode) $('#editor_from_postcode').val(data.origin_postcode);
+            if (data.origin_city) $('#editor_from_city').val(data.origin_city);
+            if (data.destination_country) $('#editor_to_country').val(data.destination_country);
+            if (data.destination_postcode) $('#editor_to_postcode').val(data.destination_postcode);
+            if (data.destination_city) $('#editor_to_city').val(data.destination_city);
+        }
+    }
+
+    // ---------------------------
+    // Helper: equipment hidden select szinkronizálása
+    // ---------------------------
+    function syncEquipmentHidden($editorRow) {
+        var selected = [];
+        $editorRow.find('.equip-checkbox:checked').each(function() {
+            selected.push($(this).val());
+        });
+        var $hiddenSelect = $editorRow.find('select[name="equipment"]');
+        if ($hiddenSelect.length) {
+            $hiddenSelect.val(selected);
+        }
+    }
+
+    // ---------------------------
+    // Helper: frissíti a táblázat sorát a payload alapján
+    // (csak a látható cellákat frissítjük)
+    // ---------------------------
+    function updateTableRowFromPayload($row, payload) {
+        // origin country
+        if (payload.from_country !== undefined) $row.find('td').eq(2).text(payload.from_country.toUpperCase());
+        if (payload.from_postcode !== undefined) $row.find('td').eq(3).text(payload.from_postcode);
+        if (payload.from_city !== undefined) $row.find('td').eq(4).text(payload.from_city);
+
+        if (payload.to_country !== undefined) $row.find('td').eq(6).text(payload.to_country.toUpperCase());
+        if (payload.to_postcode !== undefined) $row.find('td').eq(7).text(payload.to_postcode);
+        if (payload.to_city !== undefined) $row.find('td').eq(8).text(payload.to_city);
+
+        if (payload.length !== undefined) $row.find('td').eq(9).text(payload.length);
+        if (payload.weight !== undefined) $row.find('td').eq(10).text(payload.weight);
+
+        if (payload.vehicle_type !== undefined) $row.find('td').eq(11).text(payload.vehicle_type || '-');
+        if (payload.superstructure !== undefined) $row.find('td').eq(12).text(payload.superstructure || '-');
+
+        if (payload.equipment !== undefined) {
+            var eq = Array.isArray(payload.equipment) ? payload.equipment.join(', ') : (payload.equipment || '');
+            $row.find('td').eq(13).text(eq || '-');
+        }
+
+        if (payload.cargo_securement !== undefined) $row.find('td').eq(14).text(payload.cargo_securement || '-');
+        if (payload.certificates !== undefined) $row.find('td').eq(15).text(payload.certificates || '-');
+    }
+
+    // Ha ablak mérete változik vagy a DataTable újrarenderel -> zárjuk az editort
+    $(window).on('resize', function() {
+        closeOpenEditor();
+    });
+
+    // Ha a DataTable újrarendeződik (pl. lapozás), zárjuk az editort
+    $('#homeTable').on('draw.dt', function() {
+        closeOpenEditor();
+    });
+
+}); // $(document).ready
+</script>
+{% endblock %}
+<style>
+.home-container { display: flex; flex-wrap: wrap; max-width: 100%}
+.sidebar { flex: 1 1 200px; }
+.main-content { flex: 3 1 100%; padding: 15px; }
+.table-actions { margin-bottom: 10px; max-width: 80%}
+.table-outer { max-width: 100%; }
+.dataTables_wrapper .dataTables_scroll { margin-right: 20px; margin-left: 20px; }
+.dataTables_scroll{ border: 1px solid black; overflow: auto; }
+#rowActions { position: absolute; display: none; background: #f1f1f1; border: 1px solid #ccc; padding: 2px; border-radius: 4px; z-index: 10;}
+#rowActions button { margin: 2px; padding: 2px 5px; cursor: pointer; border: none; background: #fff; border-radius: 4px; }
+.odd-row { background-color: #fafafa; }
+.even-row { background-color: #eee; }
+
+/* ---------------------------
+   Editor (inline) stílusok
+   --------------------------- */
+.editor-row td {
+    padding: 0;
+    border-top: 1px solid #ddd;
+    background: #fbfbfb;
+}
+
+.editor-container {
+    padding: 14px;
+    background: #ffffff;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    margin: 8px;
+    font-size: 0.95rem;
+}
+
+/* Form elrendezés: grid/flex komponensek */
+.inline-fieldset {
+    border: 1px solid #e0e0e0;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 6px;
+}
+
+.inline-fieldset legend {
+    font-weight: bold;
+    padding: 0 6px;
+}
+
+.inline-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+.inline-col {
+    flex: 1 1 220px;
+    min-width: 160px;
+    display: flex;
+    flex-direction: column;
+}
+
+.inline-col label {
+    font-weight: 600;
+    margin-bottom: 4px;
+    font-size: 0.88rem;
+}
+
+.inline-col input[type="text"],
+.inline-col input[type="date"],
+.inline-col input[type="time"],
+.inline-col input[type="number"],
+.inline-col select {
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid #cfcfcf;
+    font-size: 0.95rem;
+    background: #fff;
+}
+
+/* equipment lista */
+.equipment-box {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    max-height: 120px;
+    overflow: auto;
+    padding: 6px;
+    border: 1px solid #eee;
+    border-radius: 6px;
+    background: #fafafa;
+}
+.equip-label { font-size:0.88rem; display:flex; align-items:center; gap:6px; padding:3px 6px; border-radius:4px;}
+.equip-checkbox { transform: scale(0.95); }
+
+/* Actions */
+.editor-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    align-items: center;
+    margin-top: 8px;
+}
+
+.editor-save, .editor-cancel {
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.editor-save {
+    background: #0b7a3f;
+    color: white;
+}
+
+.editor-cancel {
+    background: #f1f1f1;
+    color: #333;
+}
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+    .inline-row { flex-direction: column; }
+    .inline-col { min-width: auto; width: 100%; }
+    .editor-container { margin: 6px; padding: 10px; }
+}
+</style>
 {% endblock %}
