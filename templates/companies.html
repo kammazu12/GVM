@@ -19,7 +19,7 @@
         <div class="companies-list">
             {% if companies|length > 0 %}
                 {% for company in companies %}
-                    <a href="{{ url_for('company_profile', slug=company.slug) }}" target="_self" class="company-card-link">
+                    <a href="{{ url_for('company.company_profile', slug=company.slug) }}" target="_self" class="company-card-link">
                         <div class="company-card">
                             <div class="company-logo">
                                 <div class="placeholder-logo">
@@ -72,7 +72,7 @@ function escapeHtml(unsafe) {
 
 document.getElementById('companySearch').addEventListener('input', function() {
     const query = this.value;
-    fetch(`/search_companies?q=${encodeURIComponent(query)}`)
+    fetch(`/company/search_companies?q=${encodeURIComponent(query)}`)
         .then(response => response.json())
         .then(data => {
             const container = document.querySelector('.companies-list');
@@ -87,11 +87,10 @@ document.getElementById('companySearch').addEventListener('input', function() {
                 const cardWrap = document.createElement('a');
                 cardWrap.className = 'company-card-link';
 
-                // prioritás: slug (ha van), különben company_id fallback
                 if (company.slug) {
-                    cardWrap.href = `/company/${encodeURIComponent(company.slug)}`;
+                    cardWrap.href = `/company/company/${encodeURIComponent(company.slug)}`;
                 } else if (company.company_id) {
-                    cardWrap.href = `/company/${encodeURIComponent(company.company_id)}`;
+                    cardWrap.href = `/company/company/${encodeURIComponent(company.company_id)}`;
                 } else {
                     cardWrap.href = '#';
                 }
@@ -100,12 +99,17 @@ document.getElementById('companySearch').addEventListener('input', function() {
                 const empCount = (typeof company.employee_count === 'number') ? company.employee_count : 0;
                 const empText = empCount === 0 ? 'Nincsenek alkalmazottak' : (empCount + ' fő');
 
+                // Ha van céglogó, használjuk azt; ha nincs, marad a statikus
+                const logoUrl = company.picture
+                    ? `/static/uploads/company_logos/${encodeURIComponent(company.picture)}`
+                    : companyIconUrl;
+
                 const card = document.createElement('div');
                 card.className = 'company-card';
                 card.innerHTML = `
                     <div class="company-logo">
                         <div class="placeholder-logo">
-                            <img id='company_logo_pic' src="${escapeHtml(companyIconUrl)}" alt="logo">
+                            <img id='company_logo_pic' src="${escapeHtml(logoUrl)}" alt="logo">
                         </div>
                     </div>
                     <div class="company-info">
@@ -121,12 +125,11 @@ document.getElementById('companySearch').addEventListener('input', function() {
                 cardWrap.appendChild(card);
                 container.appendChild(cardWrap);
             });
+
         })
         .catch(err => console.error('Hiba a keresésnél:', err));
 });
 </script>
-
-
 
 <!-- CSS -->
 <style>
@@ -169,10 +172,15 @@ document.getElementById('companySearch').addEventListener('input', function() {
 /* Cégek kártyák link wrapper */
 .company-card-link {
     display: block;
-    width: calc((100% - 40px) / 3); /* 3 kártya / sor, gap=20px */
+    min-width: 90%; /* 3 kártya / sor, gap=20px */
+    max-width: 90%; /* 3 kártya / sor, gap=20px */
     box-sizing: border-box;
     text-decoration: none;
     color: inherit;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    /*overflow: auto;*/
+    /*text-overflow: hidden;*/
 }
 
 /* Cégek kártyák maguk */
@@ -189,6 +197,8 @@ document.getElementById('companySearch').addEventListener('input', function() {
     transition: transform 0.2s ease;
     text-decoration: none;
     color: inherit;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
 }
 
 .company-card:hover {
@@ -208,12 +218,33 @@ document.getElementById('companySearch').addEventListener('input', function() {
 }
 
 /* Cégnév és részletek */
+@media (min-width: 2000px) {
+.company-info h3 {
+    margin: 0 0 8px 0;
+    font-size: 20px;
+    white-space: normal;       /* engedi a törést */
+    word-wrap: break-word;     /* hosszú szavak törése */
+    overflow-wrap: break-word; /* modern verzió */
+}
+
+}
 .company-info h3 {
     margin: 0 0 8px 0;
     font-size: 20px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    max-width: 75%;
+    display: block;
+}
+
+.company-info p {
+    margin: 0 0 8px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 75%;
+    display: block;
 }
 
 .company-details {
@@ -269,5 +300,5 @@ document.getElementById('companySearch').addEventListener('input', function() {
         grid-template-columns: 1fr; /* 1 oszlop mobilon */
     }
 }
-
+</style>
 {% endblock %}

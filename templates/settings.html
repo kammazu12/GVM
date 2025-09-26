@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="settings-page">
+    <aside class="sidebar">
+        {% include 'sidebar.html' %}
+    </aside>
+
+    <div class="main-content">
+        <h1 class="cim">{{ _("Beállítások") }}</h1>
+        <form id="settings-form" method="POST" action="{{ url_for('profile.save_settings') }}">
+            <section>
+                <h3>{{ _("Megjelenítés") }}</h3>
+                <label class="switch">
+                  <img src="{{ url_for('static', filename='icons/moon.png') }}" alt="night"> {{ _("Éjszakai mód") }}
+                  <input type="checkbox" name="dark_mode" {% if user.settings and user.settings.dark_mode %}checked{% endif %}>
+                  <span class="slider"></span>
+                </label>
+                <br>
+
+                <label class="switch">
+                  <img src="{{ url_for('static', filename='icons/vision.png') }}" alt="colorblind">  {{ _("Színvak mód") }}
+                  <input type="checkbox" name="colorblind" {% if user.settings and user.settings.colorblind %}checked{% endif %}>
+                  <span class="slider"></span>
+                </label>
+                <br>
+                <label>
+                    {{ _("Nyelv") }}:
+                    <select name="language">
+                        <option value="hu" {% if user.settings and user.settings.language=='hu' %}selected{% endif %}>Magyar</option>
+                        <option value="en" {% if user.settings and user.settings.language=='en' %}selected{% endif %}>English</option>
+                        <option value="de" {% if user.settings and user.settings.language=='de' %}selected{% endif %}>Deutsch</option>
+                    </select>
+                </label>
+
+            </section>
+
+            <section>
+                <h3>{{ _("Teljesítmény") }}</h3>
+    <!--            <label class="switch">-->
+    <!--              <img src="{{ url_for('static', filename='icons/email_notification.png') }}" alt="email notifications"> Email értesítések-->
+    <!--              <input type="checkbox" name="email_notifications">-->
+    <!--              <span class="slider"></span>-->
+    <!--            </label>-->
+    <!--            <br>-->
+
+                <label class="switch">
+                  <img src="{{ url_for('static', filename='icons/low-speed.png') }}" alt="low quality">
+                  {{ _("Alacsony teljesítmény mód") }}
+                  <span class="tooltip">
+                    <img src="{{ url_for('static', filename='icons/question.png') }}" alt="info" class="info-icon">
+                    <span class="tooltiptext">{{ _("A Low Quality mód csökkenti a képek és grafikus elemek részletességét, valamint kikapcsolja a felugró értesítéseket és animációkat, így gyorsabb betöltést biztosít lassabb internetkapcsolat esetén.") }}</span>
+                  </span>
+                  <input type="checkbox" name="low_quality" {% if user.settings and user.settings.low_quality %}checked{% endif %}>
+                  <span class="slider"></span>
+
+                  <!-- Kérdőjel ikon tooltip-pel -->
+                </label>
+            </section>
+
+            <section>
+                <h3>{{ _("Előfizetés") }}</h3>
+                <p>
+                    {{ _("Aktuális csomag") }}:
+                    <strong>{{ _(user.company.subscription_type.capitalize() if user.company else "Ingyenes") }}</strong>
+                    {% if user.is_company_admin %}
+                    <button class="subscription-btn">{{ _("Módosítás") }}</button>
+                    {% endif %}
+                </p>
+            </section>
+            <br>
+            <section>
+                <button id="save-settings" class="btn">{{ _("Mentés") }}</button>
+            </section>
+        </form>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.querySelector('.subscription-btn');
+    if(btn){
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.location.href = "{{ url_for('profile.subscription') }}";
+        });
+    }
+});
+</script>
+{% endblock %}
+
+{% endblock %}

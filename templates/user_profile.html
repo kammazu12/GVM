@@ -8,7 +8,10 @@
     </aside>
 
     <main class="main-content">
-        <h1 class="profile-title">{{ user.first_name }} {{ user.last_name }}</h1>
+            <h1 class="profile-title">{{ user.first_name }} {{ user.last_name }}</h1>
+        <div class="profile-company">
+            <h2 class="profile-title">{{ user.company.name if user.company else 'Nincs cég' }}</h2>
+        </div>
 
         <div class="profile-header">
             <div class="profile-avatar">
@@ -19,16 +22,15 @@
                 <p><strong>Telefon:</strong> {{ user.phone_number }}</p>
                 <p><strong>Szerep:</strong> {{ user.role }}</p>
                 <p><strong>Tagság kezdete:</strong> {{ user.created_at.strftime('%Y-%m-%d') if user.created_at else '' }}</p>
-                <p><strong>Cég:</strong> {{ user.company.name if user.company else 'Nincs cég' }}</p>
 
                 {% if user.company %}
-                    <a href="{{ url_for('company_profile', slug=user.company.slug) }}" class="btn">Vissza a céghez</a>
+                    <a href="{{ url_for('company.company_profile', slug=user.company.slug) }}" class="btn">Vissza a céghez</a>
                 {% endif %}
             </div>
 
         </div>
 
-        {% if user.posted_cargos %}
+        {% if user.cargos %}
             <h2>Hirdetett szállítmányok</h2>
             <div class="table-wrapper">
                 <table id="userCargos" class="display" style="width:100%; font-size:0.9em;">
@@ -45,28 +47,75 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for cargo in user.posted_cargos %}
-                            <tr>
-                            <td>
-                                {{ cargo.start_date_1.strftime('%Y.%m.%d.') if cargo.start_date_1 else '' }}
-                                {% if cargo.start_date_2 %}
-                                    (+{{ (cargo.start_date_2 - cargo.start_date_1).days }})
+                    {% for cargo in user.cargos %}
+                    <tr data-id="{{ cargo.cargo_id }}">
+                        <td class="datum">
+                        {% set pickups = cargo.locations | selectattr('type', 'equalto', 'pickup') | list %}
+                        {% if pickups %}
+                            {% set first_pickup = pickups[0] %}
+                            {% if first_pickup.start_date %}
+                                {{ first_pickup.start_date.strftime('%Y.%m.%d.') }}
+                                {% if first_pickup.end_date %}
+                                    {% set delta = (first_pickup.end_date - first_pickup.start_date).days %}
+                                    (+{{ delta }})
                                 {% endif %}
-                            </td>
+                            {% endif %}
 
-                            <td>{{ cargo.origin_country.upper()}}</td>
-                            <td>{{ cargo.masked_origin_postcode if cargo.is_hidden_from else cargo.origin_postcode }}</td>
-                            <td>{{ cargo.masked_origin_city if cargo.is_hidden_from else cargo.origin_city }}</td>
+                            {% if first_pickup.start_time_1 or first_pickup.start_time_2 %}
+                                <br>
+                                {{ first_pickup.start_time_1.strftime('%H:%M') if first_pickup.start_time_1 else '' }}
+                                – {{ first_pickup.start_time_2.strftime('%H:%M') if first_pickup.start_time_2 else '' }}
+                            {% endif %}
+                        {% endif %}
+                    </td>
+
+                        {% if pickups %}
+                            {% set first_pickup = pickups[0] %}
+                            {% set extra_pickups = pickups|length - 1 %}
                             <td>
-                                {{ cargo.end_date_1.strftime('%Y.%m.%d.') if cargo.end_date_1 else '' }}
-                                {% if cargo.end_date_2 %}
-                                    (+{{ (cargo.end_date_2 - cargo.end_date_1).days }})
-                                {% endif %}
+                                {{ first_pickup.country.upper() }}
                             </td>
+                            <td>
+                                {{ first_pickup.masked_postcode if first_pickup.is_hidden else first_pickup.postcode }}
+                            </td>
+                            <td>
+                                {{ first_pickup.masked_city if first_pickup.is_hidden else first_pickup.city }}
+                            </td>
+                        {% endif %}
+                        {# Dropoff dátum + idő #}
+                            <td class="datum">
+                            {% set dropoffs = cargo.locations | selectattr('type', 'equalto', 'dropoff') | list %}
+                            {% if dropoffs %}
+                                {% set last_dropoff = dropoffs[-1] %}
+                                {% if last_dropoff.start_date %}
+                                    {{ last_dropoff.start_date.strftime('%Y.%m.%d.') }}
+                                    {% if last_dropoff.end_date %}
+                                        {% set delta = (last_dropoff.end_date - last_dropoff.start_date).days %}
+                                        (+{{ delta }})
+                                    {% endif %}
+                                {% endif %}
 
-                            <td>{{ cargo.destination_country.upper()}}</td>
-                            <td>{{ cargo.masked_destination_postcode if cargo.is_hidden_to else cargo.destination_postcode }}</td>
-                            <td>{{ cargo.masked_destination_city if cargo.is_hidden_to else cargo.destination_city }}</td>
+                                {% if last_dropoff.start_time_1 or last_dropoff.start_time_2 %}
+                                    <br>
+                                    {{ last_dropoff.start_time_1.strftime('%H:%M') if last_dropoff.start_time_1 else '' }}
+                                    – {{ last_dropoff.start_time_2.strftime('%H:%M') if last_dropoff.start_time_2 else '' }}
+                                {% endif %}
+                            {% endif %}
+                        </td>
+
+                        {% if dropoffs %}
+                            {% set last_dropoff = dropoffs[-1] %}
+                            {% set extra_dropoffs = dropoffs|length - 1 %}
+                            <td>
+                                {{ last_dropoff.country.upper() }}
+                            </td>
+                            <td>
+                                {{ last_dropoff.masked_postcode if last_dropoff.is_hidden else last_dropoff.postcode }}
+                            </td>
+                            <td>
+                                {{ last_dropoff.masked_city if last_dropoff.is_hidden else last_dropoff.city }}
+                            </td>
+                        {% endif %}
 
                             <td>{{ cargo.size }}</td>
                             <td>{{ cargo.weight }}</td>
@@ -84,8 +133,6 @@
                 <p>Ez a felhasználó még nem hirdetett fuvarokat.</p>
             {% endif %}
             </div>
-
-
     </main>
 </div>
 
@@ -108,13 +155,19 @@ $(document).ready(function() {
 <style>
 .profile-title {
     font-size: 28px;
-    margin-bottom: 20px;
+    margin-bottom: 0;
+    margin-top: 0;
+}
+
+.profile-company{
+    margin-top: 0;
 }
 
 .profile-header {
     display: flex;
     gap: 20px;
     margin-bottom: 30px;
+    margin-top: 30px;
     align-items: center;
 }
 
@@ -160,6 +213,10 @@ th, td {
 
 th {
     background-color: #f4f4f4;
+}
+
+td{
+    width: 150px;
 }
 
 /* Reszponzív */

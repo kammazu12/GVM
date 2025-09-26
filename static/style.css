@@ -7,7 +7,8 @@ body {
     color: #333;
     display: flex; /* sidebar + main content */
     min-height: 100vh;
-    width: 100%;
+    min-width: 100vw;
+    overflow-x: hidden;
 }
 
 /* Minden h1 sticky */
@@ -36,9 +37,7 @@ h1 {
     justify-items: center;
 }
 
-
 /* --------- Sidebar --------- */
-
 /* Sidebar submenu stílusok (add hozzá a meglévő CSS-hez) */
 .sidebar .submenu-toggle {
     display: flex;
@@ -104,10 +103,9 @@ h1 {
 }
 
 .sidebar .submenu li a:hover {
-    background: #E62235;
+    background: #c31e2e;
     color: white;
 }
-
 
 /* Ha valamiért csak egy adott ikon hibás (például company.png), használhatsz konkrétabb szelektort: */
 .sidebar .sidebar-menu img[src$="company.png"] {
@@ -121,8 +119,8 @@ h1 {
     background: #2c3e50;
     color: #fff;
     min-height: 100vh;
-    padding-left: 10px;
-    padding-right: 10px;
+    padding-left: 0;
+    padding-right: 0;
     position: fixed;
     top: 0;
     left: 0;
@@ -132,18 +130,35 @@ h1 {
     z-index: 1000;
 }
 
+.sidebar-menu li {
+    padding-right: 10px;
+    padding-left: 10px;
+}
+
+.sidebar-menu li.active {
+    padding-right: 0;
+}
+
+.sidebar-menu li.active a {
+    padding-right: 0;
+    border-bottom-right-radius: 0;
+    border-top-right-radius: 0;
+    background-color: #f4f6f8;
+    color: black !important;
+    border-left: 10px solid red;
+}
+
 .sidebar-header {
     text-align: center;       /* középre igazítás */
-    padding: 20px 0;          /* fent-lent térköz */
+    padding: 0;          /* fent-lent térköz */
 }
 
 .sidebar-header img {
-    width: 120px;             /* logó szélessége */
+    width: 100%;             /* logó szélessége */
     height: auto;             /* arányok megtartása */
     display: inline-block;
     margin-bottom: 10px;
 }
-
 
 .sidebar-header h2 {
     text-align: center;
@@ -161,7 +176,23 @@ h1 {
     margin: 10px 0;
 }
 
+.sidebar-logout li {
+    margin: 10px 20px
+;
+
+}
+
 .sidebar-menu a {
+    color: #fff;
+    text-decoration: none;
+    padding: 10px 15px;
+    display: flex;
+    align-items: center;
+    border-radius: 6px;
+    transition: background 0.3s;
+}
+
+.sidebar-logout a {
     color: #fff;
     text-decoration: none;
     padding: 10px 15px;
@@ -176,8 +207,17 @@ h1 {
     margin-right: 10px;
 }
 
+.sidebar-logout a img {
+    width: 24px;
+    margin-right: 10px;
+}
 
 .sidebar-menu a:hover {
+    background: #E62235;
+    color: white;
+}
+
+.sidebar-logout a:hover {
     background: #E62235;
     color: white;
 }
@@ -259,7 +299,7 @@ button:hover {
 input, select {
     width: 100%;
     padding: 12px;
-    margin: 8px 0 20px 0;
+    /*margin: 8px 0 20px 0;*/
     border-radius: 8px;
     border: 1px solid #ccc;
     box-sizing: border-box;
@@ -273,6 +313,10 @@ input, select {
 
 .flex button {
     width: 70%;
+}
+
+.btn-primary{
+    margin-top: 20px;
 }
 
 /* --------- Register Choice gombok --------- */
@@ -359,6 +403,7 @@ input, select {
 #password-rules li.valid::before {
     content: "✔ ";
 }
+
 #password-rules li.invalid::before {
     content: "✖ ";
 }
@@ -379,7 +424,6 @@ input, select {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     text-align: center;
 }
-
 
 .profile-image img {
     width: 120px;
@@ -530,14 +574,14 @@ input, select {
     padding: 25px 35px;
     border-radius: 12px;
     box-shadow: 0 6px 16px rgba(0,0,0,0.1);
-    width: 60%;          /* méret szabályozás */
-    max-width: 700px;
+    width: 100%;          /* méret szabályozás */
+    max-width: 100%;
 }
 
 /* Táblázat középre */
 
 .home-container{
-    max-width: 100%;
+    min-width: 100%;
 }
 
 .table-wrapper {
@@ -548,7 +592,6 @@ input, select {
     overflow-x: auto;        /* vízszintes görgetés kicsi képernyőn */
     position: relative;
 }
-
 
 /* Searchbar balra helyezése */
 .dataTables_filter {
@@ -570,7 +613,7 @@ input, select {
 .table-wrapper .dataTable {
     display: inline-block;   /* text-align működik */
     width: auto !important;  /* ne vegyen 100%-ot a JS miatt */
-    min-width: 600px;        /* opcionális minimum szélesség */
+    min-width: 100%;        /* opcionális minimum szélesség */
     max-width: 100%;
     border-collapse: collapse;
 }
@@ -655,8 +698,9 @@ input.invalid, select.invalid {
     position: fixed;
     top: 20px;
     right: 20px;
-    background: #f0f8ff; /* világoskék */
-    border: 1px solid #3399ff;
+    background: #47aa13;
+    color: white;
+    border: 7px dashed black;
     border-radius: 8px;
     padding: 10px 15px;
     margin-bottom: 10px;
@@ -674,14 +718,21 @@ input.invalid, select.invalid {
 .offer-notification a.open-chat {
     display: inline-block;
     margin-left: 10px;
-    color: #0066cc;
+    color: white;
     text-decoration: none;
     font-weight: bold;
+    float: right;
 }
 
-.offer-notification a.open-chat:hover {
-    text-decoration: underline;
+a.open-chat .offer-item{
+    display: inline-block;
+    margin-left: 10px;
+    text-decoration: none;
+    font-weight: bold;
+    width: 90%;
+    color: #3f3f3f;
 }
+
 .chat-window {
     position: fixed;
     bottom: 20px;
@@ -708,8 +759,29 @@ input.invalid, select.invalid {
     border-top-right-radius: 8px;
 }
 
-.chat-header .close-chat {
+.close-chat {
+    background-color: #ff4d4f; /* élénk piros */
+    color: #fff; /* fehér X */
+    border: none;
+    border-radius: 50%; /* teljesen kerek */
+    width: 24px;
+    height: 24px;
+    font-weight: bold;
+    font-size: 14px;
+    line-height: 1;
+    text-align: center;
     cursor: pointer;
+    padding: 0;
+    margin-left: 8px;
+    transition: background-color 0.2s;
+}
+
+.close-chat:hover {
+    background-color: #d9363e; /* sötétebb piros hover-re */
+}
+
+.chat-field{
+    margin: 5px;
 }
 
 .chat-messages {
@@ -738,6 +810,201 @@ input.invalid, select.invalid {
     cursor: pointer;
 }
 
+.offer-buttons {
+    display: flex;
+    margin-top: 8px;
+    gap: 6px;
+    width: 100%;
+}
+
+.offer-buttons button {
+    flex: 1;
+    padding: 6px 10px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.offer-buttons.two-btns button {
+    width: 50%; /* két gombnál 50-50% */
+}
+
+.offer-buttons.one-btn button {
+    width: 100%; /* egy gombnál teljes szélesség */
+    text-align: center;
+}
+
+div .mb-3{
+    margin-bottom: 20px;
+}
+
+.form-control{
+    margin-top: 10px;
+}
+
+label .form-label{
+    margin-bottom: 15px;
+}
+
+#accept-offer, #decline-offer{
+    padding: 7px;
+    margin-top: 7px;
+}
+
+.user-menu {
+    position: relative;
+    cursor: pointer;
+}
+
+.user-avatar {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.user-menu .dropdown {
+    position: absolute;
+    top: 45px;
+    right: 0;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    display: none;
+    flex-direction: column;
+    min-width: 150px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.user-menu:hover .dropdown {
+    display: flex;
+}
+
+.user-menu .dropdown a {
+    padding: 10px;
+    text-decoration: none;
+    color: #333;
+}
+
+.user-menu .dropdown a:hover {
+    background: #f0f0f0;
+}
+
+.settings-btn img{
+    width: 24px;
+}
+
+label img{
+    width: 32px;
+}
+
+.tooltip {
+  position: relative;
+  display: inline-block;
+  margin-left: 5px; /* kis távolság a kapcsolótól */
+}
+
+.tooltip .info-icon {
+  width: 16px;
+  height: 16px;
+  cursor: help;
+  opacity: 0.7;
+}
+
+.tooltip .info-icon:hover {
+  opacity: 1;
+}
+
+.tooltip .tooltiptext {
+  visibility: hidden;
+  width: 220px;
+  background-color: #333;
+  color: #fff;
+  text-align: left;
+  border-radius: 5px;
+  padding: 8px;
+  position: absolute;
+  z-index: 100;
+  bottom: 125%; /* az ikon fölé helyezkedik */
+  left: 50%;
+  margin-left: -110px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  font-size: 0.85em;
+}
+
+.tooltip:hover .tooltiptext {
+  visibility: visible;
+  opacity: 1;
+}
+
+.subscription-btn{
+    padding: 6px 10px;
+    margin-left: 20px;
+    border-radius: 6px;
+    font-size: 12px;
+}
+
+/* látatlan / új ajánlat vizuális kiemelése a profil oldalon */
+.offer-item.unseen {
+    background: #fff9e6; /* halvány sárga alap */
+    border-left: 10px solid #ffbf47;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+
+/* Toggle alap */
+.switch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Rejtett checkbox */
+.switch input {
+  display: none;
+}
+
+/* Csúszka */
+.slider {
+  position: relative;
+  width: 50px;
+  height: 24px;
+  background-color: #ccc;
+  border-radius: 24px;
+  transition: background-color 0.3s;
+}
+
+/* A pötty (kör) */
+.slider::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.3s;
+}
+
+/* Ha be van kapcsolva */
+.switch input:checked + .slider {
+  background-color: #4caf50;
+}
+
+.switch input:checked + .slider::before {
+  transform: translateX(26px);
+}
+
+#deleteSelected, #republishSelected{
+    background-color: black;
+    /*border: black 4px solid;*/
+    padding-top: 15px;
+}
 
 /* Reszponzív: kisebb képernyőn a keresősáv alá kerül */
 @media (max-width: 800px) {

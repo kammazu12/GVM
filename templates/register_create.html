@@ -135,7 +135,7 @@
                 return;
             }
 
-            fetch(`/check_tax_number?tax_number=${encodeURIComponent(value)}`)
+            fetch(`register/check_tax_number?tax_number=${encodeURIComponent(value)}`)
                 .then(r => r.json())
                 .then(data => {
                     if (data && data.exists) {

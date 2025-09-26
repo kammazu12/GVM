@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container mt-5" style="max-width: 400px;">
+<div class="container mt-5" style="max-width: 400px; height: 50%">
     <div class="card shadow-sm">
         <div class="card-body">
             <h3 class="card-title text-center mb-4">Login</h3>
@@ -26,13 +26,15 @@
             </form>
 
             <div class="mt-2 text-center">
-                <a href="{{ url_for('forgot_password') }}"><i class="bi bi-key-fill"></i> Forgot Password?</a>
+                <a href="{{ url_for('profile.forgot_password') }}"><i class="bi bi-key-fill"></i> Forgot Password?</a>
             </div>
 
             <hr>
 
             <div class="text-center">
-                <p>Don't have an account? <a href="{{ url_for('register_choice') }}">Register</a></p>
+                <p>Don't have an account? <a href="{{ url_for('register.register_choice') }}">Register</a></p>
+                <br>
+                <img src="{{ url_for('static', filename='images/logiai-standard-f.jpg') }}" alt="logiAI logo">
             </div>
         </div>
     </div>

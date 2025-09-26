@@ -25,7 +25,7 @@
         <div class="employees-list">
             {% if company.users %}
                 {% for employee in company.users %}
-                    <a id="employee_card" href="{{ url_for('user_profile', company_slug=company.slug, email=employee.email) }}">
+                    <a id="employee_card" href="{{ url_for('company.user_profile', company_slug=company.slug, email=employee.email) }}">
                         <div class="employee-card">
                             <div class="employee-left">
                                 <img src="{% if employee.profile_picture %}
@@ -66,28 +66,75 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for cargo in cargos %}
-                        <tr>
-                            <td>
-                                {{ cargo.start_date_1.strftime('%Y.%m.%d.') if cargo.start_date_1 else '' }}
-                                {% if cargo.start_date_2 %}
-                                    (+{{ (cargo.start_date_2 - cargo.start_date_1).days }})
+                    {% for cargo in cargos %}
+                    <tr data-id="{{ cargo.cargo_id }}">
+                        <td class="datum">
+                        {% set pickups = cargo.locations | selectattr('type', 'equalto', 'pickup') | list %}
+                        {% if pickups %}
+                            {% set first_pickup = pickups[0] %}
+                            {% if first_pickup.start_date %}
+                                {{ first_pickup.start_date.strftime('%Y.%m.%d.') }}
+                                {% if first_pickup.end_date %}
+                                    {% set delta = (first_pickup.end_date - first_pickup.start_date).days %}
+                                    (+{{ delta }})
                                 {% endif %}
-                            </td>
+                            {% endif %}
 
-                            <td>{{ cargo.origin_country.upper()}}</td>
-                            <td>{{ cargo.masked_origin_postcode if cargo.is_hidden_from else cargo.origin_postcode }}</td>
-                            <td>{{ cargo.masked_origin_city if cargo.is_hidden_from else cargo.origin_city }}</td>
+                            {% if first_pickup.start_time_1 or first_pickup.start_time_2 %}
+                                <br>
+                                {{ first_pickup.start_time_1.strftime('%H:%M') if first_pickup.start_time_1 else '' }}
+                                – {{ first_pickup.start_time_2.strftime('%H:%M') if first_pickup.start_time_2 else '' }}
+                            {% endif %}
+                        {% endif %}
+                    </td>
 
+                        {% if pickups %}
+                            {% set first_pickup = pickups[0] %}
+                            {% set extra_pickups = pickups|length - 1 %}
                             <td>
-                                {{ cargo.end_date_1.strftime('%Y.%m.%d.') if cargo.end_date_1 else '' }}
-                                {% if cargo.end_date_2 %}
-                                    (+{{ (cargo.end_date_2 - cargo.end_date_1).days }})
-                                {% endif %}
+                                {{ first_pickup.country.upper() }}
                             </td>
-                            <td>{{ cargo.destination_country.upper()}}</td>
-                            <td>{{ cargo.masked_destination_postcode if cargo.is_hidden_to else cargo.destination_postcode }}</td>
-                            <td>{{ cargo.masked_destination_city if cargo.is_hidden_to else cargo.destination_city }}</td>
+                            <td>
+                                {{ first_pickup.masked_postcode if first_pickup.is_hidden else first_pickup.postcode }}
+                            </td>
+                            <td>
+                                {{ first_pickup.masked_city if first_pickup.is_hidden else first_pickup.city }}
+                            </td>
+                        {% endif %}
+                        {# Dropoff dátum + idő #}
+                            <td class="datum">
+                            {% set dropoffs = cargo.locations | selectattr('type', 'equalto', 'dropoff') | list %}
+                            {% if dropoffs %}
+                                {% set last_dropoff = dropoffs[-1] %}
+                                {% if last_dropoff.start_date %}
+                                    {{ last_dropoff.start_date.strftime('%Y.%m.%d.') }}
+                                    {% if last_dropoff.end_date %}
+                                        {% set delta = (last_dropoff.end_date - last_dropoff.start_date).days %}
+                                        (+{{ delta }})
+                                    {% endif %}
+                                {% endif %}
+
+                                {% if last_dropoff.start_time_1 or last_dropoff.start_time_2 %}
+                                    <br>
+                                    {{ last_dropoff.start_time_1.strftime('%H:%M') if last_dropoff.start_time_1 else '' }}
+                                    – {{ last_dropoff.start_time_2.strftime('%H:%M') if last_dropoff.start_time_2 else '' }}
+                                {% endif %}
+                            {% endif %}
+                        </td>
+
+                        {% if dropoffs %}
+                            {% set last_dropoff = dropoffs[-1] %}
+                            {% set extra_dropoffs = dropoffs|length - 1 %}
+                            <td>
+                                {{ last_dropoff.country.upper() }}
+                            </td>
+                            <td>
+                                {{ last_dropoff.masked_postcode if last_dropoff.is_hidden else last_dropoff.postcode }}
+                            </td>
+                            <td>
+                                {{ last_dropoff.masked_city if last_dropoff.is_hidden else last_dropoff.city }}
+                            </td>
+                        {% endif %}
 
                             <td>{{ cargo.size }}</td>
                             <td>{{ cargo.weight }}</td>
@@ -98,7 +145,7 @@
                             <td>{{ cargo.certificates or '-' }}</td>
                             <td>
                                 {% if cargo.posted_by %}
-                                    <a href="{{ url_for('user_profile', company_slug=cargo.company.slug, email=cargo.posted_by.email) }}">
+                                    <a href="{{ url_for('company.user_profile', company_slug=cargo.company.slug, email=cargo.posted_by.email) }}">
                                         {{ cargo.posted_by.first_name }} {{ cargo.posted_by.last_name }}
                                     </a>
                                 {% else %}
@@ -209,6 +256,9 @@ $(document).ready(function() {
     text-align: left;
 }
 
+td {
+    width:150px;
+}
 
 /* Reszponzív */
 @media (max-width: 1100px) {

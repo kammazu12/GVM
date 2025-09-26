@@ -1,0 +1,111 @@
+# English translations for PROJECT.
+# Copyright (C) 2025 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2025-09-08 10:04+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: templates/settings.html:10
+msgid "Beállítások"
+msgstr "Settings"
+
+#: templates/settings.html:13
+msgid "Megjelenítés"
+msgstr "Appearance"
+
+#: templates/settings.html:15
+msgid "Éjszakai mód"
+msgstr "Dark mode"
+
+#: templates/settings.html:22
+msgid "Színvak mód"
+msgstr "Colorblind mode"
+
+#: templates/settings.html:28
+msgid "Nyelv"
+msgstr "Language"
+
+#: templates/settings.html:39
+msgid "Teljesítmény"
+msgstr "Performance"
+
+#: templates/settings.html:49
+msgid "Alacsony teljesítmény mód"
+msgstr "Low performance mode"
+
+#: templates/settings.html:52
+msgid ""
+"A Low Quality mód csökkenti a képek és grafikus elemek részletességét, valamint kikapcsolja a felugró értesítéseket és animációkat, így gyorsabb betöltést biztosít lassabb internetkapcsolat esetén."
+msgstr "Low performance mode reduces the detail of images and graphics, also, it disables pop-up notifications and animations, thus providing faster loading for a slower internet connection."
+
+#: templates/settings.html:65
+msgid "Előfizetés"
+msgstr "Subscription"
+
+#: templates/settings.html:66
+msgid "Aktuális csomag"
+msgstr "Actual subscription"
+
+#: templates/settings.html:66
+msgid "Ingyenes"
+msgstr "Free"
+
+#: templates/settings.html:67
+msgid "Módosítás"
+msgstr "Modify"
+
+#: templates/settings.html:71
+msgid "Mentés"
+msgstr "Save"
+
+
+#: templates/sidebar.html:8
+msgid "Kezdőlap"
+msgstr "Home"
+
+#: templates/sidebar.html:9
+msgid "Rakományt keresek"
+msgstr "Search cargo"
+
+#: templates/sidebar.html:10
+msgid "Járművet keresek"
+msgstr "Search vehicle"
+
+#: templates/sidebar.html:11
+msgid "Saját járművek"
+msgstr "My vehicles"
+
+#: templates/sidebar.html:15
+msgid "Cégek"
+msgstr "Companies"
+
+#: templates/sidebar.html:17
+msgid "Saját cég"
+msgstr "My company"
+
+#: templates/sidebar.html:18
+msgid "Cégkereső"
+msgstr "Search company"
+
+#: templates/sidebar.html:21
+msgid "Profil"
+msgstr "Profile"
+
+#: templates/sidebar.html:22
+msgid "Statisztika"
+msgstr "Statistics"
+
+#: templates/sidebar.html:33
+msgid "Kijelentkezés"
+msgstr "Log out"

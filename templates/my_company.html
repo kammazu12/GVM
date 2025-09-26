@@ -67,7 +67,7 @@
                 <input type="number" id="num_invites" min="1" max="20" value="1" style="width:70px; padding:6px;">
             </div>
 
-            <form method="POST" action="{{ url_for('generate_invite') }}" class="invite-form space-y-6 max-w-md bg-white p-6 rounded-xl shadow-md" id="invite-form">
+            <form method="POST" action="{{ url_for('company.generate_invite') }}" class="invite-form space-y-6 max-w-md bg-white p-6 rounded-xl shadow-md" id="invite-form">
                 <div id="invite-rows" class="invite-rows" aria-live="polite">
                     <!-- Sorok ide lesznek beszúrva JS-sel -->
                 </div>
@@ -87,7 +87,7 @@
         <div class="employees-list">
                     {% if company.users %}
                         {% for employee in company.users %}
-                            <a id="employee_card" href="{{ url_for('user_profile', company_slug=company.slug, email=employee.email) }}">
+                            <a id="employee_card" href="{{ url_for('company.user_profile', company_slug=company.slug, email=employee.email) }}">
                                 <div class="employee-card relative">
 
                                     <!-- Jobb felső ikonok -->
@@ -160,72 +160,118 @@
                 </div>
 
         <h2>Hirdetett fuvarok</h2>
-            {% if cargos %}
-            <div class="table-wrapper">
-                <table id="companyCargos" class="display" style="width:100%; font-size:0.9em;">
-                    <thead>
-                        <tr>
-                            <th class="felvet"><img src="{{ url_for('static', filename='icons/calendar_up.png') }}" style="width: 24px"></th>
-                            <th class="felvet" colspan="3">Rakomány felvétel</th>
-                            <th class="letet"><img src="{{ url_for('static', filename='icons/calendar_done.png') }}" style="width: 24px"></th>
-                            <th class="letet" colspan="3">Rakomány letétel</th>
-                            <th class="arujarmu">Hossza (m)</th>
-                            <th class="arujarmu">Tömege (t)</th>
-                            <th class="arujarmu" colspan="5">Jármű tulajdonságok</th>
-                            <th class="hirdeto">Hirdető</th>
-                            <th style="display:none;">created_at</th> <!-- rejtett oszlop a csökkenő rendezéshez -->
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for cargo in cargos %}
-                        <tr>
-                            <td>
-                                {{ cargo.start_date_1.strftime('%Y.%m.%d.') if cargo.start_date_1 else '' }}
-                                {% if cargo.start_date_2 %}
-                                    (+{{ (cargo.start_date_2 - cargo.start_date_1).days }})
+        {% if cargos %}
+        <div class="table-wrapper">
+            <table id="companyCargos" class="display" style="width:100%; font-size:0.9em;">
+                <thead>
+                    <tr>
+                        <th class="felvet"><img src="{{ url_for('static', filename='icons/calendar_up.png') }}" style="width: 24px"></th>
+                        <th class="felvet" colspan="3">Rakomány felvétel</th>
+                        <th class="letet"><img src="{{ url_for('static', filename='icons/calendar_done.png') }}" style="width: 24px"></th>
+                        <th class="letet" colspan="3">Rakomány letétel</th>
+                        <th class="arujarmu">Hossza (m)</th>
+                        <th class="arujarmu">Tömege (t)</th>
+                        <th class="arujarmu" colspan="5">Jármű tulajdonságok</th>
+                        <th class="hirdeto">Hirdető</th>
+                        <th style="display: none">created_at</th> <!-- rejtett oszlop a csökkenő rendezéshez -->
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cargo in cargos %}
+                    <tr data-id="{{ cargo.cargo_id }}">
+                        <td class="datum">
+                        {% set pickups = cargo.locations | selectattr('type', 'equalto', 'pickup') | list %}
+                        {% if pickups %}
+                            {% set first_pickup = pickups[0] %}
+                            {% if first_pickup.start_date %}
+                                {{ first_pickup.start_date.strftime('%Y.%m.%d.') }}
+                                {% if first_pickup.end_date %}
+                                    {% set delta = (first_pickup.end_date - first_pickup.start_date).days %}
+                                    (+{{ delta }})
                                 {% endif %}
-                            </td>
+                            {% endif %}
 
-                            <td>{{ cargo.origin_country.upper()}}</td>
-                            <td>{{ cargo.masked_origin_postcode if cargo.is_hidden_from else cargo.origin_postcode }}</td>
-                            <td>{{ cargo.masked_origin_city if cargo.is_hidden_from else cargo.origin_city }}</td>
+                            {% if first_pickup.start_time_1 or first_pickup.start_time_2 %}
+                                <br>
+                                {{ first_pickup.start_time_1.strftime('%H:%M') if first_pickup.start_time_1 else '' }}
+                                – {{ first_pickup.start_time_2.strftime('%H:%M') if first_pickup.start_time_2 else '' }}
+                            {% endif %}
+                        {% endif %}
+                    </td>
 
+                        {% if pickups %}
+                            {% set first_pickup = pickups[0] %}
+                            {% set extra_pickups = pickups|length - 1 %}
                             <td>
-                                {{ cargo.end_date_1.strftime('%Y.%m.%d.') if cargo.end_date_1 else '' }}
-                                {% if cargo.end_date_2 %}
-                                    (+{{ (cargo.end_date_2 - cargo.end_date_1).days }})
-                                {% endif %}
+                                {{ first_pickup.country.upper() }}
                             </td>
-                            <td>{{ cargo.destination_country.upper()}}</td>
-                            <td>{{ cargo.masked_destination_postcode if cargo.is_hidden_to else cargo.destination_postcode }}</td>
-                            <td>{{ cargo.masked_destination_city if cargo.is_hidden_to else cargo.destination_city }}</td>
-
-                            <td>{{ cargo.size }}</td>
-                            <td>{{ cargo.weight }}</td>
-                            <td>{{ cargo.vehicle_type or '-' }}</td>
-                            <td>{{ cargo.stucture or '-' }}</td>
-                            <td>{{ cargo.equipment or '-' }}</td>
-                            <td>{{ cargo.cargo_securement or '-' }}</td>
-                            <td>{{ cargo.certificates or '-' }}</td>
                             <td>
-                                {% if cargo.posted_by %}
-                                    <a href="{{ url_for('user_profile', company_slug=cargo.company.slug, email=cargo.posted_by.email) }}">
-                                        {{ cargo.posted_by.first_name }} {{ cargo.posted_by.last_name }}
-                                    </a>
-                                {% else %}
-                                    -
-                                {% endif %}
+                                {{ first_pickup.masked_postcode if first_pickup.is_hidden else first_pickup.postcode }}
                             </td>
-                            <td style="display:none;">{{ cargo.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                {% else %}
-                <p>Ez a cég még nem hirdetett fuvarokat.</p>
-                {% endif %}
-            </div>
+                            <td>
+                                {{ first_pickup.masked_city if first_pickup.is_hidden else first_pickup.city }}
+                            </td>
+                        {% endif %}
+                        {# Dropoff dátum + idő #}
+                            <td class="datum">
+                            {% set dropoffs = cargo.locations | selectattr('type', 'equalto', 'dropoff') | list %}
+                            {% if dropoffs %}
+                                {% set last_dropoff = dropoffs[-1] %}
+                                {% if last_dropoff.start_date %}
+                                    {{ last_dropoff.start_date.strftime('%Y.%m.%d.') }}
+                                    {% if last_dropoff.end_date %}
+                                        {% set delta = (last_dropoff.end_date - last_dropoff.start_date).days %}
+                                        (+{{ delta }})
+                                    {% endif %}
+                                {% endif %}
 
+                                {% if last_dropoff.start_time_1 or last_dropoff.start_time_2 %}
+                                    <br>
+                                    {{ last_dropoff.start_time_1.strftime('%H:%M') if last_dropoff.start_time_1 else '' }}
+                                    – {{ last_dropoff.start_time_2.strftime('%H:%M') if last_dropoff.start_time_2 else '' }}
+                                {% endif %}
+                            {% endif %}
+                        </td>
+
+                        {% if dropoffs %}
+                            {% set last_dropoff = dropoffs[-1] %}
+                            {% set extra_dropoffs = dropoffs|length - 1 %}
+                            <td>
+                                {{ last_dropoff.country.upper() }}
+                            </td>
+                            <td>
+                                {{ last_dropoff.masked_postcode if last_dropoff.is_hidden else last_dropoff.postcode }}
+                            </td>
+                            <td>
+                                {{ last_dropoff.masked_city if last_dropoff.is_hidden else last_dropoff.city }}
+                            </td>
+                        {% endif %}
+
+                        <td>{{ cargo.size }}</td>
+                        <td>{{ cargo.weight }}</td>
+                        <td>{{ cargo.vehicle_type or '-' }}</td>
+                        <td>{{ cargo.stucture or '-' }}</td>
+                        <td>{{ cargo.equipment or '-' }}</td>
+                        <td>{{ cargo.cargo_securement or '-' }}</td>
+                        <td>{{ cargo.certificates or '-' }}</td>
+                        <td>
+                            {% if cargo.posted_by %}
+                                <a href="{{ url_for('company.user_profile', company_slug=cargo.company.slug, email=cargo.posted_by.email) }}">
+                                    {{ cargo.posted_by.first_name }} {{ cargo.posted_by.last_name }}
+                                </a>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td style="display: none">{{ cargo.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p>Ez a cég még nem hirdetett fuvarokat.</p>
+            {% endif %}
+        </div>
     </main>
 </div>
 {% block scripts %}
@@ -320,6 +366,26 @@ document.addEventListener('DOMContentLoaded', function () {
             <option value="accountant">Pénzügy</option>
             <option value="owner">Tulaj</option>
         `;
+
+        // --- Role select esemény figyelés ---
+        roleSelect.addEventListener('change', function() {
+            if (roleSelect.value === 'owner') {
+                // ha owner, automatikusan admin, checkbox ne jelenjen meg
+                adminWrapper.style.display = 'none';
+                adminCheckbox.checked = true; // backendnek is küldje
+            } else {
+                // minden más esetben toggle látszik
+                adminWrapper.style.display = 'flex';
+                adminCheckbox.checked = false;
+            }
+        });
+
+        // ha alapértelmezetten owner van kiválasztva
+        if (roleSelect.value === 'owner') {
+            adminWrapper.style.display = 'none';
+            adminCheckbox.checked = true;
+        }
+
 
         roleWrapper.appendChild(roleLabel);
         roleWrapper.appendChild(roleSelect);
@@ -484,7 +550,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const formData = new FormData();
             formData.append('logo', file);
 
-            fetch("{{ url_for('upload_company_logo') }}", {
+            fetch("{{ url_for('company.upload_company_logo') }}", {
                 method: 'POST',
                 body: formData,
             })
@@ -519,7 +585,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const msg = isAdmin ? "Biztosan megvonod az admin jogot?" : "Biztosan admin jogot adsz?";
             if(!confirm(msg)) return;
 
-            fetch(`/company/{{ company.company_id }}/promote/${userId}`, {
+            fetch(`/company/company/{{ company.company_id }}/promote/${userId}`, {
                 method: 'POST',
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             })
@@ -557,7 +623,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (!confirm("Biztosan törlöd ezt a felhasználót a cégtől?")) return;
 
-            fetch(`/company/{{ company.company_id }}/remove/${userId}`, {
+            fetch(`/company//company/{{ company.company_id }}/remove/${userId}`, {
                 method: 'POST',
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             })
@@ -583,10 +649,15 @@ document.addEventListener('DOMContentLoaded', function () {
 {% endif %}
 
 <style>
-.home-container{
-    width: 100%;
+.dataTables_wrapper .dataTables_filter {
+    float: none !important;
+    text-align: left !important;
+    margin-bottom: 10px;
+    width: 10vw;
 }
-
+td{
+    width: 200px;
+}
 .company-title {
     font-size: 28px;
     margin-bottom: 20px;
@@ -627,6 +698,7 @@ document.addEventListener('DOMContentLoaded', function () {
 .invite-btn:hover {
     background-color: #357fBD;
 }
+
 .invite-icon {
     width: 20px;
     height: 20px;

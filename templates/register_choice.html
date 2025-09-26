@@ -3,11 +3,11 @@
 <div class="register-choice-container">
     <h2>Join or create a company</h2>
     <div class="button-group">
-        <a href="{{ url_for('register_join') }}" class="choice-button">
+        <a href="{{ url_for('register.register_join') }}" class="choice-button">
             <img src="{{ url_for('static', filename='icons/join.png') }}" alt="Join Company Icon">
             <span>Join a Company</span>
         </a>
-        <a href="{{ url_for('register_create') }}" class="choice-button">
+        <a href="{{ url_for('register.register_create') }}" class="choice-button">
             <img src="{{ url_for('static', filename='icons/create.png') }}" alt="Create Company Icon">
             <span>Create a Company</span>
         </a>
@@ -15,7 +15,7 @@
 
     <!-- Vissza gomb a login oldalra -->
     <div style="text-align: center; margin-top: 30px;">
-        <a href="{{ url_for('login') }}" class="back-button">
+        <a href="{{ url_for('login.login') }}" class="back-button">
             Back to login
         </a>
     </div>

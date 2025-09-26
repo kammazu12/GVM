@@ -1,0 +1,63 @@
+<div class="row">
+  <!-- Bal oldal: szöveges adatok -->
+  <div class="col-md-6">
+    <h6><b>Cég:</b> {{ cargo.company.name if cargo.company else '-' }}</h6>
+
+    <hr>
+    <h6>Felrakók</h6>
+    <ul class="list-group mb-3">
+      {% for loc in cargo.locations if loc.type == 'pickup' %}
+        <li class="list-group-item">
+          <strong>{{ loc.country.upper() }} {{ loc.masked_postcode if loc.is_hidden else loc.postcode }}</strong>
+          - {{ loc.masked_city if loc.is_hidden else loc.city }}
+        </li>
+      {% else %}
+        <li class="list-group-item text-muted">Nincs adat</li>
+      {% endfor %}
+    </ul>
+
+    <h6>Lerakók</h6>
+    <ul class="list-group mb-3">
+      {% for loc in cargo.locations if loc.type == 'dropoff' %}
+        <li class="list-group-item">
+          <strong>{{ loc.country.upper() }} {{ loc.masked_postcode if loc.is_hidden else loc.postcode }}</strong>
+          - {{ loc.masked_city if loc.is_hidden else loc.city }}
+        </li>
+      {% else %}
+        <li class="list-group-item text-muted">Nincs adat</li>
+      {% endfor %}
+    </ul>
+
+    <hr>
+    <h6>Részletek</h6>
+    <p><b>Súly:</b> {{ cargo.weight or '-' }} t</p>
+    <p><b>Méret:</b> {{ cargo.size or '-' }} m</p>
+    <p><b>Jármű típusa:</b> {{ cargo.vehicle_type or '-' }}</p>
+    <p><b>Felépítmény:</b> {{ cargo.stucture or '-' }}</p>
+    <p><b>Felszereltség:</b> {{ cargo.equipment or '-' }}</p>
+    <p><b>Tanúsítványok:</b> {{ cargo.certificates or '-' }}</p>
+    <p><b>Rakományrögzítés:</b> {{ cargo.cargo_securement or '-' }}</p>
+  </div>
+
+  <!-- Jobb oldal: térkép -->
+  <div class="col-md-6">
+    <div id="route-info" style="margin-bottom:10px;font-weight:bold;"></div>
+    <div id="map" style="width:100%; height:500px;"></div>
+  </div>
+</div>
+
+<script id="pickups-data" type="application/json">
+  [
+    {% for loc in cargo.locations if loc.type == 'pickup' %}
+      {"lat": {{ loc.latitude|tojson }}, "lng": {{ loc.longitude|tojson }}, "city": {{ (loc.masked_city if loc.is_hidden else loc.city)|tojson }}, "country": {{ loc.country|tojson }}, "postcode": {{ (loc.masked_postcode if loc.is_hidden else loc.postcode)|tojson }}}{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ]
+</script>
+
+<script id="dropoffs-data" type="application/json">
+  [
+    {% for loc in cargo.locations if loc.type == 'dropoff' %}
+      {"lat": {{ loc.latitude|tojson }}, "lng": {{ loc.longitude|tojson }}, "city": {{ (loc.masked_city if loc.is_hidden else loc.city)|tojson }}, "country": {{ loc.country|tojson }}, "postcode": {{ (loc.masked_postcode if loc.is_hidden else loc.postcode)|tojson }}}{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ]
+</script>

@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="subscriptions-page" style="display:flex; flex-direction:column; align-items:center; padding:40px 0; width: 100%">
+    <h1>{{ _("Előfizetés módosítása") }}</h1>
+
+    <div class="subscription-cards" style="display:flex; justify-content:center; gap:20px; flex-wrap:wrap; width:90%; max-width:1200px; margin-top:30px;">
+        {% set plans = [
+            {
+                "key": "basic",
+                "name": "Basic",
+                "price": "9 900 Ft / hó / alkalmazott",
+                "features": [
+                    "Alap felhasználói fiók",
+                    "Korlátozott számú fuvar rögzítése",
+                    "Alap keresési funkció",
+                    "Maximum 5 alkalmazott",
+                    "Korlátozott személyreszabási lehetőség"
+                ]
+            },
+            {
+                "key": "advanced",
+                "name": "Advanced",
+                "price": "19 900 Ft / hó / alkalmazott",
+                "features": [
+                    "Korlátlan fuvar rögzítés",
+                    "Maximum 12 alkalmazott",
+                    "Részletes statisztikák és riportok",
+                    "E-mail értesítések",
+                    "Csapatmenedzsment (több felhasználó egy cégnél)",
+                    "\"Gamify\" funkció",
+                    "Kiterjesztett személyreszabási lehetőség"
+                ]
+            },
+            {
+                "key": "pro",
+                "name": "Pro",
+                "price": "289 900 Ft / hó",
+                "features": [
+                    "Minden Advanced funkció",
+                    "Korlátlan számú alkalmazott",
+                    "All inclusive fuvarszervezés : fuvarok hirdetésétől a pénzügyekig"
+                    "AI alapú fuvarszervezés",
+                    "Automatizált javaslatok útvonalakra és költségoptimalizálásra",
+                    "Prémium support",
+                    "Teljeskörű személyreszabási lehetőség"
+                ]
+            }
+        ] %}
+
+        {% for plan in plans %}
+        <div class="card" style="
+            border:1px solid #ddd;
+            border-radius:8px;
+            padding:20px;
+            flex:1 1 28%;
+            min-width:260px;
+            max-width:350px;
+            background:#f9f9f9;
+            display:flex;
+            flex-direction:column;
+            justify-content:space-between;
+        ">
+        <div>
+            <h3>{{ plan.name }}</h3>
+            <h4 style="margin:10px 0; color:#444;">{{ plan.price }}</h4>
+
+            <ul style="list-style:none; padding:0; text-align:left; margin:15px 0;">
+                {% for feature in plan.features %}
+                <li style="margin-bottom:8px;">✅ {{ feature }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+            <div style="margin-top:auto; text-align:center;">
+                {% if user.is_company_admin %}
+                <form method="POST">
+                    <input type="hidden" name="plan" value="{{ plan.key }}">
+                    {% if company.subscription_type == plan.key %}
+                    <button class="btn" disabled style="background: #999">{{ _("Aktuális") }}</button>
+                    {% else %}
+                    <button class="btn">{{ _("Választás") }}</button>
+                    {% endif %}
+                </form>
+                {% endif %}
+            </div>
+        </div>
+
+        {% endfor %}
+    </div>
+    <!-- Vissza gomb a beállítások oldalra -->
+    <div style="text-align: center; margin-top: 30px;">
+        <a href="{{ url_for('profile.settings') }}" class="back-button align-left">
+            {{ _("Vissza a beállításokhoz") }}
+        </a>
+    </div>
+</div>
+
+
+{% endblock %}

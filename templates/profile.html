@@ -1,115 +1,211 @@
-<!-- templates/profile.html -->
 {% extends "base.html" %}
 
 {% block content %}
-<div class="home-container">
-    <aside class="sidebar">
-        {% include 'sidebar.html' %}
-    </aside>
-    <main class="main-content">
-    <h1 class="cim">Profil</h1>
-
-    <div class="profile-container">
-        <div class="profile-card">
-            <div class="profile-image" style="
-                position: relative;
-                display: inline-block;
-                cursor: pointer;
-                width: 150px;
-                height: 150px;
-                border-radius: 50%;
-                overflow: hidden; /* megakadályozza a belógást */
-            ">
-                <img id="profile-image"
-                     src="{{ url_for('static', filename='uploads/profile_pictures/' + user.profile_picture) if user.profile_picture else url_for('static', filename='icons/user.png') }}"
-                     alt="Profile Picture"
-                     style="width: 100%; height: 100%; object-fit: cover;">
-
-                <!-- Hover overlay -->
-                <div id="profile-overlay" style="
-                    position: absolute;
-                    top: 0; left: 0;
-                    width: 100%; height: 100%;
-                    background: rgba(0,0,0,0.5);
-                    color: #fff;
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    opacity: 0;
-                    transition: opacity 0.3s;
-                ">
-                    Kép cseréje
+<div class="home-container" style="display:flex; width:100%;">
+    <aside class="sidebar">{% include 'sidebar.html' %}</aside>
+    <main class="main-content" style="flex:1; display:flex; flex-direction:column; padding:0 5%;">
+        <h1 class="cim" style="margin-bottom: 20px;">Profil</h1>
+        <div class="main-flex" style="display:flex; width:100%; gap:10%;">
+            <div class="left-column" style="flex:0 0 45%; height: 100%">
+                <div class="profile-card" style="height: 100%; position: static;">
+                    <div class="profile-image" style="position: relative; display: inline-block; cursor: pointer; width: 150px; height: 150px; border-radius: 50%; overflow: hidden;">
+                        <img id="profile-image" src="{{ url_for('static', filename='uploads/profile_pictures/' + user.profile_picture) if user.profile_picture else url_for('static', filename='icons/user.png') }}" alt="Profile Picture" style="width: 100%; height: 100%; object-fit: cover;">
+                        <div id="profile-overlay" style="position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); color:#fff; display:flex; justify-content:center; align-items:center; opacity:0; transition: opacity 0.3s;">Kép cseréje</div>
+                        <input type="file" id="profile-upload" accept="image/*" style="display: none;">
+                    </div>
+                    <div class="profile-info">
+                        <p><strong><big>{{ user.first_name }} {{ user.last_name }}</big></strong> | {{ user.company.name if user.company else 'Nincs cég' }}</p>
+                        <p><strong>E-mail:</strong> {{ user.email }}</p>
+                        <p><strong>Telefon:</strong> {{ user.phone_number }}</p>
+                        <p><strong>Szerep:</strong> {{ user.role }}</p>
+                        <p><strong>Tagság kezdete:</strong> {{ user.created_at }}</p>
+                        <br>
+                        <br>
+                        <a href="{{ url_for('profile.edit_profile') }}" class="btn">Profil szerkesztése</a><br>
+                        <a href="{{ url_for('profile.change_password') }}" class="btn">Change Password</a>
+                    </div>
                 </div>
-
-                <input type="file" id="profile-upload" accept="image/*" style="display: none;">
             </div>
-
-            <div class="profile-info">
-                <p><strong><big>{{ user.first_name }} {{ user.last_name }}</big></strong> | {{ user.company.name if user.company else 'Nincs cég' }}</p>
-                <br>
-                <p><strong>E-mail:</strong> {{ user.email }}</p>
-                <p><strong>Telefon:</strong> {{ user.phone_number }}</p>
-                <p><strong>Szerep:</strong> {{ user.role }}</p>
-                <p><strong>Tagság kezdete:</strong> {{ user.created_at }}</p>
-
-                <a href="{{ url_for('edit_profile') }}" class="btn">Profil szerkesztése</a>
-                <br>
-                <a href="{{ url_for('change_password') }}" class="btn">Change Password</a>
+            <div class="right-column" style="flex:0 0 45%; height: 100%">
+                <div class="chat-card" style="border:1px solid #ccc; border-radius:10px; padding:15px; height:60vh; display:flex; flex-direction:column; background-color:#f9f9f9; margin-bottom:5vh;">
+                    <div style="display:flex; gap:10px; margin-bottom:10px;">
+                        <button id="incoming-tab" class="tab-btn active">Bejövő ajánlatok</button>
+                        <button id="outgoing-tab" class="tab-btn">Kimenő ajánlatok</button>
+                    </div>
+                    <div id="offer-notifications" class="tab-content" style="flex:1; overflow-x:hidden; overflow-y:auto; display:flex; flex-direction:column; gap:10px;"></div>
+                    <div id="my-offer-notifications" class="tab-content" style="flex:1; overflow-y:auto; overflow-x:hidden; display:none; flex-direction:column; gap:10px;"></div>
+                </div>
             </div>
         </div>
-    </div>
-</main>
+    </main>
 </div>
 
 {% block scripts %}
 <script>
-const profileImageContainer = document.querySelector('.profile-image');
-const profileOverlay = document.getElementById('profile-overlay');
-const profileInput = document.getElementById('profile-upload');
-const profileImg = document.getElementById('profile-image');
+if (!window.profileInitDone) {
+    window.profileInitDone = true;
 
-profileImageContainer.addEventListener('mouseenter', () => profileOverlay.style.opacity = 1);
-profileImageContainer.addEventListener('mouseleave', () => profileOverlay.style.opacity = 0);
+    // ---- Profilkép feltöltés marad ----
+    const profileImageContainer = document.querySelector('.profile-image');
+    const profileOverlay = document.getElementById('profile-overlay');
+    const profileInput = document.getElementById('profile-upload');
+    const profileImg = document.getElementById('profile-image');
 
-profileOverlay.addEventListener('click', () => profileInput.click());
-
-profileInput.addEventListener('change', () => {
-    const file = profileInput.files[0];
-    if (!file) return;
-
-    const formData = new FormData();
-    formData.append('profile_picture', file);
-
-    fetch("{{ url_for('upload_profile_picture') }}", {
-        method: 'POST',
-        body: formData,
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                profileImg.src = e.target.result;
-            }
-            reader.readAsDataURL(file);
-        } else {
-            alert(data.error);
-        }
-    })
-    .catch(err => {
-        alert("Hiba történt a feltöltés során.");
-        console.error(err);
+    profileImageContainer?.addEventListener('mouseenter', () => profileOverlay.style.opacity = 1);
+    profileImageContainer?.addEventListener('mouseleave', () => profileOverlay.style.opacity = 0);
+    profileOverlay?.addEventListener('click', () => profileInput.click());
+    profileInput?.addEventListener('change', () => {
+        const file = profileInput.files[0];
+        if (!file) return;
+        const formData = new FormData();
+        formData.append('profile_picture', file);
+        fetch("{{ url_for('profile.upload_profile_picture') }}", { method:'POST', body:formData })
+        .then(r=>r.json())
+        .then(data => {
+            if (data.success) {
+                const reader = new FileReader();
+                reader.onload = e => profileImg.src = e.target.result;
+                reader.readAsDataURL(file);
+            } else { alert(data.error); }
+        }).catch(err => { alert("Hiba történt a feltöltés során."); console.error(err); });
     });
+}
+
+const incomingContainer = document.getElementById("offer-notifications");
+const outgoingContainer = document.getElementById("my-offer-notifications");
+
+// ======= Funkció: 1 ajánlat DOM elem generálása =======
+function createOfferLink(data, direction) {
+    const unseenClass = (direction === "in" && !data.seen) ? 'unseen' : '';
+    const seenByRecipientClass = (direction === "out" && data.seen) ? 'seen-by-recipient' : '';
+    const classes = ['offer-item', unseenClass, seenByRecipientClass].filter(Boolean).join(' ');
+
+    const originDisplay = Array.isArray(data.origin) ? data.origin : [data.origin];
+    const destinationDisplay = Array.isArray(data.destination) ? data.destination : [data.destination];
+
+    const originText = originDisplay.length > 1
+        ? `${originDisplay[0]} (+${originDisplay.length - 1})`
+        : originDisplay[0] || '';
+
+    const destinationText = destinationDisplay.length > 1
+        ? `${destinationDisplay[destinationDisplay.length - 1]} (+${destinationDisplay.length - 1})`
+        : destinationDisplay[0] || '';
+
+    const seenBadge = (direction === "out" && data.seen)
+        ? '<span class="seen-badge" title="A fogadó megtekintette">👁 Ajánlat megtekintve</span>'
+        : '';
+
+    const $link = $(`<a href="#" class="open-chat" data-cargo="${data.cargo_id}" data-offer="${data.offer_id}">
+        <div id="offer-${data.offer_id}" class="${classes}" style="padding:10px; border-radius:5px; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,0.1); position:relative;">
+            ${direction==="in"
+                ? `<div><b>${data.from_user}</b></div>`
+                : `<div>Ajánlatod <b>${data.to_user}</b> részére:</div>`}
+            <div>⬆️ ${originText} → ⬇️ ${destinationText}</div>
+            <div><b>${data.price} ${data.currency.toUpperCase()}</b></div>
+            <small>${data.note ? '"' + data.note + '"<br>' : ''}</small>
+            <small>${data.date||''}</small>
+            ${seenBadge}
+            <div class="offer-status" style="margin-top:5px;">${data.status||''}</div>
+        </div>
+    </a>`);
+
+    // Chat megnyitás
+    $link.on('click', e => {
+        e.preventDefault();
+        openChatWindow(
+            data.cargo_id,
+            data.offer_id,
+            direction==="in" ? data.from_user : data.to_user,
+            data.profile_picture,
+            data,
+            direction==="in" ? data.user_company : ''
+        );
+        if(direction === "in" && !data.seen){
+            fetch(`/cargo/offer/mark_seen/${data.offer_id}`, { method:'POST', credentials:'same-origin' })
+            .then(res=>res.json())
+            .then(resp => {
+                if(resp.success){
+                    data.seen = true;
+                    $link.find('.offer-item').removeClass('unseen');
+                }
+            });
+        }
+    });
+    return $link[0];
+}
+
+// ======= Frissítés: lekérés szerverről =======
+function refreshOffers(){
+    $.getJSON('get_user_offers', data => {
+        incomingContainer.innerHTML = '';
+        outgoingContainer.innerHTML = '';
+        data.incoming.forEach(o => incomingContainer.appendChild(createOfferLink(o,"in")));
+        data.outgoing.forEach(o => outgoingContainer.appendChild(createOfferLink(o,"out")));
+    });
+}
+
+// Első betöltés
+refreshOffers();
+// 10 mp-enként automatikus frissítés
+setInterval(refreshOffers, 10000);
+
+// ======= Realtime frissítés socket-ről =======
+socket.on('new_offer', data => {
+    if(data.direction==="in") incomingContainer.prepend(createOfferLink(data,"in"));
+    else outgoingContainer.prepend(createOfferLink(data,"out"));
+});
+
+socket.on('offer_updated', data => {
+    const $old = $(`#offer-${data.offer_id}`);
+    if($old.length){
+        $old.parent().replaceWith(createOfferLink(data, data.direction));
+    } else {
+        if(data.direction==="in") incomingContainer.prepend(createOfferLink(data,"in"));
+        else outgoingContainer.prepend(createOfferLink(data,"out"));
+    }
+});
+
+// ======= Tab váltás =======
+document.getElementById('incoming-tab').addEventListener('click', () => {
+    incomingContainer.style.display = 'flex';
+    outgoingContainer.style.display = 'none';
+    document.getElementById('incoming-tab').classList.add('active');
+    document.getElementById('outgoing-tab').classList.remove('active');
+});
+
+document.getElementById('outgoing-tab').addEventListener('click', () => {
+    incomingContainer.style.display = 'none';
+    outgoingContainer.style.display = 'flex';
+    document.getElementById('outgoing-tab').classList.add('active');
+    document.getElementById('incoming-tab').classList.remove('active');
 });
 </script>
 {% endblock %}
-
-<!-- Flash animáció stílus -->
 <style>
-@keyframes slide-in {
-    0% { transform: translateX(100%); opacity: 0; }
-    100% { transform: translateX(0); opacity: 1; }
+.offer-item { transition: transform 0.2s ease, background 0.2s ease; }
+.offer-item.unseen {
+  border-left: 4px solid #1976d2;
+  background: #eef6ff;
 }
+.offer-item.seen-by-recipient {
+  background: #f6fff6;
+}
+.seen-badge {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 10px;
+  border: 1px solid #1976d2;
+  color: #1976d2;
+}
+.offer-status { font-size: 0.9em; margin-top: 3px; }
+.offer-item:hover { background:#e9f5ff; transform: translateX(5px); }
+.tab-btn { flex:1; padding:8px; border:none; border-radius:5px; cursor:pointer; background:#eee; color:#000; transition: background 0.2s; }
+.tab-btn.active { background:#000; color:#fff; }
+.tab-btn:hover:not(.active) { background:#ddd; }
+@media(max-width:768px){.main-flex{flex-direction:column; gap:20px;} .left-column,.right-column{flex:0 0 100%;}.profile-card{position:static; top:auto;}}
 </style>
-
 {% endblock %}

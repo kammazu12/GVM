@@ -1,35 +1,45 @@
 <!-- templates/sidebar.html -->
 <nav class="sidebar">
     <div class="sidebar-header">
-        <img src="{{ url_for('static', filename='images/logiailogo.png') }}" alt="logiAI logo">
+        <img src="{{ url_for('static', filename='images/logiai-text.jpg') }}" alt="logiAI logo">
     </div>
 
     <ul class="sidebar-menu">
-        <li><a href="{{ url_for('home') }}"><img src="{{ url_for('static', filename='icons/home.png') }}" alt=""> Kezdőlap</a></li>
-        <li><a href="{{ url_for('shipments') }}"><img src="{{ url_for('static', filename='icons/warehouse.png') }}" alt=""> Rakományt keresek</a></li>
-        <li><a href="{{ url_for('cargo') }}"><img src="{{ url_for('static', filename='icons/truck.png') }}" alt=""> Járművet keresek</a></li>
-        <li><a href="{{ url_for('vehicles') }}"><img src="{{ url_for('static', filename='icons/car.png') }}" alt=""> Saját járművek</a></li>
+        <li class="{% if request.endpoint == 'home.home' %}active{% endif %}"><a href="{{ url_for('home.home') }}"><img src="{{ url_for('static', filename='icons/home.png') }}" alt="home"> {{ _("Kezdőlap") }}</a></li>
+        <li class="{% if request.endpoint == 'shipments' %}active{% endif %}"><a href="{{ url_for('shipments') }}"><img src="{{ url_for('static', filename='icons/warehouse.png') }}" alt="shipments"> {{ _("Rakományt keresek") }}</a></li>
+        <li class="{% if request.endpoint == 'cargo.cargo' %}active{% endif %}"><a href="{{ url_for('cargo.cargo') }}"><img src="{{ url_for('static', filename='icons/truck.png') }}" alt="cargo"> {{ _("Járművet keresek") }}</a></li>
+        <li class="{% if request.endpoint == 'vehicles.vehicles' %}active{% endif %}"><a href="{{ url_for('vehicles.vehicles') }}"><img src="{{ url_for('static', filename='icons/car.png') }}" alt="vehicles"> {{ _("Saját járművek") }}</a></li>
 
         <!-- Cégek (lenyíló) -->
-        <li>
-            <a href="#" class="submenu-toggle"><img src="{{ url_for('static', filename='icons/company.png') }}" alt=""> Cégek</a>
+        <li class="{% if request.endpoint == 'company.my_company' or request.endpoint == 'company.companies' %}active{% endif %}">
+            <a href="#" class="submenu-toggle"><img src="{{ url_for('static', filename='icons/company.png') }}" alt="company"> {{ _("Cégek") }}</a>
             <ul class="submenu">
-                <li><a href="{{ url_for('my_company') }}">Saját cég</a></li>
-                <li><a href="{{ url_for('companies') }}">Cégkereső</a></li>
+                <li><a href="{{ url_for('company.my_company') }}">{{ _("Saját cég") }}</a></li>
+                <li><a href="{{ url_for('company.companies') }}">{{ _("Cégkereső") }}</a></li>
             </ul>
         </li>
-
-
-
-        <li><a href="{{ url_for('profile') }}"><img src="{{ url_for('static', filename='icons/user.png') }}" alt=""> Profil</a></li>
-        <li><a href="{{ url_for('statistics') }}"><img src="{{ url_for('static', filename='icons/stats.png') }}" alt=""> Statisztika</a></li>
+        <li class="{% if request.endpoint == 'profile.profile' %}active{% endif %}">
+            <a href="{{ url_for('profile.profile') }}">
+                {% if unseen_incoming_offers_count and unseen_incoming_offers_count > 0 %}
+                    <img src="{{ url_for('static', filename='icons/user_alert.png') }}" alt="profile">
+                {% else %}
+                    <img src="{{ url_for('static', filename='icons/user.png') }}" alt="profile">
+                {% endif %}
+                {{ _("Profil") }}
+            </a>
+        </li>
+        <li class="{% if request.endpoint == 'statistics.statistics' %}active{% endif %}"><a href="{{ url_for('statistics.statistics') }}"><img src="{{ url_for('static', filename='icons/stats.png') }}" alt="statistics"> {{ _("Statisztika") }}</a></li>
     </ul>
-
     <!-- Logout gomb a sidebar alján -->
     <ul class="sidebar-logout">
+        <li class="{% if request.endpoint == 'profile.settings' %}active{% endif %}">
+            <a href="{{ url_for('profile.settings') }}" class="settings-btn">
+                <img src="{{ url_for('static', filename='icons/settings.png') }}" alt="settings"> {{ _("Beállítások") }}
+            </a>
+        </li>
         <li>
-            <a href="{{ url_for('logout') }}" class="logout-btn">
-                <img src="{{ url_for('static', filename='icons/exit.png') }}" alt=""> Kijelentkezés
+            <a href="{{ url_for('login.logout') }}" class="logout-btn">
+                <img src="{{ url_for('static', filename='icons/exit.png') }}" alt="logout"> {{ _("Kijelentkezés") }}
             </a>
         </li>
     </ul>
@@ -88,7 +98,6 @@ document.querySelectorAll('.submenu-toggle').forEach(function(toggle) {
         submenu.classList.toggle('active');
     });
 });
-
 
 // Opció: kattintás bárhova a menün kívül bezárja az almenüt
 document.addEventListener('click', function(e) {

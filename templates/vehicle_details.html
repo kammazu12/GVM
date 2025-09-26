@@ -1,0 +1,38 @@
+<!--templates/vehicle_details.html-->
+<div id="vehicle-details">
+    <h5>Jármű részletek</h5>
+    <p><strong>Típus:</strong> {{ vehicle.vehicle_type or '-' }}</p>
+    <p><strong>Felépítmény:</strong> {{ vehicle.structure or '-' }}</p>
+    <p><strong>Felszerelés:</strong> {{ vehicle.equipment or '-' }}</p>
+    <p><strong>Rögzítés:</strong> {{ vehicle.cargo_securement or '-' }}</p>
+    <p><strong>Leírás:</strong> {{ vehicle.description or '-' }}</p>
+    <p><strong>Rakodás típusa:</strong> {{ vehicle.load_type or '-' }}</p>
+    <p><strong>Áru mérete:</strong>
+        {% if vehicle.capacity_t %}{{ vehicle.capacity_t }} t{% else %}-{% endif %},
+        {% if vehicle.volume_m3 %}{{ vehicle.volume_m3 }} m³{% else %}-{% endif %}
+    </p>
+    <p><strong>Ár:</strong> {{ vehicle.price or '-' }} {{ vehicle.currency or '-' }}</p>
+    <p><strong>Hirdető cég:</strong>
+        {% if vehicle.company %}
+            <a href="{{ url_for('company.company_profile', slug=vehicle.company.slug) }}">
+                {{ vehicle.company.name }}
+            </a>
+        {% else %}-{% endif %}
+    </p>
+
+    <!-- Hidden JSON adatok a JS-hez -->
+    <div id="pickups-data" style="display:none;">{{ pickups_json | tojson }}</div>
+    <div id="dropoffs-data" style="display:none;">{{ dropoffs_json | tojson }}</div>
+    <div id="radius-km" style="display:none;">{{ radius_km }}</div>
+    <div id="route-coords" style="display:none">{{ route_coords|tojson }}</div>
+    <div id="route-distance" style="display:none">{{ route_distance_km }}</div>
+    <div id="route-duration" style="display:none">{{ route_duration_text }}</div>
+
+    <!-- Távolság info -->
+    <div id="route-info" style="margin-top:10px; font-weight:bold;"></div>
+    <!-- Térkép -->
+    <div id="map" style="height: 500px; width: 100%; margin-top: 15px;"></div>
+    <!-- Térkép alatt -->
+    <div id="route-cities" style="margin-top:10px; font-weight:bold;"></div>
+
+</div>
