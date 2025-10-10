@@ -4,9 +4,11 @@ from flask_login import login_required
 from . import chat_bp
 from models import *  # vagy ahogy nálad importálódik
 from sqlalchemy import asc
+from utils import no_cache
 
 @chat_bp.route("/chat_history/<int:cargo_id>/<int:offer_id>")
 @login_required
+@no_cache
 def chat_history(cargo_id, offer_id):
     messages = ChatMessage.query.filter_by(
         cargo_id=cargo_id, offer_id=offer_id
@@ -60,6 +62,7 @@ def chat_history(cargo_id, offer_id):
 
 @chat_bp.route('/offer_info/<int:offer_id>')
 @login_required
+@no_cache
 def offer_info(offer_id):
     offer = Offer.query.get_or_404(offer_id)
     cargo = Cargo.query.get(offer.cargo_id)

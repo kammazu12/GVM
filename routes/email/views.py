@@ -41,6 +41,7 @@ client = genai.Client(api_key='AIzaSyByu3AatMxSafp8eKCBeON4DYTjm8ZfiYw')
 
 @email_bp.route('/api/gmail-emails')
 @login_required
+@no_cache
 def get_emails():
     if current_user.user_id not in user_tokens:
         return jsonify({"error": "No Gmail account connected"}), 400
@@ -79,6 +80,7 @@ def get_emails():
 
 @email_bp.route('/api/gmail-email/<email_id>')
 @login_required
+@no_cache
 def get_email(email_id):
     """Lazy load: teljes üzenet, HTML/Plain text formázással"""
     if current_user.user_id not in user_tokens:
@@ -125,6 +127,7 @@ def get_email(email_id):
 
 @email_bp.route('/api/gmail-email-ai/<email_id>', methods=['GET'])
 @login_required
+@no_cache
 def email_to_cargo(email_id):
     if current_user.user_id not in user_tokens:
         return jsonify({"error": "No Gmail account connected"}), 400
@@ -225,6 +228,7 @@ def email_to_cargo(email_id):
 
 @email_bp.route('/parse-email', methods=['POST'])
 @login_required
+@no_cache
 def parse_email():
     email_text = request.json.get("email_text", "")
     response = client.models.generate_content(

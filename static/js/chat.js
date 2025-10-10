@@ -4,6 +4,23 @@
 window.socket = window.socket || io();
 const socket = window.socket;
 
+socket.on('connect', () => {
+    console.log("[DEBUG] Socket connected, id:", socket.id);
+    if(typeof CURRENT_USER_ID !== 'undefined'){
+        console.log("[DEBUG] Joining user room with CURRENT_USER_ID:", CURRENT_USER_ID);
+        socket.emit("join_user", { user_id: CURRENT_USER_ID });
+    } else {
+        console.warn("[WARN] CURRENT_USER_ID nincs definiálva!");
+    }
+});
+
+socket.on('disconnect', () => {
+    console.log("[DEBUG] Socket disconnected");
+});
+
+// 🔔 Saját Socket.IO szoba csatlakozás (a backendben: join_user)
+socket.emit("join_user");
+
 // ---- Globális chat ablak kezelés ----
 const chatWindows = [];
 
@@ -74,26 +91,47 @@ function openChatWindow(cargoId, offerId, fromUser, profilePictureUrl, offerData
         let partnerName = isOwn ? offerData.to_user : offerData.from_user;
         let partnerProfilePic = offerData.profile_picture || '/static/uploads/profile_pictures/default.png';
 
+        // offerData.status lehet: "pending", "accepted", "declined"
+        let priceColor = "#007bff"; // alap: pending → kék
+
+        if(offerData.status === "accepted" || offerData.status === "finalized") {
+            priceColor = "green";
+        } else if(offerData.status === "declined" || offerData.status === "withdrawn") {
+            priceColor = "red";
+        }
+
         let buttonsHtml = "";
         if (!isOwn && offerData.cargo_owner_id === CURRENT_USER_ID) {
-            buttonsHtml = `
-                <div class="offer-buttons two-btns">
-                    <button class="accept-offer-btn" data-offer-id="${offerData.offer_id}">✅ Elfogad</button>
-                    <button class="decline-offer-btn" data-offer-id="${offerData.offer_id}">❌ Elutasít</button>
-                </div>`;
+            if (offerData.status === "pending") {
+                buttonsHtml = `
+                    <div class="offer-buttons two-btns">
+                        <button class="accept-offer-btn" data-offer-id="${offerData.offer_id}">✅ Elfogad</button>
+                        <button class="decline-offer-btn" data-offer-id="${offerData.offer_id}">❌ Elutasít</button>
+                    </div>`;
+            }
         } else if (offerData.cargo_owner_id !== CURRENT_USER_ID) {
-            buttonsHtml = `
-                <div class="offer-buttons one-btn">
-                    <button class="quick-offer-btn" data-offer-id="${offerData.offer_id}">🤝 Új ajánlat</button>
-                </div>`;
+            // ajánlattevő saját oldala → új ajánlat
+            if (offerData.status === "accepted") {
+                buttonsHtml = `
+                    <div class="offer-buttons one-btn">
+                        <button class="finalize-offer-btn" data-offer-id="${offerData.offer_id}">✔ Véglegesít</button>
+                        <button class="withdraw-offer-btn" data-offer-id="${offerData.offer_id}">↩ Visszavon</button>
+                    </div>`;
+            } else if (offerData.status === "pending" || offerData.status === "declined") {
+                buttonsHtml = `
+                    <div class="offer-buttons one-btn">
+                        <button class="quick-offer-btn" data-offer-id="${offerData.offer_id}">🤝 Új ajánlat</button>
+                    </div>`;
+            }
         }
+
 
         $messages.append(`
         <div class="msg offer-summary" data-offer-id="${offerData.offer_id}" data-price="${offerData.price}" data-currency="${offerData.currency}" style="background:#f0f0f0; padding:5px; border-radius:5px; margin-bottom:5px; display:flex; justify-content:space-between; position: sticky; top: 0; flex-wrap: wrap">
             <div class="offer-left" style="display:flex; flex-direction:column; align-items:flex-start;">
                 <span>⬆️${offerData.origin}</span>
                 <small><b>${offerData.pickup_date}</b></small>
-                <b style="color: red">${offerData.price} ${offerData.currency.toUpperCase()}</b>
+                <b class="offer-price" style="color: ${priceColor}">${offerData.price} ${offerData.currency.toUpperCase()}</b>
             </div>
             <div class="offer-right" style="display:flex; flex-direction:column; align-items:flex-end;">
                 <span>${offerData.destination}⬇️</span>
@@ -169,38 +207,107 @@ function openChatWindow(cargoId, offerId, fromUser, profilePictureUrl, offerData
     }
 }
 
-// Elfogadás gomb
+// ===== Single Source of Truth: Offer Status Update (szöveg nélkül) =====
+function updateOfferStatus(offerId, status) {
+    let color = "#007bff"; // default: pending (kék)
+    let statusText = "";   // mit írjon ki a badge
+    let showButtons = true; // csak finalized/withdrawn esetén false
+
+    if (status === 'accepted') {
+        color = "green";
+    } else if (status === 'declined') {
+        color = "red";
+    } else if (status === 'finalized') {
+        color = "green"; // sötétzöld
+        showButtons = false;
+    } else if (status === 'withdrawn') {
+        color = "red"; // sötétpiros
+        showButtons = false;
+    }
+
+    // === 1️⃣ Lista elem frissítése (pl. /profile oldalon) ===
+    const $offerItem = $(`#offer-${offerId}`);
+    if ($offerItem.length) {
+        $offerItem.removeClass('status-pending status-accepted status-declined status-finalized status-withdrawn')
+                  .addClass(`status-${status}`);
+        $offerItem.find('.offer-price').css("color", color);
+        $offerItem.find('.offer-status').text(statusText).css("color", color);
+
+        // Gombok eltüntetése, ha finalized/withdrawn
+        if (!showButtons) {
+            $offerItem.find('.offer-buttons').remove();
+        }
+    }
+
+    // === 2️⃣ Chat ablakban frissítés ===
+    const $chatOffer = $(`.offer-summary[data-offer-id="${offerId}"]`);
+    if ($chatOffer.length) {
+        $chatOffer.find('.offer-price').css("color", color);
+        $chatOffer.find('.offer-status').text(statusText).css("color", color);
+
+        // Ha finalized vagy withdrawn → gombok eltüntetése
+        if (!showButtons) {
+            $chatOffer.find('.offer-buttons').remove();
+        }
+    }
+
+    // === 3️⃣ Toast értesítés, ha nincs sehol ===
+    if (!$offerItem.length && !$chatOffer.length) {
+        const msg = statusText || `Ajánlat státusz frissítve: ${status}`;
+        showOfferToast(msg, status);
+    }
+}
+
+// ===== Override AJAX accept/decline to use SST =====
 $(document).on('click', '.accept-offer-btn', function() {
     const offerId = $(this).data('offer-id');
-    console.log("[DEBUG] Accept gomb kattintva, offerId:", offerId);
+    if (!confirm("Biztosan elfogadod az ajánlatot?")) return;
 
     $.post(`cargo/offers/accept/${offerId}`, function(resp) {
-        console.log("[DEBUG] Backend válasz (accept):", resp);
         if (resp.success) {
-            $(`.offer-summary[data-offer-id="${offerId}"] .offer-status`)
-                .text("✅ Elfogadva")
-                .css("color", "green");
+            updateOfferStatus(offerId, 'accepted'); // szín és gomb frissítése
         }
-    }).fail(function(err) {
-        console.error("[ERROR] Accept hívás sikertelen:", err);
     });
 });
 
-// Elutasítás gomb
 $(document).on('click', '.decline-offer-btn', function() {
     const offerId = $(this).data('offer-id');
-    console.log("[DEBUG] Decline gomb kattintva, offerId:", offerId);
+    if (!confirm("Biztosan elutasítod az ajánlatot?")) return;
 
     $.post(`/cargo/offers/decline/${offerId}`, function(resp) {
-        console.log("[DEBUG] Backend válasz (decline):", resp);
         if (resp.success) {
-            $(`.offer-summary[data-offer-id="${offerId}"] .offer-status`)
-                .text("❌ Elutasítva")
-                .css("color", "red");
+            updateOfferStatus(offerId, 'declined'); // szín és gomb frissítése
         }
-    }).fail(function(err) {
-        console.error("[ERROR] Decline hívás sikertelen:", err);
     });
+});
+
+// Véglegesítés
+$(document).on('click', '.finalize-offer-btn', function() {
+    const offerId = $(this).data('offer-id');
+    $.post(`/cargo/offer/finalize_or_withdraw/${offerId}`, { action: 'finalize' }, function(resp) {
+        if(resp.success){
+            updateOfferStatus(offerId, 'finalized'); // gomb eltüntetése, szín változtatás
+        } else {
+            alert(resp.error);
+        }
+    });
+});
+
+// Visszavonás
+$(document).on('click', '.withdraw-offer-btn', function() {
+    const offerId = $(this).data('offer-id');
+    $.post(`/cargo/offer/finalize_or_withdraw/${offerId}`, { action: 'withdraw' }, function(resp) {
+        if(resp.success){
+            updateOfferStatus(offerId, 'withdrawn'); // gomb eltüntetése, szín változtatás
+        } else {
+            alert(resp.error);
+        }
+    });
+});
+
+// ===== SocketIO override =====
+socket.on('offer_status_update', function(data){
+    updateOfferStatus(data.offer_id, data.status, data.origin, data.destination, data.price, data.currency);
 });
 
 // Gyors ajánlat modal
@@ -340,17 +447,86 @@ function showNotification(data) {
 
 socket.on('new_offer', function(data) { showNotification(data); });
 
-socket.on('offer_status_update', function(data){
-    const offerId = data.offer_id;
-    const $offerLink = $(`.offer-item[data-offer-id="${offerId}"]`);
-    if($offerLink.length){
-        const statusHtml = data.status === 'accepted'
-            ? '<span style="color:green; font-weight:bold;">✅ Elfogadva</span>'
-            : '<span style="color:red; font-weight:bold;">❌ Elutasítva</span>';
-        $offerLink.find('.offer-status').remove(); // ha van korábbi
-        $offerLink.append(`<div class="offer-status">${statusHtml}</div>`);
+// Stackelt toast konténer
+if($('#toast-container').length === 0){
+    $('body').append('<div id="toast-container" style="position:fixed; top:10px; right:10px; z-index:3000; display:flex; flex-direction:column; gap:10px;"></div>');
+}
+
+// Segédfüggvény: stackelt toast értesítés
+function showOfferToast(message, status) {
+    console.log("[DEBUG] showOfferToast called:", message, status);
+    const color = status === "accepted" ? "#28a745" : "#dc3545"; // zöld/piros
+
+    if($('#toast-container').length === 0){
+        console.log("[DEBUG] toast-container nem létezik, létrehozom");
+        $('body').append('<div id="toast-container" style="position:fixed; top:10px; right:10px; z-index:3000; display:flex; flex-direction:column; gap:10px;"></div>');
     }
-});
+
+    const $toast = $(`
+        <div style="
+            background:${color};
+            color:#fff;
+            padding:10px 15px;
+            border-radius:6px;
+            min-width:200px;
+            box-shadow:0 2px 8px rgba(0,0,0,0.2);
+            opacity:0;
+            transform: translateY(-20px);
+            transition: all 0.4s ease;
+        ">
+            ${message}
+        </div>
+    `);
+
+    $('#toast-container').prepend($toast);
+
+    console.log("[DEBUG] Toast appended, animating in");
+    setTimeout(() => $toast.css({opacity:1, transform:'translateY(0)'}), 10);
+
+    setTimeout(() => {
+        $toast.css({opacity:0, transform:'translateY(-20px)'});
+        setTimeout(() => {
+            $toast.remove();
+            console.log("[DEBUG] Toast removed");
+        }, 400);
+    }, 4000);
+}
+
+// Frissített socket.on az ajánlat státuszhoz
+// socket.on('offer_status_update', function(data){
+//     const offerId = data.offer_id;
+//     const status = data.status; // "accepted" vagy "declined"
+//     const statusText = status === 'accepted' ? "✔ Elfogadva" : "✖ Elutasítva";
+//     const toastMessage = `Ajánlat státusza változott:<br> ${data.origin} - ${data.destination} (${data.price} ${data.currency.toUpperCase()})<br>${statusText}`;
+//
+//     // Először próbáljuk listában frissíteni
+//     socket.on('offer_status_update', function(data){
+//         const $offerItem = $(`#offer-${data.offer_id}`);
+//         if($offerItem.length){
+//             // Státusz osztály frissítése
+//             $offerItem.removeClass('status-accepted status-declined status-pending')
+//                       .addClass(data.status === 'accepted' ? 'status-accepted'
+//                                                             : data.status === 'declined' ? 'status-declined'
+//                                                                                           : 'status-pending');
+//             // Státusz szöveg
+//             const $statusDiv = $offerItem.find('.offer-status');
+//             $statusDiv.text(data.status === 'accepted' ? '✅ Elfogadva'
+//                                                         : data.status === 'declined' ? '❌ Elutasítva'
+//                                                                                       : '');
+//         }
+//     });
+//
+//     // Chat ablakban
+//     const $chatOffer = $(`.offer-summary[data-offer-id="${offerId}"] .offer-status`);
+//     if($chatOffer.length){
+//         $chatOffer.text(statusText).css("color", status === 'accepted' ? 'green' : 'red');
+//     }
+//
+//     // Toast, ha nincs sehol
+//     if(!$offerItem.length && !$chatOffer.length){
+//         showOfferToast(toastMessage, status);
+//     }
+// });
 
 // SocketIO: másik fél frissítése a gyors ajánlatról
 socket.on('offer_updated', function(data){

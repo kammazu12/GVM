@@ -9,6 +9,7 @@ from .email import email_bp
 from .statistics import statistics_bp
 from .vehicles import vehicles_bp
 from .chat import chat_bp
+from .matching import matching_bp
 
 blueprints = [
     company_bp,
@@ -20,5 +21,6 @@ blueprints = [
     home_bp,
     statistics_bp,
     chat_bp,
-    vehicles_bp
+    vehicles_bp,
+    matching_bp
 ]

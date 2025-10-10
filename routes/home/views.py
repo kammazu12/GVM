@@ -1,10 +1,13 @@
 # routes/home/views.py
+from datetime import datetime
+from utils import no_cache
 from flask import render_template, redirect, url_for
 from flask_login import current_user, login_required
 from . import home_bp
-from models import Cargo
+from models import Cargo, Vehicle
 
 @home_bp.route('/')
+@no_cache
 def index():
     if current_user.is_authenticated:
         return redirect(url_for('home.home'))
@@ -13,6 +16,9 @@ def index():
 
 @home_bp.route('/home', endpoint='home')
 @login_required
+@no_cache
 def home():
     cargos = Cargo.query.filter_by(user_id=current_user.user_id).all()
-    return render_template('home.html', cargos=cargos, user=current_user)
+    vehicles = Vehicle.query.filter_by(user_id=current_user.user_id).all()
+    return render_template('home.html', cargos=cargos, user=current_user, vehicles=vehicles,
+        current_year=datetime.now().year)

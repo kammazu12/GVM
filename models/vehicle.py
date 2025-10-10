@@ -1,7 +1,4 @@
 from datetime import datetime
-
-from twisted.plugins.twisted_reactors import default
-
 from extensions import db
 
 class Vehicle(db.Model):
@@ -32,9 +29,35 @@ class Vehicle(db.Model):
     destination_postcode = db.Column(db.String(20))
     destination_city = db.Column(db.String(100))
     destination_diff = db.Column(db.Integer, nullable=True)  # pl. +25 km
-
     load_type = db.Column(db.String(3), nullable=True, default="FTL")  # pl. FTL / LTL
+
+    company = db.relationship('Company', back_populates='vehicles')
+    routes = db.relationship('VehicleRoute', back_populates='vehicle', cascade="all, delete-orphan", lazy=True)
 
     created_at = db.Column(db.DateTime, default=datetime.now())
 
-    company = db.relationship('Company', back_populates='vehicles')
+
+class VehicleRoute(db.Model):
+    # Egy-egy településről tárolja el sorrendben, hogy melyik útvonalon van rajta és melyik jármű teszi meg az utat.
+    id = db.Column(db.Integer, primary_key=True)                        # saját azonosító
+    vehicle_id = db.Column(db.Integer, db.ForeignKey("vehicle.vehicle_id", ondelete='CASCADE'))     # melyik járműhöz tartozik
+    stop_number = db.Column(db.Integer, nullable=False)                 # hanyadik állomás
+    country = db.Column(db.String(2), nullable=False)                   # országkód
+    postcode = db.Column(db.String(20), nullable=False)                 # irányítószám
+    city = db.Column(db.String(100), nullable=False)                    # település
+
+    vehicle = db.relationship('Vehicle', back_populates='routes')
+
+
+class NearbyCity(db.Model):
+    # Egy adott jármű eredeti vagy cél településéhez közeli városokat tárolja el, hogy a keresés gyorsabb legyen.
+    id = db.Column(db.Integer, primary_key=True)
+    country_code = db.Column(db.String(2), nullable=False)              # város országkódja
+    zipcode = db.Column(db.String(20), nullable=False)                  # város irányítószáma
+    city_name = db.Column(db.String(100), nullable=False)               # város neve
+    lat = db.Column(db.Float, nullable=False)                           # város szélességi foka
+    lon = db.Column(db.Float, nullable=False)                           # város hosszúsági foka
+    reference_country = db.Column(db.String(2), nullable=False)         # referencia település országkódja (jármű eredeti vagy cél települése)
+    reference_postcode = db.Column(db.String(20), nullable=False)       # referencia település irányítószáma
+    reference_city = db.Column(db.String(100), nullable=False)          # referencia település neve
+    radius_km = db.Column(db.Integer, nullable=False, default=50)       # hány km-es körzetben van ez a város (pl. 50 km)

@@ -1,5 +1,10 @@
 <!-- templates/companies.html -->
 {% extends "base.html" %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/company_blocklist.js') }}"></script>
+{% endblock %}
+
 {% block content %}
 <div class="home-container">
     <aside class="sidebar">
@@ -27,7 +32,16 @@
                                 </div>
                             </div>
                             <div class="company-info">
-                                <h3>{{ company.name }}</h3>
+                                <div class="company-header">
+                                    <h3 class="company-name">{{ company.name }}</h3>
+                                    {% if user.is_company_admin and company.company_id != user.company_id %}
+                                        <button
+                                            class="block-company-btn"
+                                            data-company-id="{{ company.company_id }}"
+                                            title="Cég tiltása"
+                                        >🚫</button>
+                                    {% endif %}
+                                </div>
                                 <div class="company-details">
                                     <p><strong>Hely:</strong> {{ company.country }}</p>
                                     <p><strong>Cím:</strong> {{ company.post_code }}, {{ company.street }} {{ company.house_number }}</p>
@@ -133,6 +147,30 @@ document.getElementById('companySearch').addEventListener('input', function() {
 
 <!-- CSS -->
 <style>
+.company-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+}
+
+.block-company-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: red;
+    cursor: pointer;
+    transition: transform 0.1s ease;
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+
+.block-company-btn:hover {
+    transform: scale(1.2);
+}
+
+
 /* Cím */
 .cim {
     font-size: 24px;
@@ -191,9 +229,9 @@ document.getElementById('companySearch').addEventListener('input', function() {
     background: #fff;
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    width: 90%; /* a link wrapper már meghatározza a szélességet */
+    width: 100%; /* a link wrapper már meghatározza a szélességet */
     min-width: 300px;
-    height: 150px; /* fix magasság */
+    height: 200px; /* fix magasság */
     transition: transform 0.2s ease;
     text-decoration: none;
     color: inherit;
@@ -219,15 +257,19 @@ document.getElementById('companySearch').addEventListener('input', function() {
 
 /* Cégnév és részletek */
 @media (min-width: 2000px) {
-.company-info h3 {
-    margin: 0 0 8px 0;
-    font-size: 20px;
-    white-space: normal;       /* engedi a törést */
-    word-wrap: break-word;     /* hosszú szavak törése */
-    overflow-wrap: break-word; /* modern verzió */
+    .company-info h3 {
+        margin: 0 0 8px 0;
+        font-size: 20px;
+        white-space: normal;       /* engedi a törést */
+        word-wrap: break-word;     /* hosszú szavak törése */
+        overflow-wrap: break-word; /* modern verzió */
+    }
 }
 
+.company-info{
+    width: 100%;
 }
+
 .company-info h3 {
     margin: 0 0 8px 0;
     font-size: 20px;
@@ -251,6 +293,7 @@ document.getElementById('companySearch').addEventListener('input', function() {
     display: flex;
     flex-direction: column;
     gap: 3px;
+    width: 80%;
 }
 
 .company-details p {

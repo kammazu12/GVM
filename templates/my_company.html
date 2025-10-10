@@ -37,26 +37,31 @@
                 <input type="file" id="logo-input" style="display: none;" accept="image/*,.heic">
                 {% endif %}
             </div>
-
             <div class="company-info">
                 <p><strong>Hely:</strong> {{ company.country }}</p>
                 <p><strong>Cím:</strong> {{ company.post_code }}, {{ company.street }} {{ company.house_number }}</p>
                 <p><strong>Adószám:</strong> {{ company.tax_number }}</p>
                 <p><strong>Tagság kezdete:</strong> {{ company.created_at.strftime('%Y-%m-%d') if company.created_at else '' }}</p>
             </div>
-
         </div>
 
         <!-- Alkalmazottak listája -->
-        <h2 style="display:flex; justify-content:space-between; align-items:center;">
+        <h2 style="display:flex; align-items:center;">
             Alkalmazottak
             {% if is_company_admin %}
-            <button id="invite-toggle-btn" class="invite-btn" aria-expanded="false" aria-controls="invite-panel">
-                <img src="{{ url_for('static', filename='icons/envelope_plus.png') }}" class="invite-icon" alt="Meghívó">
-                Meghívás
-            </button>
+            <span class="invite-button-container">
+                <button id="invite-toggle-btn" class="invite-btn" aria-expanded="false" aria-controls="invite-panel">
+                    <img src="{{ url_for('static', filename='icons/envelope_plus.png') }}" class="invite-icon" alt="Meghívó">
+                    Meghívás
+                </button>
+                <button type="button" class="blocked-btn" data-bs-toggle="modal" data-bs-target="#blockedCompaniesModal">
+                    <img src="{{ url_for('static', filename='icons/blacklist.png') }}" class="block-icon" alt="Tiltólista">
+                    Tiltólista kezelése
+                </button>
+            </span>
             {% endif %}
         </h2>
+
 
         <div id="invite-panel" class="invite-panel hidden" aria-hidden="true">
             <h2>Meghívók kezelése</h2>
@@ -166,9 +171,9 @@
                 <thead>
                     <tr>
                         <th class="felvet"><img src="{{ url_for('static', filename='icons/calendar_up.png') }}" style="width: 24px"></th>
-                        <th class="felvet" colspan="3">Rakomány felvétel</th>
+                        <th class="felvet">Rakomány felvétel</th>
                         <th class="letet"><img src="{{ url_for('static', filename='icons/calendar_done.png') }}" style="width: 24px"></th>
-                        <th class="letet" colspan="3">Rakomány letétel</th>
+                        <th class="letet">Rakomány letétel</th>
                         <th class="arujarmu">Hossza (m)</th>
                         <th class="arujarmu">Tömege (t)</th>
                         <th class="arujarmu" colspan="5">Jármű tulajdonságok</th>
@@ -179,18 +184,20 @@
                 <tbody>
                     {% for cargo in cargos %}
                     <tr data-id="{{ cargo.cargo_id }}">
-                        <td class="datum">
+                    <td class="datum">
                         {% set pickups = cargo.locations | selectattr('type', 'equalto', 'pickup') | list %}
                         {% if pickups %}
                             {% set first_pickup = pickups[0] %}
                             {% if first_pickup.start_date %}
-                                {{ first_pickup.start_date.strftime('%Y.%m.%d.') }}
+                                {{ first_pickup.start_date.strftime('%m.%d.') }}
+                                {% if first_pickup.start_date.year != current_year %}
+                                    .{{ first_pickup.start_date.year }}
+                                {% endif %}
                                 {% if first_pickup.end_date %}
                                     {% set delta = (first_pickup.end_date - first_pickup.start_date).days %}
                                     (+{{ delta }})
                                 {% endif %}
                             {% endif %}
-
                             {% if first_pickup.start_time_1 or first_pickup.start_time_2 %}
                                 <br>
                                 {{ first_pickup.start_time_1.strftime('%H:%M') if first_pickup.start_time_1 else '' }}
@@ -199,54 +206,58 @@
                         {% endif %}
                     </td>
 
+                    <td>
                         {% if pickups %}
                             {% set first_pickup = pickups[0] %}
                             {% set extra_pickups = pickups|length - 1 %}
-                            <td>
-                                {{ first_pickup.country.upper() }}
-                            </td>
-                            <td>
-                                {{ first_pickup.masked_postcode if first_pickup.is_hidden else first_pickup.postcode }}
-                            </td>
-                            <td>
-                                {{ first_pickup.masked_city if first_pickup.is_hidden else first_pickup.city }}
-                            </td>
+                            <span class="country-zip"><strong>{{ first_pickup.country.upper() }} {{ first_pickup.masked_postcode if first_pickup.is_hidden else first_pickup.postcode }}</strong></span><br>
+                            <span class="city">{{ first_pickup.masked_city if first_pickup.is_hidden else first_pickup.city }}</span>
+                            {% if extra_pickups > 0 %}
+                                <br><span class="extra-count">(+{{ extra_pickups }})</span>
+                            {% endif %}
+                        {% else %}
+                            -
                         {% endif %}
-                        {# Dropoff dátum + idő #}
-                            <td class="datum">
-                            {% set dropoffs = cargo.locations | selectattr('type', 'equalto', 'dropoff') | list %}
-                            {% if dropoffs %}
-                                {% set last_dropoff = dropoffs[-1] %}
-                                {% if last_dropoff.start_date %}
-                                    {{ last_dropoff.start_date.strftime('%Y.%m.%d.') }}
-                                    {% if last_dropoff.end_date %}
-                                        {% set delta = (last_dropoff.end_date - last_dropoff.start_date).days %}
-                                        (+{{ delta }})
-                                    {% endif %}
-                                {% endif %}
+                    </td>
 
-                                {% if last_dropoff.start_time_1 or last_dropoff.start_time_2 %}
-                                    <br>
-                                    {{ last_dropoff.start_time_1.strftime('%H:%M') if last_dropoff.start_time_1 else '' }}
-                                    – {{ last_dropoff.start_time_2.strftime('%H:%M') if last_dropoff.start_time_2 else '' }}
+                    <td class="datum">
+                        {% set dropoffs = cargo.locations | selectattr('type', 'equalto', 'dropoff') | list %}
+                        {% if dropoffs %}
+                            {% set last_dropoff = dropoffs[-1] %}
+                            {% if last_dropoff.start_date %}
+                                {{ last_dropoff.start_date.strftime('%m.%d.') }}
+                                {% if last_dropoff.start_date.year != current_year %}
+                                    .{{ last_dropoff.start_date.year }}
+                                {% endif %}
+                                {% if last_dropoff.end_date %}
+                                    {% set delta = (last_dropoff.end_date - last_dropoff.start_date).days %}
+                                    (+{{ delta }})
                                 {% endif %}
                             {% endif %}
-                        </td>
+                            {% if last_dropoff.start_time_1 or last_dropoff.start_time_2 %}
+                                <br>
+                                {{ last_dropoff.start_time_1.strftime('%H:%M') if last_dropoff.start_time_1 else '' }}
+                                – {{ last_dropoff.start_time_2.strftime('%H:%M') if last_dropoff.start_time_2 else '' }}
+                            {% endif %}
+                        {% endif %}
+                    </td>
 
+                    <td>
                         {% if dropoffs %}
                             {% set last_dropoff = dropoffs[-1] %}
                             {% set extra_dropoffs = dropoffs|length - 1 %}
-                            <td>
-                                {{ last_dropoff.country.upper() }}
-                            </td>
-                            <td>
-                                {{ last_dropoff.masked_postcode if last_dropoff.is_hidden else last_dropoff.postcode }}
-                            </td>
-                            <td>
-                                {{ last_dropoff.masked_city if last_dropoff.is_hidden else last_dropoff.city }}
-                            </td>
+                            <span class="country-zip"><strong>{{ last_dropoff.country.upper() }} {{ last_dropoff.masked_postcode if last_dropoff.is_hidden else last_dropoff.postcode }}</strong></span><br>
+                            <span class="city">{{ last_dropoff.masked_city if last_dropoff.is_hidden else last_dropoff.city }}</span>
+                            {% if extra_dropoffs > 0 %}
+                                <br><span class="extra-count">(+{{ extra_dropoffs }})</span>
+                            {% endif %}
+                        {% else %}
+                            -
                         {% endif %}
+                    </td>
 
+
+                        {# További oszlopok változatlanul #}
                         <td>{{ cargo.size }}</td>
                         <td>{{ cargo.weight }}</td>
                         <td>{{ cargo.vehicle_type or '-' }}</td>
@@ -268,19 +279,42 @@
                     {% endfor %}
                 </tbody>
             </table>
-            {% else %}
-            <p>Ez a cég még nem hirdetett fuvarokat.</p>
-            {% endif %}
+        {% else %}
+        <p>Ez a cég még nem hirdetett fuvarokat.</p>
+        {% endif %}
+        </div>
+
+        <!-- Tiltott cégek modal (Bootstrap) -->
+        <div class="modal fade" id="blockedCompaniesModal" tabindex="-1" aria-labelledby="blockedCompaniesModalLabel" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered modal-lg"> <!-- modal-lg: nagyobb szélesség -->
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="blockedCompaniesModalLabel">Tiltott cégek</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <table class="table table-striped" id="blockedCompaniesTable">
+                  <tbody>
+                    <!-- JS tölti fel ide a sorokat -->
+                  </tbody>
+                </table>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bezár</button>
+              </div>
+            </div>
+          </div>
         </div>
     </main>
 </div>
+
 {% block scripts %}
 <script>
 $(document).ready(function() {
     var table;
     if (! $.fn.DataTable.isDataTable('#companyCargos')) {
         table = $('#companyCargos').DataTable({
-            "order": [[16, "desc"], [1, "asc"]],
+            "order": [[8, "desc"], [1, "asc"]],
             "pageLength": 5,
             "stripeClasses": ['odd-row', 'even-row'],
             "columnDefs": [{ "orderable": false, "targets": 0 }]
@@ -289,8 +323,10 @@ $(document).ready(function() {
         table = $('#companyCargos').DataTable(); // létező példányt használjuk
     }
 });
+
 </script>
 {% endblock %}
+
 {% if is_company_admin %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -645,6 +681,104 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
 });
+
+
+// Modal kezelése
+document.addEventListener("DOMContentLoaded", () => {
+    console.log("✅ blockedCompanies.js inicializálva");
+
+    const modal = document.getElementById("blockedCompaniesModal");
+    const tbody = modal.querySelector("tbody");
+
+    // Ez a gomb a HTML-ben lévő "Tiltólista kezelése" gomb
+    const openButtons = document.querySelectorAll('[data-bs-target="#blockedCompaniesModal"]');
+
+    // --- Lista betöltése ---
+    const loadBlockedCompanies = () => {
+        console.log("🔄 Tiltott cégek lekérése a /blocked_companies végpointról...");
+
+        fetch("/company/blocked_companies")
+            .then(res => {
+                console.log("📡 Lekérés státuszkód:", res.status);
+                return res.json();
+            })
+            .then(data => {
+                console.log("📦 Válasz JSON:", data);
+
+                tbody.innerHTML = "";
+
+                if (!data || data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="2" class="text-center text-muted">Nincsenek tiltott cégek.</td></tr>`;
+                    console.log("⚠️ Üres lista");
+                    return;
+                }
+
+                data.forEach(c => {
+                    const tr = document.createElement("tr");
+
+                    tr.innerHTML = `
+                        <!-- Cég logó -->
+                        <td style="width:15%; border:none; padding:5px;">
+                            <img src="${c.logo_filename ? `/static/uploads/company_logos/${c.logo_filename}` : '/static/icons/company.png'}"
+                                 alt="${c.name}"
+                                 style="width:60px; height:60px; object-fit:cover; border-radius:8px;">
+                        </td>
+
+                        <!-- Cég neve és címe -->
+                        <td style="width:55%; border:none; padding:5px;">
+                            <strong>${c.name}</strong><br>
+                            <small class="text-muted">
+                                ${c.tax_number || ''} | ${c.country || ''} ${c.post_code || ''}, ${c.street || ''} ${c.house_number || ''}
+                            </small>
+                        </td>
+
+                        <!-- Tiltás feloldása gomb -->
+                        <td class="text-end" style="width:30%; border:none; padding:5px;">
+                            <button class="btn btn-success btn-unblock" data-id="${c.company_id}">
+                                Tiltás feloldása
+                            </button>
+                        </td>
+                    `;
+
+                    tbody.appendChild(tr);
+                });
+
+
+            })
+            .catch(err => {
+                console.error("❌ Hiba történt a fetch során:", err);
+            });
+    };
+
+    // --- Modal megnyitásra adatbetöltés ---
+    openButtons.forEach(btn => {
+        btn.addEventListener("click", () => {
+            console.log("🟢 Tiltólista modal megnyitva");
+            loadBlockedCompanies();
+        });
+    });
+
+    // --- Engedélyezés gomb kezelése ---
+    tbody.addEventListener("click", (e) => {
+        if (e.target.classList.contains("btn-unblock")) {
+            const id = e.target.dataset.id;
+            console.log("🧩 Engedélyezés indult ID:", id);
+
+            fetch(`/company/unblock_company/${id}`, { method: "POST" })
+                .then(res => res.json())
+                .then(data => {
+                    console.log("📬 Válasz az engedélyezésre:", data);
+                    if (data.success) {
+                        loadBlockedCompanies();
+                    } else {
+                        alert(data.error || "Hiba történt!");
+                    }
+                })
+                .catch(err => console.error("❌ Engedélyezés fetch hiba:", err));
+        }
+    });
+});
+
 </script>
 {% endif %}
 
@@ -655,6 +789,20 @@ document.addEventListener('DOMContentLoaded', function () {
     margin-bottom: 10px;
     width: 10vw;
 }
+
+#blockedCompaniesModal td {
+    vertical-align: middle; /* középre igazítás függőlegesen */
+}
+
+#blockedCompaniesModal td strong {
+    font-size: 1rem; /* nagyobb betű a névnek */
+}
+
+#blockedCompaniesModal td small {
+    color: #666;      /* halványabb szín a címnek */
+    font-size: 0.85rem;
+}
+
 td{
     width: 200px;
 }
@@ -670,6 +818,12 @@ td{
     align-items: center;
 }
 
+.company-logo-container{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 .company-logo img {
     width: 120px;
     height: 120px;
@@ -682,7 +836,13 @@ td{
     font-size: 16px;
 }
 
-.invite-btn {
+.invite-button-container {
+    margin-left: auto;  /* tolja a gombokat a sor jobb szélére */
+    display: flex;
+    gap: 8px;           /* kis távolság a gombok között */
+}
+
+.invite-btn, .blocked-btn {
     background-color: #4a90e2;
     color: white;
     font-weight: 600;
@@ -695,11 +855,13 @@ td{
     border: none;
     transition: background 0.2s;
 }
+
 .invite-btn:hover {
     background-color: #357fBD;
 }
 
-.invite-icon {
+
+.invite-icon, .block-icon {
     width: 20px;
     height: 20px;
 }
@@ -718,6 +880,7 @@ td{
     display: flex;
     flex-wrap: wrap;
     gap: 20px;
+    margin-bottom: 20px;
 }
 .employee-card {
     position: relative;

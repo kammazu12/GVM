@@ -78,7 +78,11 @@ const outgoingContainer = document.getElementById("my-offer-notifications");
 function createOfferLink(data, direction) {
     const unseenClass = (direction === "in" && !data.seen) ? 'unseen' : '';
     const seenByRecipientClass = (direction === "out" && data.seen) ? 'seen-by-recipient' : '';
-    const classes = ['offer-item', unseenClass, seenByRecipientClass].filter(Boolean).join(' ');
+    let statusClass = '';
+    if (data.status === 'finalized') statusClass = 'offer-finalized';
+    else if (data.status === 'withdrawn') statusClass = 'offer-withdrawn';
+
+    const classes = ['offer-item', unseenClass, seenByRecipientClass, statusClass].filter(Boolean).join(' ');
 
     const originDisplay = Array.isArray(data.origin) ? data.origin : [data.origin];
     const destinationDisplay = Array.isArray(data.destination) ? data.destination : [data.destination];
@@ -91,7 +95,22 @@ function createOfferLink(data, direction) {
         ? `${destinationDisplay[destinationDisplay.length - 1]} (+${destinationDisplay.length - 1})`
         : destinationDisplay[0] || '';
 
-    const seenBadge = (direction === "out" && data.seen)
+    // Státusz badge
+    let statusBadge = '';
+    if(data.status === 'accepted' || data.status === 'declined') {
+        let color = data.status === "accepted" ? "green" : "red";
+        let symbol = data.status === "accepted" ? "✔" : "✖";
+        let text = data.status === "accepted" ? "Ajánlat elfogadva" : "Ajánlat elutasítva";
+        statusBadge = `<span class="status-badge" style="color:${color}; border-color:${color}">${symbol} ${text}</span>`;
+    }
+    else if (data.status === 'finalized' || data.status === 'withdrawn'){
+        let color = data.status === "finalized" ? "green" : "red";
+        let symbol = data.status === "finalized" ? "✔" : "✖";
+        let text = data.status === "finalized" ? "Sikeres üzlet" : "Üzlet meghiúsult";
+        statusBadge = `<span class="status-badge" style="color:${color}; border-color:${color}">${symbol} ${text}</span>`;
+    }
+
+    const seenBadge = (direction === "out" && data.seen && data.status === "pending")
         ? '<span class="seen-badge" title="A fogadó megtekintette">👁 Ajánlat megtekintve</span>'
         : '';
 
@@ -105,9 +124,11 @@ function createOfferLink(data, direction) {
             <small>${data.note ? '"' + data.note + '"<br>' : ''}</small>
             <small>${data.date||''}</small>
             ${seenBadge}
-            <div class="offer-status" style="margin-top:5px;">${data.status||''}</div>
+            ${statusBadge}
         </div>
     </a>`);
+    const fromUserId = data.from_user_id;
+    const toUserId   = data.to_user_id;
 
     // Chat megnyitás
     $link.on('click', e => {
@@ -118,7 +139,9 @@ function createOfferLink(data, direction) {
             direction==="in" ? data.from_user : data.to_user,
             data.profile_picture,
             data,
-            direction==="in" ? data.user_company : ''
+            direction==="in" ? data.user_company : '',
+            fromUserId,
+            toUserId
         );
         if(direction === "in" && !data.seen){
             fetch(`/cargo/offer/mark_seen/${data.offer_id}`, { method:'POST', credentials:'same-origin' })
@@ -179,10 +202,18 @@ document.getElementById('outgoing-tab').addEventListener('click', () => {
     document.getElementById('outgoing-tab').classList.add('active');
     document.getElementById('incoming-tab').classList.remove('active');
 });
+
 </script>
+
 {% endblock %}
 <style>
-.offer-item { transition: transform 0.2s ease, background 0.2s ease; }
+.offer-item {
+    transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+    border: 5px solid #fff; /* alap keret */
+    border-radius: 5px;
+    padding: 10px;
+    background: #fff;
+}
 .offer-item.unseen {
   border-left: 4px solid #1976d2;
   background: #eef6ff;
@@ -190,19 +221,24 @@ document.getElementById('outgoing-tab').addEventListener('click', () => {
 .offer-item.seen-by-recipient {
   background: #f6fff6;
 }
-.seen-badge {
-  position: absolute;
-  right: 10px;
-  top: 10px;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 10px;
-  border: 1px solid #1976d2;
-  color: #1976d2;
-}
 .offer-status { font-size: 0.9em; margin-top: 3px; }
 .offer-item:hover { background:#e9f5ff; transform: translateX(5px); }
+.offer-finalized {
+  background-color: #2e7d32 !important; /* zöld */
+  color: white !important;
+  border-color: #2e7d32 !important;
+}
+.offer-withdrawn {
+  background-color: #c62828 !important; /* piros */
+  color: white !important;
+  border-color: #c62828 !important;
+}
+/* A státusz badge is fehér maradjon olvashatóan */
+.offer-finalized .status-badge,
+.offer-withdrawn .status-badge {
+  color: white !important;
+  border-color: white !important;
+}
 .tab-btn { flex:1; padding:8px; border:none; border-radius:5px; cursor:pointer; background:#eee; color:#000; transition: background 0.2s; }
 .tab-btn.active { background:#000; color:#fff; }
 .tab-btn:hover:not(.active) { background:#ddd; }

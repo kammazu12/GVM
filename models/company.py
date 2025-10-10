@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from extensions import db
 
 class Company(db.Model):
@@ -20,6 +20,15 @@ class Company(db.Model):
     vehicles = db.relationship('Vehicle', back_populates='company', cascade='all, delete-orphan')
     logo_filename = db.Column(db.String(200), nullable=True)
 
+    def is_blocked_by(self, blocker_company_id):
+        from models import CompanyBlocklist
+        return (
+                CompanyBlocklist.query
+                .filter_by(blocker_company_id=blocker_company_id, blocked_company_id=self.company_id)
+                .first()
+                is not None
+        )
+
 
 class InviteCode(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -34,3 +43,14 @@ class InviteCode(db.Model):
     expires_at = db.Column(db.DateTime, nullable=False)
     is_used = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.Date, default=date.today)
+
+
+class CompanyBlocklist(db.Model):
+    __tablename__ = 'company_blocklist'
+    id = db.Column(db.Integer, primary_key=True)
+    blocker_company_id = db.Column(db.Integer, db.ForeignKey('company.company_id'), nullable=False)  # aki tilt
+    blocked_company_id = db.Column(db.Integer, db.ForeignKey('company.company_id'), nullable=False)  # akit tiltottak
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+    blocker_company = db.relationship('Company', foreign_keys=[blocker_company_id], backref='blocked_companies')
+    blocked_company = db.relationship('Company', foreign_keys=[blocked_company_id])

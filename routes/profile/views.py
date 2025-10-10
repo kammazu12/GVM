@@ -9,6 +9,7 @@ from extensions import *
 
 @profile_bp.route('/change_password', methods=['GET', 'POST'])
 @login_required
+@no_cache
 def change_password():
     message = None
 
@@ -41,6 +42,7 @@ def change_password():
 
 @profile_bp.route("/profile")
 @login_required
+@no_cache
 def profile():
     user = current_user
     # Csak bejövő, még nem látott ajánlatok
@@ -52,6 +54,7 @@ def profile():
 
 @profile_bp.route("/edit_profile", methods=["GET", "POST"])
 @login_required
+@no_cache
 def edit_profile():
     user = current_user
     if request.method == "POST":
@@ -77,6 +80,7 @@ def edit_profile():
 
 @profile_bp.route('/upload_profile_picture', methods=['POST'])
 @login_required
+@no_cache
 def upload_profile_picture():
     success, result = save_uploaded_image(
         request.files.get('profile_picture'),
@@ -140,7 +144,7 @@ def forgot_password():
         # Biztonság: mindig ugyanazt az üzenetet küldjük vissza
         if user:
             token = PasswordResetToken.generate_for_user(user, hours_valid=1)
-            reset_link = url_for('reset_password', token=token, _external=True)
+            reset_link = url_for('profile.reset_password', token=token, _external=True)
             body = (
                 f"Hello {user.first_name},\n\n"
                 f"Kattints erre a linkre a jelszavad visszaállításához (a link 1 óráig érvényes):\n\n"
@@ -154,6 +158,7 @@ def forgot_password():
 
 @profile_bp.route('/get_user_offers')
 @login_required
+@no_cache
 def get_user_offers():
     try:
         # --- Bejövő ajánlatok ---
@@ -168,8 +173,8 @@ def get_user_offers():
 
         result_in = []
         for offer, cargo, user in incoming_query:
-            pickups = [loc.city for loc in cargo.locations if loc.type=='pickup']
-            dropoffs = [loc.city for loc in cargo.locations if loc.type=='dropoff']
+            pickups = [loc.city for loc in cargo.locations if loc.type == 'pickup']
+            dropoffs = [loc.city for loc in cargo.locations if loc.type == 'dropoff']
 
             origin_display = pickups[0] if pickups else ''
             origin_extra = len(pickups) - 1 if len(pickups) > 1 else 0
@@ -180,13 +185,15 @@ def get_user_offers():
             result_in.append({
                 'offer_id': offer.offer_id,
                 'cargo_id': cargo.cargo_id,
+                'offer_user_id': offer.offer_user_id,  # <<< ide kell!
                 'from_user': f"{user.first_name} {user.last_name}",
                 'user_company': user.company.name if user.company else '',
-                'profile_picture': url_for('static', filename='uploads/profile_pictures/' + (user.profile_picture or 'default.png')),
+                'profile_picture': url_for('static', filename='uploads/profile_pictures/' + (
+                            user.profile_picture or 'default.png')),
                 'origin': origin_display,
-                'origin_extra_count': origin_extra,          # hány további pickup van
+                'origin_extra_count': origin_extra,
                 'destination': destination_display,
-                'destination_extra_count': destination_extra, # hány további dropoff van
+                'destination_extra_count': destination_extra,
                 'price': offer.price,
                 'currency': offer.currency,
                 'note': offer.note,
@@ -194,8 +201,9 @@ def get_user_offers():
                 'arrival_date': offer.arrival_date.strftime('%Y-%m-%d') if offer.arrival_date else '',
                 'date': offer.created_at.strftime('%Y-%m-%d %H:%M'),
                 'direction': "in",
-                'cargo_owner_id' : cargo.user_id,
-                'seen' : bool(offer.seen)
+                'cargo_owner_id': cargo.user_id,
+                'seen': bool(offer.seen),
+                'status': offer.status
             })
 
         # --- Kimenő ajánlatok ---
@@ -210,8 +218,8 @@ def get_user_offers():
 
         result_out = []
         for offer, cargo, user in outgoing_query:
-            pickups = [loc.city for loc in cargo.locations if loc.type=='pickup']
-            dropoffs = [loc.city for loc in cargo.locations if loc.type=='dropoff']
+            pickups = [loc.city for loc in cargo.locations if loc.type == 'pickup']
+            dropoffs = [loc.city for loc in cargo.locations if loc.type == 'dropoff']
 
             origin_display = pickups[0] if pickups else ''
             origin_extra = len(pickups) - 1 if len(pickups) > 1 else 0
@@ -222,10 +230,12 @@ def get_user_offers():
             result_out.append({
                 'offer_id': offer.offer_id,
                 'cargo_id': cargo.cargo_id,
+                'offer_user_id': offer.offer_user_id,  # <<< ide is kell!
                 'from_user': f"{current_user.first_name} {current_user.last_name}",
                 'to_user': f"{user.first_name} {user.last_name}",
                 'partner_company': user.company.name if user.company else '',
-                'profile_picture': url_for('static', filename='uploads/profile_pictures/' + (user.profile_picture or 'default.png')),
+                'profile_picture': url_for('static', filename='uploads/profile_pictures/' + (
+                            user.profile_picture or 'default.png')),
                 'origin': origin_display,
                 'origin_extra_count': origin_extra,
                 'destination': destination_display,
@@ -238,7 +248,8 @@ def get_user_offers():
                 'date': offer.created_at.strftime('%Y-%m-%d %H:%M'),
                 'direction': "out",
                 'cargo_owner_id': cargo.user_id,
-                'seen': bool(offer.seen)
+                'seen': bool(offer.seen),
+                'status': offer.status
             })
 
         return jsonify({"incoming": result_in, "outgoing": result_out})
@@ -250,12 +261,14 @@ def get_user_offers():
 
 @profile_bp.route("/settings")
 @login_required
+@no_cache
 def settings():
     return render_template("settings.html", user=current_user)
 
 
 @profile_bp.route("/save_settings", methods=["POST"])
 @login_required
+@no_cache
 def save_settings():
     settings = current_user.settings
     if not settings:
@@ -275,6 +288,7 @@ def save_settings():
 
 @profile_bp.route("/set_language", methods=["POST"])
 @login_required
+@no_cache
 def set_language():
     language = request.json.get("language")
     if language not in ["hu", "en", "de"]:
@@ -287,6 +301,7 @@ def set_language():
 
 @profile_bp.route('/subscription', methods=['GET', 'POST'])
 @login_required
+@no_cache
 def subscription():
     if not current_user.company:
         flash("Nincs céged, nem tudsz előfizetést módosítani.", "warning")

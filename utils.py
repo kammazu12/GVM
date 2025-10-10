@@ -6,22 +6,25 @@ import uuid
 import unicodedata
 import re
 import requests
-from flask import current_app, request
+from flask import current_app, request, make_response
+from functools import wraps
 from flask_mail import Message
 from PIL import Image
 import pillow_heif
 from google_auth_oauthlib.flow import Flow
 from unidecode import unidecode
 from extensions import *
-from models import *
-from sqlalchemy import func
+from sqlalchemy import func, or_, and_
 import threading
 from models.city import City, CityZipcode
 import logging
-from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime
 import geojson
-
+from models.cargo import *
+from models.vehicle import *
+from models.user import *
+from models.company import *
+from models.city import *
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
@@ -46,6 +49,39 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'heic'}
 
 email_cache = {}  # key: email_id, value: full message
 user_tokens = {}  # key: email_id, value: full message
+
+
+def no_cache(view):
+    @wraps(view)
+    def no_cache_view(*args, **kwargs):
+        response = make_response(view(*args, **kwargs))
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+        return response
+    return no_cache_view
+
+
+def find_expired_items():
+    from models.cargo import CargoLocation, Cargo
+
+    """Lejárt rakományok és rakterek listázása"""
+    today = date.today()
+
+    # --- 1. Lejárt rakományok ---
+    expired_cargos = (
+        db.session.query(Cargo)
+        .join(CargoLocation)
+        .group_by(Cargo.cargo_id)
+        .having(db.func.max(CargoLocation.end_date) < today)
+        .all()
+    )
+
+    # --- 2. Lejárt rakterek ---
+    expired_vehicles = Vehicle.query.filter(Vehicle.available_until < today).all()
+
+    return expired_cargos, expired_vehicles
+
 
 def init_google_auth():
     flow = get_google_flow()
@@ -406,6 +442,14 @@ def lookup_coords_api(country, city):
         return None, None
 
 
+def get_city_coords(country: str, postcode: str):
+    from models import City  # ha külön modulban van
+    city = City.query.filter_by(country=country, postcode=postcode).first()
+    if city:
+        return city.latitude, city.longitude
+    return None, None
+
+
 def spawn_background_geocode(loc_id, country, city, postcode):
     from models.cargo import CargoLocation
     """
@@ -536,6 +580,24 @@ def save_locations(new_cargo, loc_type, countries, postcodes, cities, hidden_fla
         db.session.add(location)
 
 
+def save_template_locations(template_id, locations, type_):
+    """
+    Ment egy listát TemplateLocations táblába sablonhoz.
+    locations = lista dict-ekből: {'city':..., 'country':..., 'postcode':..., 'is_hidden':...}
+    type_ = 'pickup' vagy 'dropoff'
+    """
+    for loc in locations:
+        location = TemplateLocations(
+            template_id=template_id,
+            type=type_,
+            city=loc.get('city'),
+            country=loc.get('country'),
+            postcode=loc.get('postcode'),
+            is_hidden=loc.get('is_hidden', False)
+        )
+        db.session.add(location)
+
+
 def haversine(lat1, lon1, lat2, lon2):
     R = 6371
     dLat = math.radians(lat2 - lat1)
@@ -568,3 +630,169 @@ def get_country_code_from_coords(lat, lon):
                         if min(lats)<=lat<=max(lats) and min(lons)<=lon<=max(lons):
                             return country_code
     return None
+
+
+def add_nearby_cities_for_vehicle(vehicle: Vehicle):
+    print(f"\n[DEBUG] Vehicle ID={vehicle.vehicle_id}")
+
+    for ref_type in ["origin", "destination"]:
+        diff = getattr(vehicle, f"{ref_type}_diff")
+        if not diff or diff <= 0:
+            print(f"[DEBUG] {ref_type}: nincs diff")
+            continue
+
+        ref_country = getattr(vehicle, f"{ref_type}_country")
+        ref_postcode = getattr(vehicle, f"{ref_type}_postcode")
+        ref_city_name = getattr(vehicle, f"{ref_type}_city")
+
+        if not (ref_country and ref_postcode and ref_city_name):
+            print(f"[DEBUG] {ref_type}: hiányos adatok")
+            continue
+
+        # Referencia város a City táblából
+        ref_city = City.query.filter_by(
+            country_code=ref_country,
+            city_name=ref_city_name,
+            zipcode=ref_postcode
+        ).first()
+
+        if not ref_city or ref_city.latitude is None or ref_city.longitude is None:
+            print(f"[DEBUG] {ref_type}: nem található koordináta a City táblában {ref_city_name} ({ref_postcode})")
+            continue
+
+        ref_lat = ref_city.latitude
+        ref_lon = ref_city.longitude
+        print(f"[DEBUG] {ref_type}: diff={diff}, ref_city={ref_city_name}, lat={ref_lat}, lon={ref_lon}")
+
+        # Bounding box
+        lat_min = ref_lat - diff / 110
+        lat_max = ref_lat + diff / 110
+        lon_min = ref_lon - diff / (111 * math.cos(math.radians(ref_lat)))
+        lon_max = ref_lon + diff / (111 * math.cos(math.radians(ref_lat)))
+
+        nearby_cities = City.query.filter(
+            City.country_code == ref_country,
+            City.latitude.between(lat_min, lat_max),
+            City.longitude.between(lon_min, lon_max)
+        ).all()
+
+        print(f"[DEBUG] {ref_type}: {len(nearby_cities)} város a bounding boxban")
+
+        inserted_count = 0
+        for c in nearby_cities:
+            if c.latitude is None or c.longitude is None:
+                continue
+
+            dist = haversine(ref_lat, ref_lon, c.latitude, c.longitude)
+            if dist > diff:
+                print(f"[DEBUG]   {c.city_name} ({c.zipcode}) túl messze: {dist:.2f} km > {diff}")
+                continue
+
+            # Ellenőrizzük, hogy van-e már bent
+            exists = NearbyCity.query.filter_by(
+                reference_country=ref_country,
+                reference_postcode=ref_postcode,
+                reference_city=ref_city_name,
+                city_name=c.city_name
+            ).order_by(NearbyCity.radius_km.asc()).first()
+
+            if exists:
+                if exists.radius_km <= diff:
+                    print(f"[DEBUG]   {c.city_name} ({c.zipcode}) már benne van kisebb/equal radius-szal: {exists.radius_km} km → SKIP")
+                    continue
+                else:
+                    print(f"[DEBUG]   {c.city_name} ({c.zipcode}) létezik nagyobb radius-szal ({exists.radius_km} km), most hozzáadjuk {diff}-tel")
+
+            else:
+                print(f"[DEBUG]   {c.city_name} ({c.zipcode}) új → beszúrva diff={diff}, dist={dist:.2f} km")
+
+            nearby = NearbyCity(
+                country_code=c.country_code,
+                zipcode=c.zipcode,
+                city_name=c.city_name,
+                lat=c.latitude,
+                lon=c.longitude,
+                reference_country=ref_country,
+                reference_postcode=ref_postcode,
+                reference_city=ref_city_name,
+                radius_km=diff
+            )
+            db.session.add(nearby)
+            inserted_count += 1
+
+        db.session.commit()
+        print(f"[DEBUG] {ref_type}: összesen {inserted_count} új város beszúrva")
+
+    print(f"[LOG] NearbyCity-k feltöltve Vehicle ID={vehicle.vehicle_id}")
+
+
+def fill_missing_city(location_data):
+    """
+    Ha a városmező hiányzik, próbáljuk kikeresni ország+irányítószám alapján.
+    location_data: dict, tartalmazhat city, country, postcode, latitude, longitude
+    """
+    city_name = location_data.get("city")
+    country = location_data.get("country")
+    zipcode = location_data.get("postcode")
+
+    if (not city_name or city_name.strip() == "") and country and zipcode:
+        found_city = City.query.filter_by(country_code=country, zipcode=zipcode).first()
+        if found_city:
+            location_data["city"] = found_city.city_name
+            location_data["latitude"] = found_city.latitude
+            location_data["longitude"] = found_city.longitude
+
+    return location_data
+
+
+def get_blocked_company_ids(user):
+    """
+    Visszaadja a felhasználó számára tiltott cégek ID-jait.
+    Tartalmazza azokat, akiket a user cég tiltott,
+    illetve azokat, akik a user cégét tiltották.
+    """
+    blocked_ids = db.session.query(CompanyBlocklist.blocked_company_id).filter_by(
+        blocker_company_id=user.company_id
+    )
+    blocked_by_others = db.session.query(CompanyBlocklist.blocker_company_id).filter_by(
+        blocked_company_id=user.company_id
+    )
+    all_blocked = blocked_ids.union_all(blocked_by_others).all()
+    return [id[0] for id in all_blocked]
+
+
+def handle_company_block_fast(blocker_company_id, blocked_company_id):
+    """
+    Blokkol egy céget, és törli az összes offer-t (és a hozzá tartozó chat üzeneteket)
+    a két cég felhasználói között, memóriaterhelés minimalizálása mellett.
+    """
+    from models.cargo import Cargo, CargoLocation, Offer
+    # 1️⃣ Adjuk hozzá a tiltólistához
+    new_block = CompanyBlocklist(
+        blocker_company_id=blocker_company_id,
+        blocked_company_id=blocked_company_id
+    )
+    db.session.add(new_block)
+    db.session.flush()  # kell az új ID-hoz, ha más tábla hivatkozik rá
+
+    # 2️⃣ Lekérjük a két cég felhasználóinak ID-jait
+    user_ids_blocker = db.session.query(User.user_id).filter_by(company_id=blocker_company_id).subquery()
+    user_ids_blocked = db.session.query(User.user_id).filter_by(company_id=blocked_company_id).subquery()
+
+    # 3️⃣ Törlés: minden Offer, ahol a két cég felhasználói érintettek
+    # mindkét irányban
+    db.session.query(Offer).filter(
+        or_(
+            and_(
+                Offer.offer_user_id.in_(user_ids_blocker),
+                Offer.cargo.has(Cargo.user_id.in_(user_ids_blocked))
+            ),
+            and_(
+                Offer.offer_user_id.in_(user_ids_blocked),
+                Offer.cargo.has(Cargo.user_id.in_(user_ids_blocker))
+            )
+        )
+    ).delete(synchronize_session=False)  # NAGYON FONTOS: gyors törlés
+
+    # 4️⃣ Commit
+    db.session.commit()

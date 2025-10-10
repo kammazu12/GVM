@@ -35,6 +35,13 @@ class Cargo(db.Model):
     last_republished_at = db.Column(db.DateTime, nullable=True)
     is_template = db.Column(db.Boolean, default=False)
 
+    notifications = db.relationship(
+        "ExpiredNotification",
+        primaryjoin="and_(foreign(ExpiredNotification.item_id)==Cargo.cargo_id, "
+                    "ExpiredNotification.item_type=='cargo')",
+        viewonly=True
+    )
+
 
 class CargoLocation(db.Model):
     __tablename__ = "cargo_location"
@@ -83,6 +90,9 @@ class Templates(db.Model):
     equipment = db.Column(db.String(200))
     cargo_securement = db.Column(db.String(150))
     note = db.Column(db.String(500))
+
+    palette_exchange = db.Column(db.Boolean, default=False)
+    oversize = db.Column(db.Boolean, default=False)
 
     # Kapcsolatok
     locations = db.relationship("TemplateLocations", back_populates="cargo", cascade="all, delete-orphan")

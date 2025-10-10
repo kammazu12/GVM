@@ -6,5 +6,6 @@ from utils import *
 
 @statistics_bp.route('/statistics')
 @login_required
+@no_cache
 def statistics():
     return render_template('statistics.html', user=current_user)

@@ -37,9 +37,9 @@
                     <thead>
                         <tr>
                             <th class="felvet"><img src="{{ url_for('static', filename='icons/calendar_up.png') }}" style="width: 24px"></th>
-                            <th class="felvet" colspan="3">Rakomány felvétel</th>
+                            <th class="felvet">Rakomány felvétel</th>
                             <th class="letet"><img src="{{ url_for('static', filename='icons/calendar_done.png') }}" style="width: 24px"></th>
-                            <th class="letet" colspan="3">Rakomány letétel</th>
+                            <th class="letet">Rakomány letétel</th>
                             <th class="arujarmu">Hossza (m)</th>
                             <th class="arujarmu">Tömege (t)</th>
                             <th class="arujarmu" colspan="5">Jármű tulajdonságok</th>
@@ -47,76 +47,88 @@
                         </tr>
                     </thead>
                     <tbody>
-                    {% for cargo in user.cargos %}
-                    <tr data-id="{{ cargo.cargo_id }}">
-                        <td class="datum">
-                        {% set pickups = cargo.locations | selectattr('type', 'equalto', 'pickup') | list %}
-                        {% if pickups %}
-                            {% set first_pickup = pickups[0] %}
-                            {% if first_pickup.start_date %}
-                                {{ first_pickup.start_date.strftime('%Y.%m.%d.') }}
-                                {% if first_pickup.end_date %}
-                                    {% set delta = (first_pickup.end_date - first_pickup.start_date).days %}
-                                    (+{{ delta }})
-                                {% endif %}
-                            {% endif %}
+                        {% for cargo in user.cargos %}
+                        <tr data-id="{{ cargo.cargo_id }}">
 
-                            {% if first_pickup.start_time_1 or first_pickup.start_time_2 %}
-                                <br>
-                                {{ first_pickup.start_time_1.strftime('%H:%M') if first_pickup.start_time_1 else '' }}
-                                – {{ first_pickup.start_time_2.strftime('%H:%M') if first_pickup.start_time_2 else '' }}
-                            {% endif %}
-                        {% endif %}
-                    </td>
-
-                        {% if pickups %}
-                            {% set first_pickup = pickups[0] %}
-                            {% set extra_pickups = pickups|length - 1 %}
-                            <td>
-                                {{ first_pickup.country.upper() }}
-                            </td>
-                            <td>
-                                {{ first_pickup.masked_postcode if first_pickup.is_hidden else first_pickup.postcode }}
-                            </td>
-                            <td>
-                                {{ first_pickup.masked_city if first_pickup.is_hidden else first_pickup.city }}
-                            </td>
-                        {% endif %}
-                        {# Dropoff dátum + idő #}
+                            {# Pickup dátum + idő #}
                             <td class="datum">
-                            {% set dropoffs = cargo.locations | selectattr('type', 'equalto', 'dropoff') | list %}
-                            {% if dropoffs %}
-                                {% set last_dropoff = dropoffs[-1] %}
-                                {% if last_dropoff.start_date %}
-                                    {{ last_dropoff.start_date.strftime('%Y.%m.%d.') }}
-                                    {% if last_dropoff.end_date %}
-                                        {% set delta = (last_dropoff.end_date - last_dropoff.start_date).days %}
-                                        (+{{ delta }})
+                                {% set pickups = cargo.locations | selectattr('type', 'equalto', 'pickup') | list %}
+                                {% if pickups %}
+                                    {% set first_pickup = pickups[0] %}
+                                    {% if first_pickup.start_date %}
+                                        {{ first_pickup.start_date.strftime('%m.%d.') }}
+                                        {% if first_pickup.start_date.year != current_year %}
+                                            .{{ first_pickup.start_date.year }}
+                                        {% endif %}
+                                        {% if first_pickup.end_date %}
+                                            {% set delta = (first_pickup.end_date - first_pickup.start_date).days %}
+                                            (+{{ delta }})
+                                        {% endif %}
+                                    {% endif %}
+
+                                    {% if first_pickup.start_time_1 or first_pickup.start_time_2 %}
+                                        <br>
+                                        {{ first_pickup.start_time_1.strftime('%H:%M') if first_pickup.start_time_1 else '' }}
+                                        – {{ first_pickup.start_time_2.strftime('%H:%M') if first_pickup.start_time_2 else '' }}
                                     {% endif %}
                                 {% endif %}
+                            </td>
 
-                                {% if last_dropoff.start_time_1 or last_dropoff.start_time_2 %}
-                                    <br>
-                                    {{ last_dropoff.start_time_1.strftime('%H:%M') if last_dropoff.start_time_1 else '' }}
-                                    – {{ last_dropoff.start_time_2.strftime('%H:%M') if last_dropoff.start_time_2 else '' }}
+                            {# Pickup hely #}
+                            <td>
+                                {% if pickups %}
+                                    {% set first_pickup = pickups[0] %}
+                                    {% set extra_pickups = pickups|length - 1 %}
+                                    <span class="country-zip"><strong>{{ first_pickup.country.upper() }} {{ first_pickup.masked_postcode if first_pickup.is_hidden else first_pickup.postcode }}</strong></span><br>
+                                    <span class="city">{{ first_pickup.masked_city if first_pickup.is_hidden else first_pickup.city }}</span>
+                                    {% if extra_pickups > 0 %}
+                                        <br><span class="extra-count">(+{{ extra_pickups }})</span>
+                                    {% endif %}
+                                {% else %}
+                                    -
                                 {% endif %}
-                            {% endif %}
-                        </td>
+                            </td>
 
-                        {% if dropoffs %}
-                            {% set last_dropoff = dropoffs[-1] %}
-                            {% set extra_dropoffs = dropoffs|length - 1 %}
-                            <td>
-                                {{ last_dropoff.country.upper() }}
-                            </td>
-                            <td>
-                                {{ last_dropoff.masked_postcode if last_dropoff.is_hidden else last_dropoff.postcode }}
-                            </td>
-                            <td>
-                                {{ last_dropoff.masked_city if last_dropoff.is_hidden else last_dropoff.city }}
-                            </td>
-                        {% endif %}
+                            {# Dropoff dátum + idő #}
+                            <td class="datum">
+                                {% set dropoffs = cargo.locations | selectattr('type', 'equalto', 'dropoff') | list %}
+                                {% if dropoffs %}
+                                    {% set last_dropoff = dropoffs[-1] %}
+                                    {% if last_dropoff.start_date %}
+                                        {{ last_dropoff.start_date.strftime('%m.%d.') }}
+                                        {% if last_dropoff.start_date.year != current_year %}
+                                            .{{ last_dropoff.start_date.year }}
+                                        {% endif %}
+                                        {% if last_dropoff.end_date %}
+                                            {% set delta = (last_dropoff.end_date - last_dropoff.start_date).days %}
+                                            (+{{ delta }})
+                                        {% endif %}
+                                    {% endif %}
 
+                                    {% if last_dropoff.start_time_1 or last_dropoff.start_time_2 %}
+                                        <br>
+                                        {{ last_dropoff.start_time_1.strftime('%H:%M') if last_dropoff.start_time_1 else '' }}
+                                        – {{ last_dropoff.start_time_2.strftime('%H:%M') if last_dropoff.start_time_2 else '' }}
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+
+                            {# Dropoff hely #}
+                            <td>
+                                {% if dropoffs %}
+                                    {% set last_dropoff = dropoffs[-1] %}
+                                    {% set extra_dropoffs = dropoffs|length - 1 %}
+                                    <span class="country-zip"><strong>{{ last_dropoff.country.upper() }} {{ last_dropoff.masked_postcode if last_dropoff.is_hidden else last_dropoff.postcode }}</strong></span><br>
+                                    <span class="city">{{ last_dropoff.masked_city if last_dropoff.is_hidden else last_dropoff.city }}</span>
+                                    {% if extra_dropoffs > 0 %}
+                                        <br><span class="extra-count">(+{{ extra_dropoffs }})</span>
+                                    {% endif %}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+
+                            {# Egyéb mezők #}
                             <td>{{ cargo.size }}</td>
                             <td>{{ cargo.weight }}</td>
                             <td>{{ cargo.vehicle_type or '-' }}</td>
@@ -142,7 +154,7 @@ $(document).ready(function() {
     var table;
     if (! $.fn.DataTable.isDataTable('#userCargos')) {
         table = $('#userCargos').DataTable({
-            "order": [[15, "desc"], [1, "asc"]],
+            "order": [[12, "desc"], [1, "asc"]],
             "pageLength": 5,
             "stripeClasses": ['odd-row', 'even-row'],
         });

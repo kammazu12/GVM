@@ -2,29 +2,39 @@
 from flask import render_template, flash, redirect, url_for, jsonify, abort
 from flask_login import login_required, current_user
 from sqlalchemy import and_
-
-from models import Vehicle
+from models import Vehicle, VehicleRoute
 from utils import *
 from . import vehicles_bp
+import json
+from flask import Blueprint, request, redirect, url_for, current_app
+from flask_login import current_user
+from datetime import datetime
+import requests
+from math import radians, sin, cos, sqrt, atan2
+from extensions import db
+from models import Vehicle, VehicleRoute, City
+
 
 @vehicles_bp.route('/vehicles')
 @login_required
+@no_cache
 def vehicles():
-    return render_template('vehicles.html', user=current_user)
+    return render_template('vehicles.html', user=current_user,
+        current_year=datetime.now().year)
 
 
-@vehicles_bp.route("/vehicles/save", methods=["POST"])
+@vehicles_bp.route("/save", methods=["POST"])
 def save_vehicle():
-    # Form mezők beolvasása
+    # --- Form mezők beolvasása ---
     origin_city = request.form.get("origin_city")
     origin_postcode = request.form.get("origin_zip")
     origin_country = request.form.get("origin_country")
-    origin_diff = request.form.get("origin_diff")
+    origin_diff = parse_float(request.form.get("origin_diff"))
 
     destination_city = request.form.get("destination_city")
     destination_postcode = request.form.get("destination_zip")
     destination_country = request.form.get("destination_country")
-    destination_diff = request.form.get("destination_diff")
+    destination_diff = parse_float(request.form.get("destination_diff"))
 
     available_from_str = request.form.get("available_from")
     available_until_str = request.form.get("available_until")
@@ -43,25 +53,21 @@ def save_vehicle():
     oversize = request.form.get("oversize") == "true"
     price = request.form.get("price")
     currency = request.form.get("currency")
-    load_type = request.form.get("load_type")
+    load_type = request.form.get("load_type") == "true"
+    load_type = "LTL" if load_type else "FTL"
 
-    # --- LOG az adatoknál ---
-    print("[Backend] origin:", origin_city, origin_postcode, origin_country, origin_diff)
-    print("[Backend] destination:", destination_city, destination_postcode, destination_country, destination_diff)
-    print("[Backend] vehicle_type:", vehicle_type, "capacity_t:", capacity_t, "volume_m3:", volume_m3)
-
-    # Mentés
+    # --- Vehicle mentése ---
     new_vehicle = Vehicle(
         user_id=current_user.user_id,
         company_id=current_user.company_id,
         origin_city=origin_city,
         origin_postcode=origin_postcode,
         origin_country=origin_country,
-        origin_diff=origin_diff if origin_diff != "any" else None,
+        origin_diff=origin_diff,
         destination_city=destination_city,
         destination_postcode=destination_postcode,
         destination_country=destination_country,
-        destination_diff=destination_diff if destination_diff != "any" else None,
+        destination_diff=destination_diff,
         available_from=available_from,
         available_until=available_until,
         vehicle_type=vehicle_type,
@@ -77,28 +83,273 @@ def save_vehicle():
         currency=currency,
         load_type=load_type
     )
-
     db.session.add(new_vehicle)
     db.session.commit()
+    print(f"[LOG] Vehicle mentve: ID={new_vehicle.vehicle_id}")
 
-    print("[Backend] A jármű sikeresen mentve lett!")
+    # --- Pickup és Dropoff koordináták lekérése ---
+    pickup_city = City.query.filter_by(city_name=origin_city, country_code=origin_country).first()
+    dropoff_city = City.query.filter_by(city_name=destination_city, country_code=destination_country).first()
+
+    if not pickup_city or not dropoff_city or not pickup_city.latitude or not dropoff_city.latitude:
+        print("[ERROR] Nem található origin vagy destination város koordináta!")
+        return redirect(url_for("shipments"))
+
+    # --- Elsőként a frontend által küldött OSRM útvonal feldolgozása ---
+    osrm_route_coords = []
+    route_coords_input = request.form.get("routeCoordsInput")
+
+    if route_coords_input:
+        try:
+            osrm_route_coords = json.loads(route_coords_input)
+            print(f"[LOG] Frontend OSRM útvonal betöltve: {len(osrm_route_coords)} pont")
+        except Exception as e:
+            print("[ERROR] routeCoordsInput feldolgozási hiba:", e)
+
+    # --- Ha nem jött frontend útvonal, akkor backend OSRM számítás fallback ---
+    if not osrm_route_coords:
+        try:
+            coord_string = f"{pickup_city.longitude},{pickup_city.latitude};{dropoff_city.longitude},{dropoff_city.latitude}"
+            osrm_url = f"https://router.project-osrm.org/route/v1/driving/{coord_string}?overview=full&geometries=geojson"
+            response = requests.get(osrm_url, timeout=10)
+            data = response.json()
+            if "routes" in data and len(data["routes"]) > 0:
+                osrm_route_coords = [[lat, lon] for lon, lat in data["routes"][0]["geometry"]["coordinates"]]
+            print(f"[LOG] Backend OSRM útvonal koordináták száma: {len(osrm_route_coords)}")
+        except Exception as e:
+            print("[ERROR] OSRM hiba:", e)
+
+    # Ha semmi sincs, legalább a két végpontot használjuk
+    if not osrm_route_coords:
+        osrm_route_coords = [[pickup_city.latitude, pickup_city.longitude],
+                             [dropoff_city.latitude, dropoff_city.longitude]]
+        print("[LOG] OSRM nem adott vissza útvonalat, a két végpontot használjuk.")
+
+    # --- Bounding box és városok keresése ---
+    lats = [lat for lat, lon in osrm_route_coords]
+    lons = [lon for lat, lon in osrm_route_coords]
+    min_lat, max_lat = min(lats)-0.1, max(lats)+0.1
+    min_lon, max_lon = min(lons)-0.1, max(lons)+0.1
+
+    cities_query = City.query.filter(
+        City.latitude != None,
+        City.longitude != None,
+        City.latitude >= min_lat, City.latitude <= max_lat,
+        City.longitude >= min_lon, City.longitude <= max_lon
+    ).all()
+    print(f"[LOG] Bounding box városok: {len(cities_query)}")
+
+    # --- Radius szűrés és haversine távolság ---
+    radius_km = 3
+    nearby = []
+    for city in cities_query:
+        min_idx = None
+        min_dist = float('inf')
+        for idx, (lat, lon) in enumerate(osrm_route_coords):
+            max_deg = radius_km / 111.0
+            if abs(lat - city.latitude) > max_deg or abs(lon - city.longitude) > max_deg:
+                continue
+            # haversine
+            dlat = radians(city.latitude - lat)
+            dlon = radians(city.longitude - lon)
+            a = sin(dlat/2)**2 + cos(radians(lat))*cos(radians(city.latitude))*sin(dlon/2)**2
+            c = 2 * atan2(sqrt(a), sqrt(1-a))
+            dist = 6371 * c
+            if dist <= radius_km and dist < min_dist:
+                min_dist = dist
+                min_idx = idx
+        if min_idx is not None:
+            nearby.append((min_idx, city))
+
+    nearby.sort(key=lambda x: x[0])
+    print(f"[LOG] Talált városok a route mentén: {len(nearby)}")
+
+    # --- Mentés VehicleRoute táblába ---
+    for stop_number, (_, city) in enumerate(nearby, start=1):
+        route_entry = VehicleRoute(
+            vehicle_id=new_vehicle.vehicle_id,
+            stop_number=stop_number,
+            country=city.country_code,
+            postcode=city.zipcode,
+            city=city.city_name
+        )
+        db.session.add(route_entry)
+        print(f"[LOG] VehicleRoute hozzáadva: {city.city_name}, stop_number={stop_number}")
+
+    db.session.commit()
+    print(f"[LOG] Összes VehicleRoute mentve a járműhöz ID={new_vehicle.vehicle_id}")
+
+    # --- NearbyCity feltöltés csak végpontokhoz ---
+    add_nearby_cities_for_vehicle(new_vehicle)
+
     return redirect(url_for("shipments"))
 
 
-@vehicles_bp.route("/list")
+@vehicles_bp.route("/get_vehicle/<int:vehicle_id>")
 @login_required
-def vehicles_list():
-    """
-    Járművek listázása a táblázathoz
-    """
-    # Lekérjük az összes járművet a felhasználó cégéhez tartozóan
-    vehicles = Vehicle.query.filter_by(company_id=current_user.company_id).all()
+@no_cache
+def get_vehicle(vehicle_id):
+    vehicle = Vehicle.query.get_or_404(vehicle_id)
+    if vehicle.company_id != current_user.company_id:
+        return jsonify({"error": "Nincs hozzáférés"}), 403
 
-    return render_template("vehicles_list.html", vehicles=vehicles)
+    return jsonify({
+        "vehicle_id": vehicle.vehicle_id,
+        "vehicle_type": vehicle.vehicle_type,
+        "structure": vehicle.structure,
+        "equipment": vehicle.equipment or "",           # lehet None → üres string
+        "cargo_securement": vehicle.cargo_securement or "",
+        "description": vehicle.description or "",
+        "capacity_t": vehicle.capacity_t or "",
+        "volume_m3": vehicle.volume_m3 or "",
+        "available_from": vehicle.available_from.strftime('%Y-%m-%d') if vehicle.available_from else "",
+        "available_until": vehicle.available_until.strftime('%Y-%m-%d') if vehicle.available_until else "",
+        "palette_exchange": bool(vehicle.palette_exchange),
+        "oversize": bool(vehicle.oversize),
+        "price": vehicle.price or "",
+        "currency": vehicle.currency or "",
+        "origin_country": vehicle.origin_country or "",
+        "origin_postcode": vehicle.origin_postcode or "",
+        "origin_city": vehicle.origin_city or "",
+        "origin_diff": vehicle.origin_diff or "",
+        "destination_country": vehicle.destination_country or "",
+        "destination_postcode": vehicle.destination_postcode or "",
+        "destination_city": vehicle.destination_city or "",
+        "destination_diff": vehicle.destination_diff or "",
+        "load_type": vehicle.load_type or "FTL",       # default
+        "created_at": vehicle.created_at.strftime('%Y-%m-%d %H:%M:%S')
+    })
+
+
+# TO BE DONE
+@vehicles_bp.route("/update_vehicle", methods=['POST'])
+@login_required
+@no_cache
+def update_vehicle():
+    data = request.get_json()
+    vehicle_id = data.get('vehicle_id')
+    field = data.get('field')
+    value = data.get('value')
+
+    vehicle = Vehicle.query.get_or_404(vehicle_id)
+    if vehicle.company_id != current_user.company_id:
+        return jsonify({"error": "Nincs hozzáférés"}), 403
+
+    # Csak engedélyezett mezők frissítése
+    editable_fields = [
+        "vehicle_type","structure","equipment","cargo_securement",
+        "description","capacity_t","volume_m3","available_from","available_until",
+        "palette_exchange","oversize","price","currency",
+        "origin_country","origin_postcode","origin_city",
+        "destination_country","destination_postcode","destination_city"
+    ]
+
+    # mezőnév mapping a táblázat headerből
+    field_map = {
+        "Jármű típusa":"vehicle_type",
+        "Szerkezet":"structure",
+        "Felszereltség":"equipment",
+        "Rakomány rögzítése":"cargo_securement",
+        "Leírás":"description",
+        "Teher (t)":"capacity_t",
+        "Hossz (m³)":"volume_m3",
+        "Dátum":"available_from",  # egyszerűsítés, lehet két mező is
+        "Ár":"price"
+    }
+
+    db_field = field_map.get(field, field)
+    if db_field not in editable_fields:
+        return jsonify({"error": "Nem szerkeszthető mező"}), 400
+
+    # típuskonverzió
+    try:
+        if db_field in ["capacity_t","volume_m3","price"]:
+            setattr(vehicle, db_field, float(value) if value else None)
+        elif db_field in ["palette_exchange","oversize"]:
+            setattr(vehicle, db_field, value.lower() in ["true","1","yes"])
+        elif db_field in ["available_from","available_until"]:
+            from datetime import datetime
+            setattr(vehicle, db_field, datetime.strptime(value, "%Y-%m-%d").date() if value else None)
+        else:
+            setattr(vehicle, db_field, value)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    return jsonify({"success": True})
+
+
+# TO BE DONE?
+@vehicles_bp.route("/delete/<int:vehicle_id>", methods=['DELETE'])
+@login_required
+@no_cache
+def delete_vehicle(vehicle_id):
+    vehicle = Vehicle.query.get_or_404(vehicle_id)
+    if vehicle.company_id != current_user.company_id:
+        return jsonify({"error": "Nincs hozzáférés"}), 403
+
+    db.session.delete(vehicle)
+    db.session.commit()
+    return jsonify({"success": True})
+
+
+@vehicles_bp.route('/delete_vehicles', methods=['POST'])
+@login_required
+@no_cache
+def delete_vehicles():
+    data = request.get_json(silent=True) or {}
+    ids_to_delete = data.get('ids', [])
+
+    if not ids_to_delete:
+        return jsonify({'error': 'Nincs kiválasztva sor!'}), 400
+
+    try:
+        vehicles = Vehicle.query.filter(Vehicle.vehicle_id.in_(ids_to_delete)).all()
+        deleted_ids = []
+        for vehicle in vehicles:
+            if vehicle.user_id != current_user.user_id:
+                continue
+
+            db.session.delete(vehicle)
+            deleted_ids.append(vehicle.vehicle_id)
+
+        db.session.commit()
+        return jsonify({'success': True, 'deleted_ids': deleted_ids})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@vehicles_bp.route("/republish_vehicles", methods=["POST"])
+@login_required
+@no_cache
+def republish_vehicles():
+    """
+    Újraközlés: a kiválasztott járműveket újra publikálja.
+    """
+    data = request.get_json()
+    if not data or "ids" not in data:
+        return jsonify({"error": "Nincsenek ID-k megadva!"}), 400
+
+    vehicle_ids = data["ids"]
+    republished = []
+
+    for vid in vehicle_ids:
+        vehicle = Vehicle.query.filter_by(vehicle_id=vid, user_id=current_user.user_id).first()
+        if vehicle:
+            vehicle.created_at = datetime.utcnow()  # újraközlés ideje
+            db.session.add(vehicle)
+            republished.append(vid)
+
+    db.session.commit()
+    now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    return jsonify({"republished": republished, "now": now_str})
 
 
 @vehicles_bp.route("/api/list")
 @login_required
+@no_cache
 def vehicles_api():
     """
     API a járművekhez JSON-ban
@@ -203,54 +454,86 @@ def vehicle_details(vehicle_id):
     )
 
 
-@vehicles_bp.route('/cities_near_route_country', methods=['POST'])
-def cities_near_route_country():
+@vehicles_bp.route('/cities_near_route', methods=['POST'])
+def cities_near_route():
     """
-    POST JSON: {"route": [[lat, lon], ...], "radius_km": 1, "country_codes": ["HU","DE",...]}
-    Visszaadja országonként a településeket sorrendben (felrakótól lerakóig),
-    csak a route bounding box-ában keresve a városokat.
+    POST JSON: {"route": [[lat, lon], ...], "radius_km": 1}
+    Visszaadja az összes települést sorrendben, amin keresztül a route megy.
+    Gyorsított verzió:
+      - route ritkítása
+      - gyors bounding box szűrés városonként
     """
     data = request.get_json()
     route = data.get("route", [])
     radius_km = data.get("radius_km", 1)
-    country_codes = data.get("country_codes", [])
 
-    if not route or len(route) < 2 or not country_codes:
+    if not route or len(route) < 2:
         return jsonify([])
 
-    # Bounding box a route köré (kicsit nagyobb, mint a radius)
+    # ---- route ritkítás ----
+    def simplify_route(points, max_points=200):
+        if len(points) <= max_points:
+            return points
+        step = max(1, len(points) // max_points)
+        return points[::step]
+
+    route = simplify_route(route)
+
+    # ---- bounding box az egész útvonal köré ----
     lats = [lat for lat, lon in route]
     lons = [lon for lat, lon in route]
-    min_lat, max_lat = min(lats)-0.1, max(lats)+0.1
-    min_lon, max_lon = min(lons)-0.1, max(lons)+0.1
+    min_lat, max_lat = min(lats) - 0.1, max(lats) + 0.1
+    min_lon, max_lon = min(lons) - 0.1, max(lons) + 0.1
 
-    response = []
+    # ---- DB lekérdezés ----
+    cities_query = City.query.filter(
+        City.latitude != None,
+        City.longitude != None,
+        City.latitude >= min_lat, City.latitude <= max_lat,
+        City.longitude >= min_lon, City.longitude <= max_lon
+    ).all()
 
-    for country in country_codes:
-        # Csak az adott ország városai + route bounding box
-        cities_query = City.query.filter(
-            City.latitude != None,
-            City.longitude != None,
-            City.country_code == country,
-            and_(City.latitude >= min_lat, City.latitude <= max_lat),
-            and_(City.longitude >= min_lon, City.longitude <= max_lon)
-        ).all()
+    # ---- gyors előszűrés távolság becsléssel ----
+    def approx_distance_ok(lat1, lon1, lat2, lon2, radius_km):
+        # ~111 km ~ 1 fok szélesség
+        max_deg = radius_km / 111.0
+        return abs(lat1 - lat2) <= max_deg and abs(lon1 - lon2) <= max_deg
 
-        nearby = []
-        for city in cities_query:
-            min_idx = None
-            min_dist = float('inf')
-            for idx, (lat, lon) in enumerate(route):
-                dist = haversine(lat, lon, city.latitude, city.longitude)
-                if dist <= radius_km and dist < min_dist:
-                    min_dist = dist
-                    min_idx = idx
-            if min_idx is not None:
-                nearby.append((min_idx, city))
+    # ---- települések vizsgálata ----
+    nearby = []
+    for city in cities_query:
+        min_idx = None
+        min_dist = float('inf')
 
-        nearby.sort(key=lambda x: x[0])
-        country_cities = [{"city_name": c.city_name, "latitude": c.latitude, "longitude": c.longitude} for _, c in nearby]
-        response.append({"country": country, "cities": country_cities})
+        for idx, (lat, lon) in enumerate(route):
+            if not approx_distance_ok(lat, lon, city.latitude, city.longitude, radius_km):
+                continue  # túl messze, nem kell számolni
 
-    return jsonify(response)
+            dist = haversine(lat, lon, city.latitude, city.longitude)
+            if dist <= radius_km and dist < min_dist:
+                min_dist = dist
+                min_idx = idx
 
+        if min_idx is not None:
+            nearby.append((min_idx, city))
+
+    # ---- sorrend az útvonal mentén ----
+    nearby.sort(key=lambda x: x[0])
+
+    city_list = [
+        {
+            "city_name": c.city_name,
+            "latitude": c.latitude,
+            "longitude": c.longitude
+        }
+        for _, c in nearby
+    ]
+
+    return jsonify(city_list)
+
+
+@vehicles_bp.route("/geojson/countries_list")
+def geojson_countries_list():
+    folder = os.path.join(current_app.static_folder, "geojson/countries")
+    files = [f for f in os.listdir(folder) if f.endswith(".json")]
+    return jsonify(files)

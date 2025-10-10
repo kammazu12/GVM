@@ -4,10 +4,8 @@
     <aside class="sidebar">
         {% include 'sidebar.html' %}
     </aside>
-
     <main class="main-content">
     <h1 class="cim">Járművek</h1>
-
     <div class="cargo-container">
         <button class="accordion-btn">Áru keresése/feltöltése ▼</button>
         <!-- Lenyíló form -->
@@ -18,31 +16,61 @@
                 <button type="button" class="tab-btn" data-tab="emails-tab">E-mailes felvitel</button>
             </div>
             <div id="form-tab" class="tab-content" style="display:block;">
-                <form action="{{ url_for('cargo.cargo') }}" method="POST" class="freight-form">
-
-                  <!-- Honnan és Hová blokk egymás mellett -->
-                  <!-- Honnan-Hová + Mikor -->
+                <form action="{{ url_for('cargo.cargo') }}" class="freight-form">
+                    <!-- Honnan és Hová blokk egymás mellett -->
                     <!-- Sablon kiválasztó -->
                     <div class="template-select-wrapper">
-                        <label for="template_select"><strong>Sablon betöltése:</strong></label>
-                        <select id="template_select" name="template_id">
-                            <option value="" selected disabled>Válassz sablont</option>
-                            {% for t in templates %}
-                                {% set pickup_count = t.locations|selectattr("type", "equalto", "pickup")|list|length %}
-                                {% set delivery_count = t.locations|selectattr("type", "equalto", "delivery")|list|length %}
-                                {% set first_loc = t.locations[0] %}
-                                {% set last_loc = t.locations[-1] %}
-                                <option value="{{ t.id }}">
-                                    {{ first_loc.zip }} {{ first_loc.city }}
-                                    {% if pickup_count > 1 %}(+{{ pickup_count - 1 }}){% endif %}
+                      <label for="template_select"><strong>Sablon betöltése:</strong></label>
+
+                      <!-- Fallback select (ha nincs JS) -->
+                      <select id="template_select" name="template_id" style="display:none;">
+                          {% if templates|length == 0 %}
+                              <option value="" selected disabled>Jelenleg még nincs sablon</option>
+                          {% else %}
+                              <option value="" selected disabled>Válassz sablont</option>
+                              {% for t in templates %}
+                                {% set pickups = t.locations|selectattr("type", "equalto", "pickup")|list %}
+                                {% set dropoffs = t.locations|selectattr("type", "equalto", "dropoff")|list %}
+                                {% set pickup_count = pickups|length %}
+                                {% set delivery_count = dropoffs|length %}
+
+                                {% if pickup_count > 0 %}
+                                    {% set first_loc = pickups[0] %}
+                                {% else %}
+                                    {% set first_loc = None %}
+                                {% endif %}
+
+                                {% if delivery_count > 0 %}
+                                    {% set last_loc = dropoffs[-1] %}
+                                {% else %}
+                                    {% set last_loc = None %}
+                                {% endif %}
+
+                                  <option value="{{ t.id }}">
+                                    {% if first_loc %}
+                                        {{ first_loc.country_code }} {{ first_loc.zip }} {{ first_loc.city }}
+                                        {% if pickup_count > 1 %}(+{{ pickup_count - 1 }}){% endif %}
+                                    {% else %}
+                                        Nincs felrakó
+                                    {% endif %}
                                     ➡
-                                    {{ last_loc.zip }} {{ last_loc.city }}
-                                    {% if delivery_count > 1 %}(+{{ delivery_count - 1 }}){% endif %}
+                                    {% if last_loc %}
+                                        {{ last_loc.country_code }} {{ last_loc.zip }} {{ last_loc.city }}
+                                        {% if delivery_count > 1 %}(+{{ delivery_count - 1 }}){% endif %}
+                                    {% else %}
+                                        Nincs lerakó
+                                    {% endif %}
                                     | {{ t.weight }} t | {{ t.size }} m
                                     {% if t.price %}| {{ t.price }} {{ t.currency }}{% endif %}
-                                </option>
-                            {% endfor %}
-                        </select>
+                                  </option>
+
+
+                              {% endfor %}
+                          {% endif %}
+                      </select>
+
+                      <!-- Egyedi lenyíló (JS tölti be) -->
+                      <div id="template-dropdown" class="custom-template-dropdown"></div>
                     </div>
                     <br>
                     <div class="grid-top">
@@ -54,11 +82,9 @@
                                 <!-- első (alap) fieldset ide kerül JS által -->
                             </div>
                         </div>
-
                         <div class="swap-container">
                             <button type="button" id="swap-btn">⇄</button>
                         </div>
-
                         <!-- DROPOFFS (Hová) konténer és számláló -->
                         <div class="dropoff-wrapper">
                             <legend>Hová</legend>
@@ -116,14 +142,12 @@
                                 </div>
                             </fieldset>
                         </template>
-
                         <template id="dropoff-template" data-editor-usable="1">
                             <fieldset class="dropoff-fieldset">
                                 <div class="move-buttons">
                                     <button type="button" class="move-up"><img src="{{ url_for('static', filename='icons/up-arrow.png') }}" alt="Move up" class="move-up"></button>
                                     <button type="button" class="move-down"><img src="{{ url_for('static', filename='icons/down-arrow.png') }}" alt="Move down" class="move-down"></button>
                                 </div>
-
                                 <div class="location-grid">
                                     <!-- Bal oldal -->
                                     <div class="left-side" style="position: relative; width: 100%;">
@@ -134,7 +158,6 @@
                                         <input type="hidden" name="to_postcode[__INDEX__]" class="city-postcode">
                                         <ul class="search-results" style="display:none;"></ul>
                                     </div>
-
                                     <!-- Jobb oldal -->
                                     <div class="right-side">
                                         <div class="start-flex">
@@ -333,7 +356,7 @@
                                     <div class="palette-card" id="paletteCard">
                                         <span id="paletteText"><b>Palettacsere</b> <img src="{{ url_for('static', filename='icons/exchange_palette.png') }}" alt="Palettacsere"></span>
                                     </div>
-                                    <input type="hidden" id="palette_exch" name="palette_exch" value="false">
+                                    <input type="hidden" id="palette_exchange" name="palette_exchange" value="false">
                                     <div class="oversize-card" id="oversizeCard">
                                         <span id="oversizeText"><b>Túlméretes áru</b> <img src="{{ url_for('static', filename='icons/oversize.png') }}" alt="Palettacsere"></span>
                                     </div>
@@ -354,7 +377,6 @@
                     </div>
                 </form>
             </div>
-
             <div id="emails-tab" class="tab-content" style="display:none;">
                 <div id="email-container-wrapper" style="max-height: 400px; overflow-y: auto; border: 1px solid #ccc; padding: 10px;">
                     <div id="email-container" class="email-container">
@@ -365,21 +387,24 @@
                 </div>
             </div>
         </div>
-
         <!-- Táblázat -->
         <div class="table-wrapper">
             <table id="vehiclesTable" class="display" style="font-size:0.9em; border:none;">
                 <thead>
                     <tr>
                         <th class="datum felvet"><img src="{{ url_for('static', filename='icons/calendar_up.png') }}" style="width: 24px"></th>
-                        <th class="felvet">Indulási hely</th>
+                        <th class="felvet">Indulás helye</th>
                         <th class="datum letet"><img src="{{ url_for('static', filename='icons/calendar_done.png') }}" style="width: 24px"></th>
-                        <th  class="letet">Hova</th>
-
-                        <th class="arujarmu" colspan="5">Jármű jellemzői</th>
+                        <th  class="letet">Érkezés helye</th>
+                        <th class="arujarmu">Jármű típusa</th>
+                        <th class="arujarmu">Felépítmény</th>
+                        <th class="arujarmu">Felszerelés</th>
+                        <th class="arujarmu">Rögzítés</th>
+                        <th class="arujarmu">Megjegyzés</th>
                         <th class="arujarmu">Extrák</th>
                         <th class="arujarmu">Rakodás típusa</th>
-                        <th class="letet" colspan="2">Raktér mérete</th>
+                        <th class="letet">Jármű kapacitása</th>
+                        <th class="letet">Raktér mérete</th>
                         <th class="letet">Ár</th>
                         <th class="letet">Hirdető cég</th>
                         <th style="display:none;">created_at</th>
@@ -390,7 +415,15 @@
                     <tr class="vehicle-row" data-vehicle-id="{{ vehicle.vehicle_id }}" style="cursor:pointer;">
                         <!-- Elérhető (from) -->
                         <td class="datum">
-                            {{ vehicle.available_from.strftime('%Y.%m.%d.') if vehicle.available_from else '-' }}
+                            {% if vehicle.available_from %}
+                                {% if vehicle.available_from.year == current_year %}
+                                    {{ vehicle.available_from.strftime('%m.%d.') }}
+                                {% else %}
+                                    {{ vehicle.available_from.strftime('%Y.%m.%d.') }}
+                                {% endif %}
+                            {% else %}
+                                -
+                            {% endif %}
                         </td>
 
                         <!-- Indulási hely -->
@@ -399,11 +432,23 @@
                                 <strong>{{ vehicle.origin_country or '-' }} {{ vehicle.origin_postcode or '-' }}</strong>
                             </span><br>
                             <span class="city">{{ vehicle.origin_city or '-' }}</span>
+                            {% if vehicle.origin_diff %}
+                                <br>
+                                <span class="diff">(+{{ vehicle.origin_diff }} km)</span>
+                            {% endif %}
                         </td>
 
                         <!-- Elérhető (to) -->
                         <td class="datum">
-                            {{ vehicle.available_until.strftime('%Y.%m.%d.') if vehicle.available_until else '-' }}
+                            {% if vehicle.available_until %}
+                                {% if vehicle.available_until.year == current_year %}
+                                    {{ vehicle.available_until.strftime('%m.%d.') }}
+                                {% else %}
+                                    {{ vehicle.available_until.strftime('%Y.%m.%d.') }}
+                                {% endif %}
+                            {% else %}
+                                -
+                            {% endif %}
                         </td>
 
                         <!-- Hova -->
@@ -412,6 +457,10 @@
                                 <strong>{{ vehicle.destination_country or '-' }} {{ vehicle.destination_postcode or '-' }}</strong>
                             </span><br>
                             <span class="city">{{ vehicle.destination_city or '-' }}</span>
+                            {% if vehicle.destination_diff %}
+                                <br>
+                                <span class="diff">(+{{ vehicle.destination_diff }} km)</span>
+                            {% endif %}
                         </td>
 
                         <!-- Jármű jellemzői külön mezők -->
@@ -468,27 +517,139 @@
                 </tbody>
             </table>
         </div>
-
     </div>
-
     <div class="modal fade" id="vehicleModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Jármű részletek</h5>
+                </div>
+                <div class="modal-body" id="vehicleDetails">
+                    <!-- Ide töltjük majd AJAX-szal a részleteket -->
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Matching Modal -->
+    <div class="modal fade" id="matchingModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">Jármű részletek</h5>
+            <h5 class="modal-title">Matching járművek</h5>
+            <button id="reloadBtn" class="btn btn-primary">Bezárás és frissítés</button>
           </div>
-          <div class="modal-body" id="vehicleDetails">
-            <!-- Ide töltjük majd AJAX-szal a részleteket -->
+          <div class="modal-body">
+            <p>Az alábbi járművek pontszám alapján leginkább megfelelnek a rakománynak:</p>
+            <div id="matchingList"></div> <!-- ide kerül a táblázat -->
           </div>
         </div>
       </div>
     </div>
-
 </main>
 </div>
 
-
 <style>
+.custom-template-dropdown {
+  position: relative;
+  width: 100%;
+  min-width: 280px;
+}
+
+.custom-template-dropdown .dropdown-header {
+  background: #fff;
+  border: 1px solid #ccc;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.custom-template-dropdown .dropdown-list {
+  display: none;
+  position: absolute;
+  top: 105%;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  max-height: 250px;
+  overflow-y: auto;
+  z-index: 100;
+}
+
+.custom-template-dropdown.open .dropdown-list {
+  display: block;
+}
+
+.custom-template-dropdown .dropdown-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.custom-template-dropdown .dropdown-item:hover {
+  background: #f2f2f2;
+}
+
+.custom-template-dropdown .delete-btn {
+  color: black;       /* fekete X */
+  background: none;   /* nincs háttér */
+  border: none;       /* nincs keret */
+  border-radius: 0;   /* nincs lekerekítés */
+  width: auto;        /* ne fix méret */
+  height: auto;
+  padding: 0 4px;     /* kis belső margó */
+  font-weight: bold;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+
+.template-select-wrapper{
+    width: 45%;
+}
+
+#vehiclesTable td{
+    width: 300px;
+}
+
+/* Matching Modal testreszabása */
+#matchingModal .modal-dialog {
+  max-width: 80vw;       /* szélesség max 80% viewport width */
+  width: 80vw;           /* tényleges szélesség */
+  margin: auto;          /* vízszintesen középre igazítja */
+}
+
+#matchingModal .modal-content {
+  width: 100%;
+}
+
+#matchingModal .modal-body {
+  overflow-x: auto;      /* ha széles a táblázat, görgethető legyen */
+}
+
+#matchingModal table th {
+    background: #4a90e2;
+    color: white;
+}
+
+#matchingModal table tr:nth-child(even) {
+    background: #f9f9f9;
+}
+
+#matchingModal .letet, .hirdeto{
+    background-color: red;
+}
+
+#matchingModal .arujarmu, #matchingModal .felvet{
+    background-color: #111;
+    color: white;
+}
 
 .search-results {
     position: absolute;
@@ -1124,36 +1285,304 @@ label img{
 
 {% block scripts %}
 <script>
+// ------------------------------------------- MATCHING MODAL ------------------------------------------------
+console.log("freight.js betöltődött");
+
+document.addEventListener("DOMContentLoaded", () => {
+    const form = document.querySelector(".freight-form");
+    if (!form) {
+        console.error("Nem található .freight-form");
+        return;
+    }
+
+    const matchingModalEl = document.getElementById('matchingModal');
+    const matchingModal = new bootstrap.Modal(matchingModalEl);
+    const matchingList = document.getElementById("matchingList");
+    const reloadBtn = document.getElementById("reloadBtn");
+
+    // --- EGYETLEN SUBMIT LISTENER ---
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        console.log("Submit event triggered");
+
+        const formData = new FormData(form);
+
+        // Városvalidálás (marad a korábbi logika)
+        let allValid = true;
+        form.querySelectorAll(".city-valid").forEach(el => {
+            if (el.value !== "1") allValid = false;
+        });
+        if (!allValid) {
+            alert("Minden városnál érvényes értéket kell kiválasztani a listából!");
+            return;
+        }
+
+        try {
+            const resp = await fetch(form.action, {
+                method: "POST",
+                body: formData,
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest"
+                }
+            });
+
+            const data = await resp.json();
+            // console.log("POST /cargo/cargo válasz:", data);
+
+            if (!data.success) {
+                // Hibák megjelenítése, **ne írja felül a modal-t**
+                for (const [fieldName, msg] of Object.entries(data.errors || {})) {
+                    const field = form.querySelector(`[name="${fieldName}"]`);
+                    if (field) {
+                        field.classList.add('error');
+                        const errorSpan = document.createElement('span');
+                        errorSpan.classList.add('error-msg');
+                        errorSpan.textContent = msg;
+                        field.parentNode.appendChild(errorSpan);
+                    }
+                }
+                alert("Hiba történt a mentés során!");
+                return;
+            }
+
+            // --- MATCHES RENDER ---
+            if (Array.isArray(data.matches) && data.matches.length > 0) {
+                renderMatchesTable(data.matches);
+                matchingModal.show();
+            } else if (data.cargo_id) {
+                await fetchMatchesAndShow(data.cargo_id);
+            } else if (Array.isArray(data.top_vehicle_ids) && data.top_vehicle_ids.length > 0) {
+                const rows = data.top_vehicle_ids.map(id => ({ vehicle_id: id, score: "—" }));
+                renderMatchesTable(rows);
+                matchingModal.show();
+            } else {
+                matchingList.innerHTML = "<p>Nincs ajánlott jármű (nincs adat).</p>";
+                matchingModal.show();
+            }
+
+        } catch (err) {
+            console.error("Hálózati/JS hiba:", err);
+            alert("Hiba a kapcsolódásban. Nézd a konzolt a részletekért.");
+        }
+    });
+
+    // reload gomb
+    reloadBtn?.addEventListener("click", () => {
+        matchingModal.hide();
+        location.reload();
+    });
+
+    // --- HELPER FÜGGVÉNYEK ---
+    async function fetchMatchesAndShow(cargo_id) {
+        try {
+            const r = await fetch("/find_matches", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ cargo_id })
+            });
+            const dd = await r.json();
+
+            if (dd && Array.isArray(dd.matches) && dd.matches.length > 0) {
+                renderMatchesTable(dd.matches);
+            } else {
+                matchingList.innerHTML = "<p>Nincs találat.</p>";
+            }
+            matchingModal.show();
+        } catch (err) {
+            console.error("Hiba a /find_matches hívásakor:", err);
+            matchingList.innerHTML = "<p>Hiba a találatok lekérésekor.</p>";
+            matchingModal.show();
+        }
+    }
+
+    function formatDate(dateStr) {
+        if (!dateStr) return "-";
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('hu-HU', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        });
+    }
+
+    function renderMatchesTable(matches) {
+        matchingList.innerHTML = "";
+        const table = document.createElement("table");
+        table.className = "table table-striped";
+
+        const thead = document.createElement("thead");
+        thead.innerHTML = `
+            <tr>
+                <th class="datum felvet"><img src="{{ url_for('static', filename='icons/calendar_up.png') }}" style="width: 24px"></th>
+                <th class="felvet">Indulási hely</th>
+                <th class="datum letet"><img src="{{ url_for('static', filename='icons/calendar_done.png') }}" style="width: 24px"></th>
+                <th class="letet">Hova</th>
+                <th class="arujarmu">Jármű típusa</th>
+                <th class="arujarmu">Felépítmény</th>
+                <th class="arujarmu">Felszerelés</th>
+                <th class="arujarmu">Rögzítés</th>
+                <th class="arujarmu">Megjegyzés</th>
+                <th class="arujarmu">Rakodás típusa</th>
+                <th class="letet">Jármű kapacitása</th>
+                <th class="letet">Raktér mérete</th>
+                <th class="letet">Ár</th>
+                <th class="letet">Hirdető cég</th>
+                <th>Pontszám</th>
+            </tr>`;
+        table.appendChild(thead);
+
+        const tbody = document.createElement("tbody");
+
+        matches.forEach(m => {
+            const tr = document.createElement("tr");
+
+            tr.innerHTML = `
+                <td class="datum">${m.available_from ? formatDate(m.available_from) : "-"}</td>
+                <td class="pickup-cell">
+                    <strong>${m.origin_country || "-"} ${m.origin_postcode || "-"}</strong><br>
+                    <span class="city">${m.origin_city || "-"}</span><br>
+                    <small class="text-muted">(+${m.origin_diff ?? 0} km)</small>
+                </td>
+                <td class="datum">${m.available_until ? formatDate(m.available_until) : "-"}</td>
+                <td class="dropoff-cell">
+                    <strong>${m.destination_country || "-"} ${m.destination_postcode || "-"}</strong><br>
+                    <span class="city">${m.destination_city || "-"}</span><br>
+                    <small class="text-muted">(+${m.destination_diff ?? 0} km)</small>
+                </td>
+                <td>${m.vehicle_type || "-"}</td>
+                <td>${m.structure || "-"}</td>
+                <td>${m.equipment || "-"}</td>
+                <td>${m.cargo_securement || "-"}</td>
+                <td>${m.description || "-"}</td>
+                <td>${m.load_type || "-"}</td>
+                <td>${m.capacity_t ? m.capacity_t + " t" : "-"}</td>
+                <td>${m.volume_m3 ? m.volume_m3 + " m³" : "-"}</td>
+                <td>${m.price || "-"} ${m.currency || ""}</td>
+                <td>${m.company || "-"}</td>
+                <td><strong>${m.score}</strong></td>
+            `;
+
+            tbody.appendChild(tr);
+        });
+
+        table.appendChild(tbody);
+        matchingList.appendChild(table);
+    }
+
+});
+
+const form = document.querySelector(".freight-form");
+console.log("Form:", form);
+
+if (form) {
+    form.addEventListener("submit", async function(e) {
+        e.preventDefault();
+        console.log("Submit event triggered");
+        // cargo_id teszt
+        const cargoId = form.dataset.cargoId || document.querySelector('input[name="cargo_id"]')?.value;
+        console.log("Cargo ID:", cargoId);
+    });
+}
+
+// --- Modal kirajzolása ---
+function showMatchingModal(matches) {
+    const list = document.getElementById("matchingList");
+
+    // védelem: ha már van táblázat érvényes pontszámokkal, ne írjuk felül
+    const existingScores = list.querySelectorAll("tbody tr td:nth-child(2)");
+    if (existingScores.length > 0) {
+        let hasRealScore = Array.from(existingScores).some(td => {
+            const txt = td.textContent.trim();
+            return txt !== "N/A" && txt !== "—";
+        });
+        if (hasRealScore) {
+            console.log("Táblázat már létezik pontszámokkal → showMatchingModal nem írja felül.");
+            const modal = new bootstrap.Modal(document.getElementById("matchingModal"));
+            modal.show();
+            return;
+        }
+    }
+
+    // új táblázat építése (ha eddig nem volt értelmes adat)
+    list.innerHTML = "";
+    const table = document.createElement("table");
+    table.className = "table table-striped";
+
+    const thead = document.createElement("thead");
+    thead.innerHTML = "<tr><th>Jármű ID</th><th>Pontszám</th></tr>";
+    table.appendChild(thead);
+
+    const tbody = document.createElement("tbody");
+
+    matches.forEach(match => {
+        let vehicleId, score;
+        if (typeof match === "object") {
+            vehicleId = match.vehicle_id ?? (match.id ?? "N/A");
+            score = match.score ?? "N/A";
+        } else {
+            vehicleId = match; // sima ID tömb
+            score = "—";
+        }
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${vehicleId}</td><td>${score}</td>`;
+        tbody.appendChild(tr);
+    });
+
+    table.appendChild(tbody);
+    list.appendChild(table);
+
+    const modal = new bootstrap.Modal(document.getElementById("matchingModal"));
+    modal.show();
+}
+
+// --- Bezárás + frissítés gomb ---
+document.getElementById("reloadBtn").addEventListener("click", function() {
+    location.reload();
+});
+
+$('#matchingModal').off('hidden.bs.modal').on('hidden.bs.modal', async function () {
+    location.reload();
+});
+
+// ---------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------
 // ---------------------------------- Település kereső JS + mentés -----------------------------------------
 
 $(document).ready(function() {
+    let searchTimer; // ide mentjük az időzítőt
+
     // delegált esemény a dinamikusan létrehozott city-search inputokra
     $(document).on("input", ".city-search", function() {
         let $input = $(this);
         let query = $input.val().trim();
-
         let $results = $input.siblings(".search-results");
+
+        // reseteljük az időzítőt minden billentyűnél
+        clearTimeout(searchTimer);
 
         if(query.length < 2){
             $results.hide();
             return;
         }
 
-        $.get("/cargo/ajax/city_search", { q: query }, function(data) {
-            $results.empty();
+        // csak 500ms inaktivitás után fut le a keresés
+        searchTimer = setTimeout(() => {
+            $.get("/cargo/ajax/city_search", { q: query }, function(data) {
+                $results.empty();
 
-            if(data.length === 0){
-                $results.hide();
-                return;
-            }
+                if(data.length === 0){
+                    $results.hide();
+                    return;
+                }
 
-            data.slice(0, 10).forEach(item => { // max 10 találat
-                let text = `${item.city_name}, ${item.country_code} (${item.zipcode || ""})`;
-                $results.append(`<li class="result-item">${text}</li>`);
+                data.slice(0, 10).forEach(item => { // max 10 találat
+                    let text = `${item.city_name}, ${item.country_code} (${item.zipcode || ""})`;
+                    $results.append(`<li class="result-item">${text}</li>`);
+                });
+
+                $results.show();
             });
-
-            $results.show();
-        });
+        }, 300); // 0.3 másodperc
     });
 
     // delegált click esemény
@@ -1161,8 +1590,10 @@ $(document).ready(function() {
         let $li = $(this);
         let $ul = $li.parent();
         let $input = $ul.siblings(".city-search");
+        let $valid = $ul.siblings(".city-valid");
 
         $input.val($li.text());
+        $valid.val("1");  // Érvényes város kiválasztva
         $ul.hide();
     });
 
@@ -1171,6 +1602,52 @@ $(document).ready(function() {
         let $ul = $(this).siblings(".search-results");
         setTimeout(() => $ul.hide(), 200);
     });
+
+    // Ha a felhasználó szerkeszti az inputot, reseteljük az érvényességet
+    $(document).on("input", ".city-search", function() {
+        let $input = $(this);
+        let $valid = $input.siblings(".city-valid");
+        $valid.val("0");  // új beírás → nincs még érvényes város
+    });
+
+    // $(".freight-form").on("submit", function(e) {
+    //     console.log("Form submit event");
+    //     e.preventDefault(); // minden submitot blokkolunk, nem lesz újratöltés
+    //
+    //     let allValid = true;
+    //     $(this).find(".city-valid").each(function() {
+    //         if ($(this).val() !== "1") {
+    //             allValid = false;
+    //             return false; // kilépés a loopból
+    //         }
+    //     });
+    //
+    //     if (!allValid) {
+    //         alert("Minden városnál érvényes értéket kell kiválasztani a listából!");
+    //         return; // megszakítjuk a mentést
+    //     }
+    //
+    //     // --- AJAX POST ---
+    //     const form = this;
+    //     const formData = new FormData(form);
+    //
+    //     fetch(form.action, {
+    //         method: "POST",
+    //         body: formData,
+    //         headers: {
+    //             "X-Requested-With": "XMLHttpRequest"
+    //         }
+    //     })
+    //     .then(response => response.json())
+    //     .then(data => {
+    //         if(data.success){
+    //             showMatchingModal(data.top_vehicle_ids); // csak a modal megjelenítése
+    //         } else {
+    //             alert("Hiba történt a fuvar keresésekor:\n" + (data.error || data.errors?.join("\n")));
+    //         }
+    //     })
+    //     .catch(err => console.error(err));
+    // });
 });
 
 $(document).on("click", ".result-item", function() {
@@ -1189,21 +1666,6 @@ $(document).on("input", ".city-search", function() {
     let $input = $(this);
     let $valid = $input.siblings(".city-valid");
     $valid.val("0");  // új beírás → nincs még érvényes város
-});
-
-$(".freight-form").on("submit", function(e) {
-    let allValid = true;
-    $(this).find(".city-valid").each(function() {
-        if ($(this).val() !== "1") {
-            allValid = false;
-            return false;  // kilépés a loopból
-        }
-    });
-
-    if (!allValid) {
-        e.preventDefault();
-        alert("Minden városnál érvényes értéket kell kiválasztani a listából!");
-    }
 });
 
 function selectCity(element, cityData) {
@@ -1226,6 +1688,7 @@ function selectCity(element, cityData) {
 }
 
 // ---------------------------------------------------------------------------------------------------------
+
 document.addEventListener("click", (e) => {
     const target = e.target.closest("#hiddenFromCard");
     if (target) {
@@ -1243,7 +1706,7 @@ document.addEventListener("click", (e) => {
 
     const target3 = e.target.closest("#paletteCard");
     if (target3) {
-        const input3 = document.getElementById("palette_exch");
+        const input3 = document.getElementById("palette_exchange");
         const isActive3 = target3.classList.toggle("active");
         input3.value = isActive3 ? "true" : "false";
     }
@@ -1528,6 +1991,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const freightForm = document.querySelector('.freight-form');
     if (freightForm) {
         freightForm.addEventListener('submit', function(e) {
+            console.log("Form submit validation");
             const p = parseInt(pickupCountInput.value) || 1;
             const d = parseInt(dropoffCountInput.value) || 1;
             if (p < 1 || d < 1 || (p + d) > MAX_TOTAL) {
@@ -1742,40 +2206,44 @@ function toggleCheckboxes(type) {
 }
 
 // Szinkronizálás a hidden selecttel
-function setupMultiselect(type) {
-   const checkboxes = document.querySelectorAll(`#${type}-checkboxes input[type="checkbox"]`);
-   const hiddenSelect = document.getElementById(type);
-   const selectedSpan = document.getElementById(type + "-selected");
+function initMultiselect(type) {
+    const checkboxes = document.querySelectorAll(`#${type}-checkboxes input[type="checkbox"]`);
+    const hiddenSelect = document.getElementById(type);
+    const selectedSpan = document.getElementById(type + "-selected");
 
-   checkboxes.forEach(cb => {
-       cb.addEventListener('change', () => {
-           Array.from(hiddenSelect.options).forEach(option => option.selected = false);
+    function updateSelection() {
+        const checkedValues = [];
+        checkboxes.forEach(cb => {
+            const option = Array.from(hiddenSelect.options).find(o => o.value === cb.value);
+            if(option) option.selected = cb.checked;
+            if(cb.checked) {
+                checkedValues.push(cb.value);
+                cb.parentElement.classList.add('selected');
+            } else {
+                cb.parentElement.classList.remove('selected');
+            }
+        });
+        selectedSpan.textContent = checkedValues.length ? checkedValues.join(', ') :
+            (type==='equipment' ? 'Válassz felszereltséget' : 'Válassz rakományrögzítést');
+    }
 
-           const checkedValues = [];
-           checkboxes.forEach(cb => {
-               if(cb.checked){
-                   const option = Array.from(hiddenSelect.options).find(o => o.value === cb.value);
-                   if(option) option.selected = true;
-                   checkedValues.push(cb.value);
-                   cb.parentElement.classList.add('selected');
-               } else {
-                   cb.parentElement.classList.remove('selected');
-               }
-           });
-           selectedSpan.textContent = checkedValues.length ? checkedValues.join(', ') : (type==='equipment' ? 'Válassz felszereltséget' : 'Válassz rakományrögzítést');
-       });
-   });
+    // Event listener minden checkboxra
+    checkboxes.forEach(cb => cb.addEventListener('change', updateSelection));
 
-   // Betöltéskor kijelölés
-   checkboxes.forEach(cb => {
-       if(cb.checked) cb.parentElement.classList.add('selected');
-       else cb.parentElement.classList.remove('selected');
-   });
+    // Betöltéskor frissítés (még nincs template, csak a checked állapot)
+    updateSelection();
+
+    // Visszaadjuk a frissítő függvényt, hogy később sablon alapján meghívhassuk
+    return function selectValue(value) {
+        if(!value) return;
+        checkboxes.forEach(cb => cb.checked = (cb.value === value));
+        updateSelection();
+    };
 }
 
-// Init
-setupMultiselect('equipment');
-setupMultiselect('securement');
+// --- Init DOM betöltéskor ---
+const selectEquipment = initMultiselect('equipment');
+const selectSecurement = initMultiselect('securement');
 
 // Bezárás kattintás máshova
 document.addEventListener('click', function(event) {
@@ -1892,6 +2360,7 @@ document.addEventListener("DOMContentLoaded", () => {
    });
 
    form.addEventListener("submit", (e) => {
+       console.log("Form submit validation");
        let valid = true;
        inputs.forEach(input => {
            if (!validateInput(input)) {
@@ -1915,144 +2384,418 @@ document.addEventListener("DOMContentLoaded", () => {
    }
 });
 
-window.addEventListener('DOMContentLoaded', () => {
-   const form = document.querySelector('.freight-form');
-   console.log(form.action);
+// window.addEventListener('DOMContentLoaded', () => {
+//     const form = document.querySelector('.freight-form');
+//
+//     form.addEventListener('submit', async (e) => {
+//         console.log('AJAX form submit');
+//         e.preventDefault(); // **Fontos**, hogy ne töltse újra az oldalt
+//
+//         // Korábbi hibák törlése
+//         form.querySelectorAll('.error').forEach(el => el.classList.remove('error'));
+//         form.querySelectorAll('.error-msg').forEach(el => el.remove());
+//
+//         // Form adatok összegyűjtése
+//         const formData = new FormData(form);
+//
+//         try {
+//             const response = await fetch(form.action, {
+//                 method: 'POST',
+//                 body: formData,
+//                 headers: {
+//                     "X-Requested-With": "XMLHttpRequest" // jelezzük, hogy AJAX
+//                 }
+//             });
+//
+//             const data = await response.json();
+//
+//             if (!data.success) {
+//                 // Hibák megjelenítése
+//                 for (const [fieldName, msg] of Object.entries(data.errors || {})) {
+//                     const field = form.querySelector(`[name="${fieldName}"]`);
+//                     if (field) {
+//                         field.classList.add('error');
+//                         const errorSpan = document.createElement('span');
+//                         errorSpan.classList.add('error-msg');
+//                         errorSpan.textContent = msg;
+//                         field.parentNode.appendChild(errorSpan);
+//                     }
+//                 }
+//                 alert("Hiba történt a mentés során!");
+//             }
+//
+//         } catch (err) {
+//             console.error(err);
+//             alert("Hálózati vagy szerverhiba történt!");
+//         }
+//     });
+// });
 
-   form.addEventListener('submit', async (e) => {
-       e.preventDefault(); // megállítja a normál submitot
+// template betöltés és autocomplete városkeresés
+document.addEventListener('DOMContentLoaded', function() {
+    const templateSelect = document.getElementById('template_select');
 
-       // töröljük a korábbi hibákat
-       form.querySelectorAll('.error').forEach(el => el.classList.remove('error'));
-       form.querySelectorAll('.error-msg').forEach(el => el.remove());
+    // --- Segédfüggvények ---
+    function nextWeekday(date, n = 1) {
+        let result = new Date(date);
+        let added = 0;
+        while (added < n) {
+            result.setDate(result.getDate() + 1);
+            const day = result.getDay();
+            if (day !== 0 && day !== 6) added++;
+        }
+        return result;
+    }
 
-       // adatgyűjtés
-       const formData = new FormData(form);
+    function formatDate(date) {
+        const yyyy = date.getFullYear();
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const dd = String(date.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    }
 
-       // AJAX POST
-       const response = await fetch(form.action, {
-           method: 'POST',
-           body: formData
-       });
+    async function fetchCitySuggestions(q) {
+        if (!q || q.trim().length < 2) return [];
+        try {
+            const res = await fetch('/cargo/ajax/city_search?q=' + encodeURIComponent(q));
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
+            // console.log('[autocomplete] fetch', q, '→', data.length, 'results');
+            return Array.isArray(data) ? data.slice(0, 10) : [];
+        } catch (err) {
+            console.warn('[autocomplete] fetch error', err);
+            return [];
+        }
+    }
 
-       const data = await response.json();
+    function formatDisplay(item) {
+        // formátum amit a backend split_city_string ismer: "City, CC (ZIP)"
+        const zip = item.zipcode || '';
+        const cc = item.country_code || '';
+        return `${item.city_name}${cc ? ', ' + cc : ''}${zip ? ' (' + zip + ')' : ''}`;
+    }
 
-       if(data.success){
-           // sikeres mentés, átirányítás vagy üzenet
-           window.location.reload();
-       } else {
-           // hibák feldolgozása
-           for(const [fieldName, msg] of Object.entries(data.errors)){
-               const field = form.querySelector(`[name="${fieldName}"]`);
-               if(field){
-                   field.classList.add('error');
-                   const errorSpan = document.createElement('span');
-                   errorSpan.classList.add('error-msg');
-                   errorSpan.textContent = msg;
-                   field.parentNode.appendChild(errorSpan);
-               }
-           }
-       }
-   });
-});
+    function findResultsListFor(input) {
+        // keresünk sibling UL.search-results (a sablonban ott van)
+        const wrapper = input.closest('.left-side') || input.parentElement;
+        if (!wrapper) return null;
+        return wrapper.querySelector('.search-results');
+    }
 
-document.addEventListener('DOMContentLoaded', () => {
-   const templateSelect = document.getElementById('template_select');
+    function setHiddenFieldsFromFieldset(fieldset, country, postcode) {
+        // próbálunk sokféle selectorral találni (class, name, id) hogy kompatibilis legyen
+        const countryEl = fieldset.querySelector('.city-country') || fieldset.querySelector('input[name^="from_country"]') || fieldset.querySelector('input[name^="to_country"]');
+        const postEl = fieldset.querySelector('.city-postcode') || fieldset.querySelector('input[name^="from_postcode"]') || fieldset.querySelector('input[name^="to_postcode"]');
+        const validEl = fieldset.querySelector('.city-valid') || fieldset.querySelector('input[name^="from_city_valid"]') || fieldset.querySelector('input[name^="to_city_valid"]');
 
-   // Ha már a sablon adatok JSON-ban megvannak
-   const templates = {{ templates|tojson }};   // Flask Jinja2 tojson filter
+        if (countryEl) countryEl.value = country || '';
+        if (postEl) postEl.value = postcode || '';
+        if (validEl) validEl.value = '1';
+        // console.log('[autocomplete] hidden set:', { country, postcode, validEl: !!validEl });
+    }
 
-   templateSelect.addEventListener('change', () => {
-       const templateId = templateSelect.value;
-       if (!templateId) return;
+    function clearHiddenFieldsFromFieldset(fieldset) {
+        const countryEl = fieldset.querySelector('.city-country') || fieldset.querySelector('input[name^="from_country"]') || fieldset.querySelector('input[name^="to_country"]');
+        const postEl = fieldset.querySelector('.city-postcode') || fieldset.querySelector('input[name^="from_postcode"]') || fieldset.querySelector('input[name^="to_postcode"]');
+        const validEl = fieldset.querySelector('.city-valid') || fieldset.querySelector('input[name^="from_city_valid"]') || fieldset.querySelector('input[name^="to_city_valid"]');
 
-       // Megkeressük a sablont
-       const selectedTemplate = templates.find(t => t.id == templateId);
-       if (!selectedTemplate) return;
+        if (countryEl) countryEl.value = '';
+        if (postEl) postEl.value = '';
+        if (validEl) validEl.value = '0';
+        // console.log('[autocomplete] hidden cleared');
+    }
 
-       // --- Általános mezők ---
-       document.getElementById('weight').value = selectedTemplate.weight || '';
-       document.getElementById('length').value = selectedTemplate.size || '';
-       document.getElementById('price').value = selectedTemplate.price || '';
-       document.getElementById('currency').value = selectedTemplate.currency || 'EUR';
-       document.getElementById('description').value = selectedTemplate.description || '';
-       document.getElementById('vehicle_type').value = selectedTemplate.vehicle_type || '';
-       document.getElementById('superstructure').value = selectedTemplate.structure || '';
-       document.getElementById('vehicle_notes').value = selectedTemplate.note || '';
+    async function openSuggestionsForInput(inputEl, query) {
+        const ul = findResultsListFor(inputEl);
+        if (!ul) {
+            console.warn('Nincs search-results ul a mező mellett');
+            return;
+        }
+        ul.innerHTML = '';
+        ul.style.display = 'none';
 
-       // Sablon betöltéskor kijelölés beállítása
-       function applyTemplateToMultiselect(type, values) {
-           const checkboxes = document.querySelectorAll(`#${type}-checkboxes input[type="checkbox"]`);
-           const hiddenSelect = document.getElementById(type);
-           const selectedSpan = document.getElementById(type + "-selected");
+        if (!query || query.trim().length < 2) return;
 
-           const valList = (values || '').split(',').map(s => s.trim());
+        const suggestions = await fetchCitySuggestions(query);
+        if (!suggestions.length) return;
 
-           // Először töröljük a korábbi kijelöléseket
-           Array.from(hiddenSelect.options).forEach(opt => opt.selected = false);
-           checkboxes.forEach(cb => {
-               cb.checked = false;
-               cb.parentElement.classList.remove('selected');
-           });
+        suggestions.forEach(item => {
+            const li = document.createElement('li');
+            li.className = 'result-item';
+            li.textContent = formatDisplay(item);
+            // tároljuk az objektumot data attribútumban (JSON)
+            li.dataset.item = JSON.stringify(item);
 
-           // Új kijelölések
-           const checkedValues = [];
-           valList.forEach(val => {
-               // hidden select update
-               const option = Array.from(hiddenSelect.options).find(o => o.value === val);
-               if (option) option.selected = true;
+            li.addEventListener('click', function() {
+                const obj = JSON.parse(this.dataset.item || '{}');
+                const display = formatDisplay(obj);
+                // kitöltjük az inputot a full formátummal (backend-compatibilis)
+                inputEl.value = display;
 
-               // checkbox update
-               const cb = Array.from(checkboxes).find(c => c.value === val);
-               if (cb) {
-                   cb.checked = true;
-                   cb.parentElement.classList.add('selected');
-                   checkedValues.push(val);
-               }
-           });
+                // hidden mezők és valid jelölése a fieldset-ben
+                const fieldset = inputEl.closest('fieldset') || inputEl.parentElement;
+                setHiddenFieldsFromFieldset(fieldset, obj.country_code || obj.country || '', obj.zipcode || '');
 
-           // szöveges kijelzés
-           selectedSpan.textContent = checkedValues.length
-               ? checkedValues.join(', ')
-               : (type === 'equipment' ? 'Válassz felszereltséget' : 'Válassz rakományrögzítést');
-       }
+                // elrejtjük a listát
+                ul.style.display = 'none';
+                ul.innerHTML = '';
+                // console.log('[autocomplete] selected:', display);
+            });
 
-       // Beállítjuk az equipment és securement értékeket
-       applyTemplateToMultiselect('equipment', selectedTemplate.equipment);
-       applyTemplateToMultiselect('securement', selectedTemplate.cargo_securement);
+            ul.appendChild(li);
+        });
+
+        ul.style.display = 'block';
+    }
+
+    async function autoSelectFirstSuggestion(inputEl, query) {
+        const suggestions = await fetchCitySuggestions(query);
+        if (!suggestions.length) {
+            console.warn('[autocomplete] nincs találat automata kiválasztáshoz:', query);
+            return;
+        }
+        const obj = suggestions[0]; // első találat
+        const display = formatDisplay(obj);
+
+        inputEl.value = display;
+
+        const fieldset = inputEl.closest('fieldset') || inputEl.parentElement;
+        setHiddenFieldsFromFieldset(fieldset, obj.country_code || obj.country || '', obj.zipcode || '');
+        // console.log('[autocomplete] auto-selected:', display);
+    }
 
 
-       // --- Pickup / Dropoff locations ---
-       const pickupContainer = document.getElementById('pickup-container');
-       const dropoffContainer = document.getElementById('dropoff-container');
-       const pickupCountInput = document.getElementById('pickup-count');
-       const dropoffCountInput = document.getElementById('dropoff-count');
+    // Ha sablon betöltés történik: csak városnév kerül a mezőbe, hidden-ek törlődnek, autocomplete lefut és megmutatja a találatokat.
+    templateSelect && templateSelect.addEventListener('change', async function() {
+        const templateId = this.value;
+        if (!templateId) return;
 
-       // Számoljuk a pickup/dropoff helyeket a sablonból
-       const pickupCount = (selectedTemplate.locations || []).filter(l => l.type === 'pickup').length || 1;
-       const dropoffCount = (selectedTemplate.locations || []).filter(l => l.type === 'dropoff').length || 1;
-       pickupCountInput.value = pickupCount;
-       dropoffCountInput.value = dropoffCount;
+        try {
+            const res = await fetch(`/cargo/template/${templateId}`);
+            const data = await res.json();
+            if (!data.success) {
+                alert('Hiba a sablon betöltésekor: ' + data.error);
+                return;
+            }
+            const template = data.template;
 
-       // Render új fieldsetek a helyes számmal
-       if (typeof renderPickups === 'function') {
-           renderPickups(pickupCount);
-       }
-       if (typeof renderDropoffs === 'function') {
-           renderDropoffs(dropoffCount);
-       }
+            console.log(template)
 
-       // Move gombok frissítése
-       if (typeof refreshMoveButtons === 'function') {
-           refreshMoveButtons('#pickup-container', 'from');
-           refreshMoveButtons('#dropoff-container', 'to');
-       }
+            // --- Általános mezők ---
+            document.getElementById('weight').value = template.weight || '';
+            document.getElementById('length').value = template.size || '';
+            document.getElementById('price').value = template.price || '';
+            if (template.currency) document.getElementById('currency').value = template.currency;
+            document.getElementById('description').value = template.description || '';
+            document.getElementById('vehicle_type').value = template.vehicle_type || '';
+            document.getElementById('superstructure').value = template.structure || '';
+            document.getElementById('vehicle_notes').value = template.note || '';
 
-       // Swap gomb láthatóság frissítése
-       if (typeof toggleSwapVisibility === 'function') {
-           toggleSwapVisibility();
-       }
-   });
+            // --- Multiselect-ek ---
+            if(template.equipment) selectEquipment(template.equipment);
+            if(template.cargo_securement) selectSecurement(template.cargo_securement);
+
+            // --- PICKUPS ---
+            const pickupContainer = document.getElementById('pickup-container');
+            pickupContainer.innerHTML = '';
+            for (let i = 0; i < template.pickups.length; i++) {
+                const loc = template.pickups[i];
+                const frag = document.getElementById('pickup-template').content.cloneNode(true);
+
+                frag.querySelectorAll('input, select, textarea').forEach(el => {
+                    if (el.name) el.name = el.name.replace('__INDEX__', i);
+                });
+
+                pickupContainer.appendChild(frag);
+
+                const fs = pickupContainer.querySelectorAll('fieldset')[pickupContainer.querySelectorAll('fieldset').length - 1];
+                if (!fs) continue;
+
+                const cityInput = fs.querySelector('.city-search');
+                if (cityInput && [loc.city, loc.country, loc.postcode].some(Boolean)) {
+                    const query = [loc.city, loc.country, loc.postcode].filter(Boolean).join(' ');
+                    cityInput.value = query;
+                    clearHiddenFieldsFromFieldset(fs);
+                    if (query.trim().length >= 2) await autoSelectFirstSuggestion(cityInput, query);
+                }
+
+                // Dátum kitöltés
+                const startDateInput = fs.querySelector('input[name^="from_start_date"]');
+                const endDateInput = fs.querySelector('input[name^="from_end_date"]');
+                if (startDateInput && endDateInput) {
+                    const today = new Date();
+                    startDateInput.value = formatDate(today);
+                    endDateInput.value = formatDate(nextWeekday(today, 1));
+                }
+            }
+
+            // --- DROPOFFS ---
+            const dropoffContainer = document.getElementById('dropoff-container');
+            dropoffContainer.innerHTML = '';
+            for (let i = 0; i < template.dropoffs.length; i++) {
+                const loc = template.dropoffs[i];
+                const frag = document.getElementById('dropoff-template').content.cloneNode(true);
+
+                frag.querySelectorAll('input, select, textarea').forEach(el => {
+                    if (el.name) el.name = el.name.replace('__INDEX__', i);
+                });
+
+                dropoffContainer.appendChild(frag);
+
+                const fs = dropoffContainer.querySelectorAll('fieldset')[dropoffContainer.querySelectorAll('fieldset').length - 1];
+                if (!fs) continue;
+
+                const cityInput = fs.querySelector('.city-search');
+                if (cityInput && [loc.city, loc.country, loc.postcode].some(Boolean)) {
+                    const query = [loc.city, loc.country, loc.postcode].filter(Boolean).join(' ');
+                    cityInput.value = query;
+                    clearHiddenFieldsFromFieldset(fs);
+                    if (query.trim().length >= 2) await autoSelectFirstSuggestion(cityInput, query);
+                }
+
+                // Dátum kitöltés
+                const startDateInput = fs.querySelector('input[name^="to_start_date"]');
+                const endDateInput = fs.querySelector('input[name^="to_end_date"]');
+                if (startDateInput && endDateInput) {
+                    const today = new Date();
+                    const startNext = nextWeekday(today, 1);
+                    const endNext = nextWeekday(startNext, 1);
+                    startDateInput.value = formatDate(startNext);
+                    endDateInput.value = formatDate(endNext);
+                }
+            }
+
+            // ✅ Palettacsere és túlméretes áru kijelzés
+            const paletteCard = document.getElementById('paletteCard');
+            const paletteInput = document.getElementById('palette_exchange');
+            const oversizeCard = document.getElementById('oversizeCard');
+            const oversizeInput = document.getElementById('oversize');
+
+            function isTrue(val) {
+                return val === true || val === 'true' || val === 1 || val === '1';
+            }
+
+            if (isTrue(template.palette_exchange)) {
+                paletteCard.classList.add('active');
+                paletteInput.value = "true";
+            } else {
+                paletteCard.classList.remove('active');
+                paletteInput.value = "false";
+            }
+            if (isTrue(template.oversize)) {
+                oversizeCard.classList.add('active');
+                oversizeInput.value = "true";
+            } else {
+                oversizeCard.classList.remove('active');
+                oversizeInput.value = "false";
+            }
+
+            // Frissítjük a számláló mezőket
+            document.getElementById('pickup-count').value = template.pickups.length;
+            document.getElementById('dropoff-count').value = template.dropoffs.length;
+
+        } catch (err) {
+            console.error('[template] betöltési hiba:', err);
+            alert('Hiba történt a sablon betöltésekor.');
+        }
+
+
+    });
+
+    // --- Sablon törlés gomb kezelése ---
+    // --- Egyedi dropdown sablonkezelés ---
+    const dropdown = document.getElementById('template-dropdown');
+    const realSelect = document.getElementById('template_select');
+
+    // --- Dropdown újrarenderelése ---
+    function renderTemplateDropdown() {
+        const templates = Array.from(realSelect.options).filter(o => o.value && o.value !== "");
+
+        dropdown.innerHTML = '';
+
+        // Header
+        const header = document.createElement('div');
+        header.className = 'dropdown-header';
+        header.textContent = 'Válassz sablont';
+        dropdown.appendChild(header);
+
+        // Lista
+        const list = document.createElement('div');
+        list.className = 'dropdown-list';
+
+        if (templates.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'dropdown-item';
+            empty.textContent = 'Jelenleg még nincs sablon';
+            list.appendChild(empty);
+        } else {
+            templates.forEach(opt => {
+                const item = document.createElement('div');
+                item.className = 'dropdown-item';
+
+                const text = document.createElement('span');
+                text.textContent = opt.textContent;
+
+                const del = document.createElement('button');
+                del.type = 'button'; // nagyon fontos
+                del.className = 'delete-btn';
+                del.title = 'Sablon törlése';
+                del.textContent = '✕';
+
+                // --- Törlés esemény ---
+                del.addEventListener('click', async e => {
+                    e.stopPropagation();
+                    e.preventDefault(); // Nincs form submit
+                    if (!confirm('Biztosan törlöd ezt a sablont?')) return;
+
+                    try {
+                        const res = await fetch(`/cargo/template/delete/${opt.value}`, { method: 'POST' });
+                        const data = await res.json();
+                        if (data.success) {
+                            opt.remove();
+                            renderTemplateDropdown();
+                        } else {
+                            alert('Hiba történt: ' + (data.error || 'Ismeretlen hiba.'));
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        alert('Hálózati hiba.');
+                    }
+                });
+
+                // --- Betöltés esemény ---
+                item.addEventListener('click', async () => {
+                    header.textContent = opt.textContent;
+                    realSelect.value = opt.value;
+                    dropdown.classList.remove('open');
+
+                    // Kiváltjuk az eredeti change-t, hogy a sablon betöltődjön
+                    const ev = new Event('change', { bubbles: true });
+                    realSelect.dispatchEvent(ev);
+                });
+
+                item.appendChild(text);
+                item.appendChild(del);
+                list.appendChild(item);
+            });
+        }
+        dropdown.appendChild(list);
+        // Header click toggle
+        header.addEventListener('click', () => {
+            dropdown.classList.toggle('open');
+        });
+    }
+
+    renderTemplateDropdown();
+
+    // Bezárás kattintásra a body más részén
+    document.addEventListener('click', e => {
+        if (!dropdown.contains(e.target)) dropdown.classList.remove('open');
+    });
+
+    // - extra: ha a user gépel az inputba, a meglévő delegated autocomplete jQuery kód működni fog -
+    //   de a sablon-újrakészítésnél függetlenül betöltjük a találatokat (openSuggestionsForInput),
+    //   így a felhasználónak tényleg ki kell választania egy találatot.
 });
 
 function setupCityAutocomplete(selector) {
@@ -2113,145 +2856,209 @@ $(document).ready(function() {
     // Sor kattintás (például részletek megjelenítéshez később)
     $('#vehiclesTable tbody').on('click', 'tr', function() {
         var data = table.row(this).data();
-        console.log("Kiválasztott jármű:", data);
+        // console.log("Kiválasztott jármű:", data);
     });
 });
 
-// VEHICLE MODAL – AJAX + Leaflet + OSRM + körök + városok (országonkénti frissítéssel)
+// --- COUNTRY GEOJSON LAZY LOAD + CACHE ---
+const countryBorders = {};
+const countryPromises = {}; // cache a fetch Promise-okhoz
+
+async function drawCountryIfNeeded(countryCode, layer, color) {
+    // console.log("drawCountryIfNeeded hívás:", countryCode);
+
+    if (!countryCode) {
+        // console.log("Nincs countryCode");
+        return;
+    }
+
+    if (!countryBorders[countryCode]) {
+        // console.log("GeoJSON nincs még cache-ben:", countryCode);
+        if (!countryPromises[countryCode]) {
+            // console.log("Új fetch Promise létrehozása:", countryCode);
+            countryPromises[countryCode] = fetch(`/static/geojson/countries/${countryCode}.geojson`)
+                .then(res => {
+                    if (!res.ok) throw new Error("HTTP hiba "+res.status);
+                    return res.json();
+                })
+                .then(geojson => {
+                    // console.log("GeoJSON betöltve:", countryCode);
+                    countryBorders[countryCode] = geojson;
+                    return geojson;
+                })
+                .catch(e => {
+                    console.warn('GeoJSON betöltés hiba:', countryCode, e);
+                });
+        }
+
+        await countryPromises[countryCode];
+    } else {
+        // console.log("GeoJSON már cache-ben:", countryCode);
+    }
+
+    if (countryBorders[countryCode]) {
+        // console.log("GeoJSON hozzáadása a layerhez:", countryCode);
+        L.geoJSON(countryBorders[countryCode], {
+            style: { color: color, weight: 2, fillOpacity: 0.1 }
+        }).addTo(layer);
+    } else {
+        console.warn("GeoJSON nincs elérhető:", countryCode);
+    }
+}
+
+// --- VEHICLE MODAL ---
 document.addEventListener("DOMContentLoaded", function() {
     document.querySelectorAll(".vehicle-row").forEach(function(row) {
-        row.addEventListener("click", function(e) {
+        row.addEventListener("click", async function(e) {
             let vehicleId = this.dataset.vehicleId;
             if ($(e.target).closest('.action-column-right').length) return;
 
-            fetch(`/vehicles/${vehicleId}/details`)
-                .then(r => r.text())
-                .then(html => {
-                    let vehicleDetailsEl = document.getElementById("vehicleDetails");
-                    vehicleDetailsEl.innerHTML = html;
+            const res = await fetch(`/vehicles/${vehicleId}/details`);
+            const html = await res.text();
+            let vehicleDetailsEl = document.getElementById("vehicleDetails");
+            vehicleDetailsEl.innerHTML = html;
 
-                    let myModal = new bootstrap.Modal(document.getElementById('vehicleModal'));
-                    myModal.show();
-
-                    $('#vehicleModal').off('shown.bs.modal').on('shown.bs.modal', async function () {
-
-                        // --- TÉRKÉP ELŐKÉSZÍTÉSE ---
-                        if (window.currentVehicleMap) { try { window.currentVehicleMap.remove(); } catch(e){} window.currentVehicleMap = null; }
-                        let mapEl = document.getElementById('map');
-                        if (!mapEl) { console.warn('Nincs #map'); return; }
-
-                        window.currentVehicleMap = L.map('map', { preferCanvas: true }).setView([54.0, 15.0], 4);
-                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                            attribution: '&copy; OpenStreetMap contributors'
-                        }).addTo(window.currentVehicleMap);
-
-                        // --- ADATOK ---
-                        var pickups = JSON.parse(vehicleDetailsEl.querySelector("#pickups-data")?.textContent || "[]");
-                        var dropoffs = JSON.parse(vehicleDetailsEl.querySelector("#dropoffs-data")?.textContent || "[]");
-
-                        var pickupColor = '#2ca25f', dropoffColor = '#d73027';
-                        var pickupsLayer = L.layerGroup().addTo(window.currentVehicleMap);
-                        var dropoffsLayer = L.layerGroup().addTo(window.currentVehicleMap);
-
-                        function validCoord(lat,lng){ return !isNaN(lat) && !isNaN(lng) && lat!==0 && lng!==0; }
-
-                        function addCircleOrCountry(point, color){
-                            let lat = Number(point.lat), lng = Number(point.lng);
-                            if(!validCoord(lat,lng)) return;
-                            if(point.radiusKm && !isNaN(point.radiusKm) && point.radiusKm>0){
-                                L.circle([lat,lng], { radius: point.radiusKm*1000, color: color, weight:1, fillOpacity:0.1 }).addTo(window.currentVehicleMap);
-                            } else if(point.radiusKm===null && point.country){
-                                fetch(`/static/geojson/countries/${point.country}.geojson`)
-                                    .then(r=>r.json())
-                                    .then(geojson=>{ L.geoJSON(geojson, { color: color, weight:1, fillOpacity:0.05 }).addTo(window.currentVehicleMap); })
-                                    .catch(e=>console.error("GeoJSON load error", e));
-                            }
-                        }
-
-                        var allCoords = [];
-
-                        pickups.forEach(p=>{
-                            var lat=Number(p.lat), lng=Number(p.lng);
-                            if(validCoord(lat,lng)){
-                                L.circleMarker([lat,lng], {radius:7, color:'#000', fillColor:pickupColor, fillOpacity:0.9})
-                                  .bindPopup("<b>Felrakó</b><br>"+(p.city||p.masked_city||''))
-                                  .addTo(pickupsLayer);
-                                addCircleOrCountry(p, '#3388ff');
-                                allCoords.push([lat,lng]);
-                            }
-                        });
-
-                        dropoffs.forEach(d=>{
-                            var lat=Number(d.lat), lng=Number(d.lng);
-                            if(validCoord(lat,lng)){
-                                L.circleMarker([lat,lng], {radius:7, color:'#000', fillColor:dropoffColor, fillOpacity:0.9})
-                                  .bindPopup("<b>Lerakó</b><br>"+(d.city||d.masked_city||''))
-                                  .addTo(dropoffsLayer);
-                                addCircleOrCountry(d, '#ff9933');
-                                allCoords.push([lat,lng]);
-                            }
-                        });
-
-                        // --- OSRM ÚTVONAL ---
-                        let routeCoords = [];
-                        if(allCoords.length>=2){
-                            var coordPairs = allCoords.map(c=>c[1]+','+c[0]).join(';');
-                            var osrmUrl = 'https://router.project-osrm.org/route/v1/driving/'+coordPairs+'?overview=full&geometries=geojson';
-                            try {
-                                let osrmData = await (await fetch(osrmUrl)).json();
-                                if(osrmData.routes && osrmData.routes.length){
-                                    var r = osrmData.routes[0];
-                                    routeCoords = r.geometry.coordinates.map(c=>[c[1],c[0]]);
-                                    var routeLine = L.polyline(routeCoords, {color:'#3388ff', weight:3, opacity:0.9}).addTo(window.currentVehicleMap);
-                                    window.currentVehicleMap.fitBounds(routeLine.getBounds(), {padding:[30,30]});
-
-                                    var km = (r.distance||0)/1000;
-                                    let infoEl = document.getElementById('route-info');
-                                    if(infoEl) infoEl.textContent = `Útvonal távolság: ${km.toFixed(1)} km (OSRM)`;
-                                } else {
-                                    routeCoords = allCoords;
-                                }
-                            } catch(e){ console.warn('OSRM hiba, fallback', e); routeCoords = allCoords; }
-                        }
-
-                        // --- ORSZÁGONKÉNTI TELEPÜLÉS FRISSÍTÉS ---
-                        if(routeCoords.length >= 2){
-                            // Országok sorrendben (felrakó → lerakó)
-                            let countryCodes = [];
-                            pickups.forEach(p=>{ if(p.country && !countryCodes.includes(p.country)) countryCodes.push(p.country); });
-                            dropoffs.forEach(d=>{ if(d.country && !countryCodes.includes(d.country)) countryCodes.push(d.country); });
-
-                            let citiesEl = document.getElementById('route-cities');
-                            if(!citiesEl) return;
-
-                            for(const country of countryCodes){
-                                let response = await (await fetch('/vehicles/cities_near_route_country', {
-                                    method:'POST',
-                                    headers: {'Content-Type':'application/json'},
-                                    body: JSON.stringify({ route: routeCoords, radius_km: 1, country_codes: [country] })
-                                })).json();
-
-                                if(response && response.length && response[0].cities){
-                                    let cityNames = response[0].cities.map(c=>c.city_name);
-                                    if(cityNames.length){
-                                        // Frissítés országonként
-                                        if(citiesEl.innerHTML.includes("→")){
-                                            citiesEl.innerHTML += " → " + cityNames.join(" → ");
-                                        } else {
-                                            citiesEl.innerHTML = "<b>Útvonal települések:</b> " + cityNames.join(" → ");
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                    });
+            // toggle event binding itt:
+            const toggle = document.getElementById("route-cities-toggle");
+            const content = document.getElementById("route-cities-content");
+            if (toggle && content) {
+                toggle.addEventListener("click", function() {
+                    if (content.style.display === "none") {
+                        content.style.display = "block";
+                        toggle.textContent = "▼ Útvonal települések";
+                    } else {
+                        content.style.display = "none";
+                        toggle.textContent = "▶ Útvonal települések";
+                    }
                 });
+            }
+
+            let myModalEl = document.getElementById('vehicleModal');
+            let myModal = new bootstrap.Modal(myModalEl);
+            myModal.show();
+
+            $('#vehicleModal').off('shown.bs.modal').on('shown.bs.modal', async function () {
+                // --- TÉRKÉP ---
+                if(window.currentVehicleMap){
+                    window.currentVehicleMap.remove();
+                    window.currentVehicleMap = null;
+                }
+
+                window.currentVehicleMap = L.map('map', { preferCanvas: true }).setView([54.0, 15.0], 4);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; OpenStreetMap contributors'
+                }).addTo(window.currentVehicleMap);
+
+                let pickupsLayer = L.layerGroup().addTo(window.currentVehicleMap);
+                let dropoffsLayer = L.layerGroup().addTo(window.currentVehicleMap);
+                let citiesLayer = L.layerGroup().addTo(window.currentVehicleMap);
+
+                function validCoord(lat,lng){ return !isNaN(lat) && !isNaN(lng) && lat!==0 && lng!==0; }
+
+                let pickups = JSON.parse(vehicleDetailsEl.querySelector("#pickups-data")?.textContent || "[]");
+                let dropoffs = JSON.parse(vehicleDetailsEl.querySelector("#dropoffs-data")?.textContent || "[]");
+                let allCoords = [];
+
+                // PICKUPS
+                for (const p of pickups) {
+                    const hasCoords = validCoord(p.lat, p.lng);
+                    const needCountry = !hasCoords || p.origin_diff === null;
+
+                    if (hasCoords && p.origin_diff !== null) {
+                        // Marker + radius
+                        L.circleMarker([p.lat, p.lng], {radius:7, color:'#000', fillColor:'#2ca25f', fillOpacity:0.9})
+                          .bindPopup("<b>Felrakó</b><br>"+(p.city||p.masked_city||''))
+                          .addTo(pickupsLayer);
+
+                        if (p.radiusKm) {
+                            L.circle([p.lat, p.lng], {radius: p.radiusKm*1000, color:'#2ca25f', fillOpacity:0.1})
+                             .addTo(pickupsLayer);
+                        }
+
+                        allCoords.push([p.lat, p.lng]);
+                    }
+
+                    if (needCountry && p.country) {
+                        await drawCountryIfNeeded(p.country, pickupsLayer, '#2ca25f');
+                    }
+                }
+
+                // DROPOFFS
+                for (const d of dropoffs) {
+                    const hasCoords = validCoord(d.lat, d.lng);
+                    const needCountry = !hasCoords || d.destination_diff === null;
+
+                    if (hasCoords && d.destination_diff !== null) {
+                        L.circleMarker([d.lat, d.lng], {radius:7, color:'#000', fillColor:'#d73027', fillOpacity:0.9})
+                          .bindPopup("<b>Lerakó</b><br>"+(d.city||d.masked_city||''))
+                          .addTo(dropoffsLayer);
+
+                        if (d.radiusKm) {
+                            L.circle([d.lat, d.lng], {radius: d.radiusKm*1000, color:'#d73027', fillOpacity:0.1})
+                             .addTo(dropoffsLayer);
+                        }
+
+                        allCoords.push([d.lat, d.lng]);
+                    }
+
+                    if (needCountry && d.country) {
+                        await drawCountryIfNeeded(d.country, dropoffsLayer, '#d73027');
+                    }
+                }
+
+                // OSRM ÚTVONAL
+                let routeCoords = [];
+                if(allCoords.length>=2){
+                    try {
+                        let coordPairs = allCoords.map(c=>c[1]+','+c[0]).join(';');
+                        let osrmData = await (await fetch('https://router.project-osrm.org/route/v1/driving/'+coordPairs+'?overview=full&geometries=geojson')).json();
+                        if(osrmData.routes && osrmData.routes.length){
+                            let r = osrmData.routes[0];
+                            routeCoords = r.geometry.coordinates.map(c=>[c[1],c[0]]);
+                            L.polyline(routeCoords, {color:'#3388ff', weight:3, opacity:0.9}).addTo(window.currentVehicleMap);
+                            window.currentVehicleMap.fitBounds(L.polyline(routeCoords).getBounds(), {padding:[30,30]});
+
+                            let km = (r.distance||0)/1000;
+                            let infoEl = document.getElementById('route-info');
+                            if(infoEl) infoEl.textContent = `Útvonal távolság: ${km.toFixed(1)} km (OSRM)`;
+                        } else {
+                            routeCoords = allCoords;
+                        }
+                    } catch(e){ console.warn('OSRM hiba', e); routeCoords = allCoords; }
+                }
+
+                // TELEPÜLÉSEK A ROUTE MENTÉN
+                if(routeCoords.length>=2){
+                    const citiesEl = document.getElementById('route-cities-content');
+                    if(!citiesEl) return;
+
+                    const response = await (await fetch('/vehicles/cities_near_route', {
+                        method:'POST',
+                        headers: {'Content-Type':'application/json'},
+                        body: JSON.stringify({ route: routeCoords, radius_km: 3 })
+                    })).json();
+
+                    if(response && response.length){
+                        let cityNames = response.map(c=>c.city_name);
+                        citiesEl.innerHTML = "" + cityNames.join(" → ");
+
+                        response.forEach(city=>{
+                            if(!pickups.some(p=>p.lat==city.latitude && p.lng==city.longitude) &&
+                               !dropoffs.some(d=>d.lat==city.latitude && d.lng==city.longitude)){
+                                L.circleMarker([city.latitude, city.longitude], {
+                                    radius: 6,
+                                    color: '#000',
+                                    fillColor: '#3388ff',
+                                    fillOpacity: 0.9
+                                }).bindPopup(`<b>${city.city_name}</b>`).addTo(citiesLayer);
+                            }
+                        });
+                    }
+                }
+            }); // shown.bs.modal
         });
     });
 });
-
-
 
 </script>
 {% endblock %}

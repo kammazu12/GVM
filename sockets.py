@@ -8,12 +8,28 @@ from models import Cargo, Offer, ChatMessage
 @socketio.on("connect")
 def handle_connect():
     print(f"User connected: {request.sid}")
+    if current_user.is_authenticated:
+        room_name = f"user_{current_user.user_id}"
+        join_room(room_name)
+        print(f"[SOCKET] {current_user.user_id} joined room {room_name}")
 
 
 @socketio.on('join')
 def handle_join(data):
     room = data['room']
     join_room(room)
+
+
+@socketio.on("join_user")
+def handle_join_user(data=None):
+    user_id = None
+    if data:
+        user_id = data.get("user_id")
+    if not user_id and current_user.is_authenticated:
+        user_id = current_user.user_id
+    print(f"[SOCKET] User joined own room: user_{user_id}")
+    if user_id:
+        join_room(f"user_{user_id}")
 
 
 @socketio.on("send_message")

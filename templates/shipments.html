@@ -202,8 +202,11 @@
                     <div id="paletteCard" class="palette-card">Raklap csere <img src="{{ url_for('static', filename='icons/exchange_palette.png') }}" alt="Palettacsere"></div>
                     <input type="hidden" id="palette_exch" name="palette_exchange" value="false">
 
-                    <div id="oversizeCard" class="oversize-card">Túlméretes <img src="{{ url_for('static', filename='icons/oversize.png') }}" alt="Palettacsere"></div>
+                    <div id="oversizeCard" class="oversize-card">Túlméretes áru<img src="{{ url_for('static', filename='icons/oversize.png') }}" alt="Túlméretes"></div>
                     <input type="hidden" id="oversize" name="oversize" value="false">
+
+                    <div id="loadtypeCard" class="loadtype-card">Részrakomány <img src="{{ url_for('static', filename='icons/ltl.png') }}" alt="LTL"></div>
+                    <input type="hidden" id="load_type" name="load_type" value="false">
                 </div>
               </div>
 
@@ -217,14 +220,13 @@
                     <option value="EUR">EUR</option>
                     <option value="HUF">HUF</option>
                     </select>
-
-                    <label for="load_type">Szállítás típusa</label>
-                    <select id="load_type" name="load_type">
-                    <option value="FTL">FTL (Teljes rakomány)</option>
-                    <option value="LTL">LTL (Részrakomány)</option>
-                    </select>
                 </div>
 
+                <input type="hidden" id="origin_lat" name="origin_lat">
+                <input type="hidden" id="origin_lon" name="origin_lon">
+                <input type="hidden" id="destination_lat" name="destination_lat">
+                <input type="hidden" id="destination_lon" name="destination_lon">
+                <input type="hidden" id="routeCoordsInput" name="routeCoordsInput">
                 <div class="btn-wrapper" style="margin-top:15px;">
                 <button type="submit">Keresés és mentés</button>
               </div>
@@ -256,9 +258,14 @@
                     <th class="felvet">Rakomány felvétel</th>
                     <th class="letet datum"><img src="{{ url_for('static', filename='icons/calendar_done.png') }}" style="width: 24px"></th>
                     <th class="letet">Rakomány letétel</th>
-                    <th class="arujarmu">Hossza (m)</th>
-                    <th class="arujarmu">Tömege (t)</th>
-                    <th class="arujarmu" colspan="5">Jármű tulajdonságok</th>
+                    <th class="arujarmu"><img src="{{ url_for('static', filename='icons/length2.png') }}" style="width: 24px"> (m)</th>
+                    <th class="arujarmu"><img src="{{ url_for('static', filename='icons/weight.png') }}" style="width: 28px"> (t)</th>
+                    <th class="arujarmu">Jármű típusa</th>
+                    <th class="arujarmu">Felépítmény</th>
+                    <th class="arujarmu">Felszerelés</th>
+                    <th class="arujarmu">Rögzítés</th>
+                    <th class="arujarmu">Extrák</th>
+                    <th class="arujarmu">Megjegyzés</th>
                     <th class="hirdeto">Hirdető cég</th>
                     <th class="action-column letet"></th>
                     <th style="display:none;">created_at</th> <!-- rejtett oszlop a csökkenő rendezéshez -->
@@ -273,7 +280,11 @@
                         {% if pickups %}
                             {% set first_pickup = pickups[0] %}
                             {% if first_pickup.start_date %}
-                                {{ first_pickup.start_date.strftime('%Y.%m.%d.') }}
+                                {% if first_pickup.start_date.year == current_year %}
+                                    {{ first_pickup.start_date.strftime('%m.%d.') }}
+                                {% else %}
+                                    {{ first_pickup.start_date.strftime('%Y.%m.%d.') }}
+                                {% endif %}
                                 {% if first_pickup.end_date %}
                                     {% set delta = (first_pickup.end_date - first_pickup.start_date).days %}
                                     (+{{ delta }})
@@ -314,7 +325,11 @@
                         {% if dropoffs %}
                             {% set last_dropoff = dropoffs[-1] %}
                             {% if last_dropoff.start_date %}
-                                {{ last_dropoff.start_date.strftime('%Y.%m.%d.') }}
+                                {% if last_dropoff.start_date.year == current_year %}
+                                    {{ last_dropoff.start_date.strftime('%m.%d.') }}
+                                {% else %}
+                                    {{ last_dropoff.start_date.strftime('%Y.%m.%d.') }}
+                                {% endif %}
                                 {% if last_dropoff.end_date %}
                                     {% set delta = (last_dropoff.end_date - last_dropoff.start_date).days %}
                                     (+{{ delta }})
@@ -349,13 +364,25 @@
                         {% endif %}
                     </td>
 
+                    {# A többi oszlop változatlan marad #}
                     <td>{{ cargo.size }}</td>
                     <td>{{ cargo.weight }}</td>
                     <td>{{ cargo.vehicle_type or '-' }}</td>
                     <td>{{ cargo.structure or '-' }}</td>
                     <td>{{ cargo.equipment or '-' }}</td>
                     <td>{{ cargo.cargo_securement or '-' }}</td>
-                    <td>{{ cargo.note or '-' }}</td>  {# certificates helyett leírás #}
+                    <td>
+                        {% set extras = [] %}
+                        {% if cargo.palette_exchange %}{% set _ = extras.append('Palettacsere') %}{% endif %}
+                        {% if cargo.oversize %}{% set _ = extras.append('Túlméretes áru') %}{% endif %}
+                        {{ extras|join('<br>') | safe if extras else '-' }}
+                    </td>
+                    <td>
+                        {% set notes = [] %}
+                        {% if cargo.description %}{% set _ = notes.append("Rakomány: " ~ (cargo.description[:50] ~ ('...' if cargo.description|length > 30 else ''))) %}{% endif %}
+                        {% if cargo.note %}{% set _ = notes.append("Jármű: " ~ (cargo.note[:50] ~ ('...' if cargo.note|length > 30 else ''))) %}{% endif %}
+                        {{ notes|join('<br>')|safe if notes else '-' }}
+                    </td>
 
                     <td>
                         {% if cargo.company %}
@@ -386,6 +413,40 @@
 </div>
 
 <style>
+
+.suggestions {
+    display: none;
+    position: relative;
+    background: #fff;
+    border: 1px solid #ccc;
+    max-height: 200px;
+    overflow-y: auto;
+    width: 100%;
+    z-index: 1000;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.result-item {
+    padding: 5px 10px;
+    cursor: pointer;
+}
+
+.result-item:hover {
+    background-color: #f0f0f0;
+}
+
+/* találatok */
+.search-results .result-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.search-results .result-item:hover {
+    background-color: #f0f0f0;
+}
+
+
 /* A sticky action oszlop ne takarja el a child tartalmat: adjunk alacsonyabb z-indexet neki */
 .action-column-right {
     position: sticky;
@@ -458,20 +519,28 @@ td{
     grid-template-rows: auto;
     gap: 10px;
 }
+
 #origin {
   grid-column: 1 / 2; /* első oszlop */
 }
+
 #origin_diff {
   grid-column: 2 / 3;
+    max-height: 40px;
 }
+
 #swap-btn {
   grid-column: 3 / 4;
+    max-height: 50px;
 }
+
 #destination {
   grid-column: 4 / 5;
 }
+
 #destination_diff {
   grid-column: 5 / 6;
+    max-height: 40px;
 }
 
 #available_from {
@@ -509,7 +578,8 @@ td{
 }
 
 .palette-card,
-.oversize-card {
+.oversize-card,
+.loadtype-card {
   flex: 1;
   text-align: center;
   padding: 12px;
@@ -519,20 +589,6 @@ td{
   transition: all 0.2s ease-in-out;
   background: #fafafa;
   user-select: none;
-}
-
-.palette-card:hover,
-.oversize-card:hover {
-  border-color: #007bff;
-  background: #f0f8ff;
-}
-
-.palette-card.active,
-.oversize-card.active {
-  border-color: #007bff;
-  background: #e6f0ff;
-  font-weight: bold;
-  box-shadow: 0 0 6px rgba(0,0,0,0.15);
 }
 
 /* Gomb */
@@ -551,13 +607,13 @@ td{
   background: #0056b3;
 }
 
-.palette-card:hover, .oversize-card:hover {
+.palette-card:hover, .oversize-card:hover, .loadtype-card:hover {
     background: #f2f6ff;
     border-color: #cfe0ff;
     box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
 
-.palette-card.active, .oversize-card.active {
+.palette-card.active, .oversize-card.active, .loadtype-card.active {
     background: #e9f5ff;
     border-color: #5aa3ff;
     box-shadow: 0 2px 6px rgba(0,0,0,0.08);
@@ -565,7 +621,7 @@ td{
 }
 
 .cards-row img{
-    width: 24px;
+    width: 28px;
 }
 
 /* ---------- LAYOUT (49% / 49%) ---------- */
@@ -752,30 +808,184 @@ td{
     display: none;
 }
 
-.suggestions {
-    border: 1px solid #ccc;
-    max-height: 200px;
-    overflow-y: auto;
-    position: absolute;
-    background: #fff;
-    z-index: 1000;
-}
-
-.suggestion-item {
-    padding: 5px 10px;
-    cursor: pointer;
-}
-
-.suggestion-item:hover {
-    background: #f0f0f0;
-}
-
-
 </style>
 {% endblock %}
 
 {% block scripts %}
 <script>
+const vehicleForm = document.getElementById("vehicleForm");
+
+/**
+ * Csökkenti a koordináták számát az útvonalon.
+ * @param {Array} coords - [[lat, lon], [lat, lon], ...]
+ * @param {number} maxPoints - maximum pontszám
+ * @returns {Array} csökkentett koordináták
+ */
+
+function downsampleRoute(coords, maxPoints) {
+    if (coords.length <= maxPoints) return coords;
+
+    const step = Math.ceil(coords.length / maxPoints);
+    const downsampled = [];
+    for (let i = 0; i < coords.length; i += step) {
+        downsampled.push(coords[i]);
+    }
+    // Mindig biztosítjuk az utolsó pontot is
+    if (downsampled[downsampled.length - 1] !== coords[coords.length - 1]) {
+        downsampled.push(coords[coords.length - 1]);
+    }
+    return downsampled;
+}
+
+vehicleForm.addEventListener("submit", async function(e) {
+    e.preventDefault(); // ne töltsön újra az oldalt
+
+    // --- Form mezők ---
+    const originCity = document.getElementById("origin_city").value;
+    const originZip = document.getElementById("origin_zip").value;
+    const originCountry = document.getElementById("origin_country").value;
+
+    const destCity = document.getElementById("destination_city").value;
+    const destZip = document.getElementById("destination_zip").value;
+    const destCountry = document.getElementById("destination_country").value;
+
+    // --- Geocode lekérés backendről ---
+    async function geocode(city, zip, country) {
+        const url = `/cargo/geocode_location?city=${encodeURIComponent(city)}&postcode=${encodeURIComponent(zip)}&country=${encodeURIComponent(country)}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("Geocode hiba");
+        return await res.json();
+    }
+
+    let originCoords, destCoords;
+    try {
+        originCoords = await geocode(originCity, originZip, originCountry);
+        destCoords = await geocode(destCity, destZip, destCountry);
+    } catch(err) {
+        alert("Nem sikerült lekérni a koordinátákat!");
+        return;
+    }
+
+    // --- OSRM útvonal lekérése ---
+    let routeCoords = [];
+    try {
+        const osrmRes = await fetch(`https://router.project-osrm.org/route/v1/driving/${originCoords.lng},${originCoords.lat};${destCoords.lng},${destCoords.lat}?overview=full&geometries=geojson`);
+        const data = await osrmRes.json();
+        if(data.routes && data.routes.length){
+            routeCoords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]); // lat, lon sorrend
+        }
+
+        // --- Pontcsökkentés (max 500 pont) ---
+        routeCoords = downsampleRoute(routeCoords, 500);
+
+    } catch(err){
+        console.error("OSRM hiba:", err);
+    }
+
+
+    // --- Hidden input feltöltése ---
+    document.getElementById("origin_lat").value = originCoords.lat;
+    document.getElementById("origin_lon").value = originCoords.lng;
+    document.getElementById("destination_lat").value = destCoords.lat;
+    document.getElementById("destination_lon").value = destCoords.lng;
+    document.getElementById("routeCoordsInput").value = JSON.stringify(routeCoords);
+
+    // --- Form submit ---
+    vehicleForm.submit();
+});
+
+// DataTables inicializálás és kezelése
+$(document).ready(function() {
+    var table;
+    if (! $.fn.DataTable.isDataTable('#shipmentsTable')) {
+        table = $('#shipmentsTable').DataTable({
+            dom: '<"top"f>rt<"bottom"lip>',
+            "order": [[14, "desc"], [0, "asc"]],
+            "pageLength": 25,
+            // scrollX: true,
+            // "stripeClasses": ['odd-row', 'even-row'],
+            "columnDefs": [{ "orderable": false, "targets": 13 }]
+        });
+    } else {
+        table = $('#shipmentsTable').DataTable(); // létező példányt használjuk
+    }
+
+    // Offer gomb click (child row)
+    $(document).on('click', 'button.offer-btn', function(e) {
+        console.log("Offer button clicked!", e.target);
+        e.stopPropagation();
+
+        var tr = $(this).closest('tr');
+        var row = table.row(tr);
+        const cargoId = tr.data('cargo-id');
+        console.log("cargoId:", cargoId);
+
+        if (row.child.isShown()) {
+            row.child.hide();
+            tr.removeClass('shown');
+            return;
+        }
+
+        // minden child row bezárása előtte
+        table.rows().every(function() {
+            if (this.child.isShown()) this.child.hide();
+            $(this.node()).removeClass('shown');
+        });
+
+        const formHtml = `
+            <div class="offer-child-wrapper">
+                <form class="offer-form">
+                    <input type="hidden" name="cargo_id" value="${cargoId}">
+                    <label>Felvét dátuma: <input type="date" name="pickup_date" required></label>
+                    <label>Letét dátuma: <input type="date" name="delivery_date" required></label>
+                    <label>Ár: <input type="number" name="price" step="1" required></label>
+                    <label>Valuta:
+                        <select name="currency">
+                            <option value="eur">€</option>
+                            <option value="huf">Ft</option>
+                        </select>
+                    </label>
+                    <label>Megjegyzés: <input type="text" name="note" maxlength="50"></label>
+                    <button type="submit">Küldés</button>
+                </form>
+            </div>
+        `;
+        row.child(formHtml).show();
+        tr.addClass('shown');
+    });
+
+    // Offer form submit
+    $('#shipmentsTable').on('submit', '.offer-form', function(e) {
+        e.preventDefault();
+        const $form = $(this);
+        const data = $form.serialize();
+
+        $.post('cargo/offer', data)
+            .done(function(response) {
+                alert('Ajánlat elküldve!');
+                $form.closest('.offer-child-wrapper').remove();
+            })
+            .fail(function(xhr) {
+                alert('Hiba: ' + (xhr.responseJSON?.message || 'Ismeretlen hiba'));
+            });
+
+        table.rows().every(function() {
+            if (this.child.isShown()) this.child.hide();
+            $(this.node()).removeClass('shown');
+        });
+    });
+
+    // Child row-ok bezárása újrarenderkor
+    table.on('draw', function() {
+        table.rows().every(function() {
+            if (this.child && this.child.isShown && this.child.isShown()) {
+                this.child.hide();
+            }
+        });
+        $('#shipmentsTable tbody tr').removeClass('shown');
+    });
+});
+
 // SWAP BUTTON
 document.addEventListener("DOMContentLoaded", function () {
     const swapBtn = document.getElementById("swap-btn");
@@ -809,6 +1019,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const oversizeCard = document.getElementById("oversizeCard");
     const paletteInput = document.getElementById("palette_exch");
     const oversizeInput = document.getElementById("oversize");
+    const loadtypeCard = document.getElementById("loadtypeCard");
+    const loadtypeInput = document.getElementById("load_type");
 
     if (paletteCard) {
         paletteCard.addEventListener("click", () => {
@@ -821,6 +1033,13 @@ document.addEventListener("DOMContentLoaded", () => {
         oversizeCard.addEventListener("click", () => {
             oversizeCard.classList.toggle("active");
             oversizeInput.value = oversizeCard.classList.contains("active");
+        });
+    }
+
+    if (loadtypeCard) {
+        loadtypeCard.addEventListener("click", () => {
+            loadtypeCard.classList.toggle("active");
+            loadtypeInput.value = loadtypeCard.classList.contains("active");
         });
     }
 });
@@ -1044,98 +1263,6 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 });
 
-// DataTables inicializálás és kezelése
-$(document).ready(function() {
-    var table;
-    if (! $.fn.DataTable.isDataTable('#shipmentsTable')) {
-        table = $('#shipmentsTable').DataTable({
-            dom: '<"top"f>rt<"bottom"lip>',
-            "order": [[12, "desc"], [1, "asc"]],
-            "pageLength": 25,
-            // scrollX: true,
-            "stripeClasses": ['odd-row', 'even-row'],
-            "columnDefs": [{ "orderable": false, "targets": 11 }]
-        });
-    } else {
-        table = $('#shipmentsTable').DataTable(); // létező példányt használjuk
-    }
-
-
-    // Offer gomb click (child row)
-    $('#shipmentsTable').on('click', '.offer-btn, .offer-btn *', function(e) {
-        e.stopPropagation(); // Minden belső elemre is érvényes
-
-        var tr = $(this).closest('tr');
-        var row = table.row(tr);
-
-        const cargoId = tr.data('cargo-id');
-
-        if (row.child.isShown()) {
-            row.child.hide();
-            tr.removeClass('shown');
-            return;
-        }
-
-        // minden child row bezárása előtte
-        table.rows().every(function() {
-            if (this.child.isShown()) this.child.hide();
-            $(this.node()).removeClass('shown');
-        });
-
-        const formHtml = `
-            <div class="offer-child-wrapper">
-                <form class="offer-form">
-                    <input type="hidden" name="cargo_id" value="${cargoId}">
-                    <label>Felvét dátuma: <input type="date" name="pickup_date" required></label>
-                    <label>Letét dátuma: <input type="date" name="delivery_date" required></label>
-                    <label>Ár: <input type="number" name="price" step="1" required></label>
-                    <label>Valuta:
-                        <select name="currency">
-                            <option value="eur">€</option>
-                            <option value="huf">Ft</option>
-                        </select>
-                    </label>
-                    <label>Megjegyzés: <input type="text" name="note" maxlength="50"></label>
-                    <button type="submit">Küldés</button>
-                </form>
-            </div>
-        `;
-        row.child(formHtml).show();
-        tr.addClass('shown');
-    });
-
-    // Offer form submit
-    $('#shipmentsTable').on('submit', '.offer-form', function(e) {
-        e.preventDefault();
-        const $form = $(this);
-        const data = $form.serialize();
-
-        $.post('cargo/offer', data)
-            .done(function(response) {
-                alert('Ajánlat elküldve!');
-                $form.closest('.offer-child-wrapper').remove();
-            })
-            .fail(function(xhr) {
-                alert('Hiba: ' + (xhr.responseJSON?.message || 'Ismeretlen hiba'));
-            });
-
-        table.rows().every(function() {
-            if (this.child.isShown()) this.child.hide();
-            $(this.node()).removeClass('shown');
-        });
-    });
-
-    // Child row-ok bezárása újrarenderkor
-    table.on('draw', function() {
-        table.rows().every(function() {
-            if (this.child && this.child.isShown && this.child.isShown()) {
-                this.child.hide();
-            }
-        });
-        $('#shipmentsTable tbody tr').removeClass('shown');
-    });
-});
-
 // kártyás multiselect
 (function(){
   // alapértelmezett szövegek
@@ -1308,88 +1435,273 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// city autocomplete AJAX
-function setupAjaxCityList(inputId, apiUrl) {
-    const input = document.getElementById(inputId);
-    const container = document.getElementById(inputId + "_suggestions");
+$(document).ready(function() {
+    let searchTimer;
 
-    input.addEventListener("input", async function() {
-        const query = this.value.trim();
-        container.innerHTML = "";
-        if (query.length < 2) return;
+    const apiUrl = "/cargo/ajax/city_search";
 
-        try {
-            const res = await fetch(`${apiUrl}?q=${encodeURIComponent(query)}`);
-            const cities = await res.json();
+    // Delegált input esemény minden autocomplete-wrapper inputjára
+    $(document).on("input", "#origin, #destination", function() {
+        const $input = $(this);
+        const query = $input.val().trim();
+        const $results = $input.siblings(".suggestions");
 
-            cities.slice(0, 10).forEach(city => {
-                const div = document.createElement("div");
-                div.classList.add("suggestion-item");
-                div.textContent = `${city.city_name} (${city.zipcode})`;
-                div.dataset.city = city.city_name;
-                div.dataset.zipcode = city.zipcode;
-                div.dataset.country = city.country_code;
+        clearTimeout(searchTimer);
+        $results.empty().hide();
 
-                div.addEventListener("click", () => {
-                    input.value = div.textContent;
-                    document.getElementById(inputId + "_city").value = div.dataset.city;
-                    document.getElementById(inputId + "_zip").value = div.dataset.zipcode;
-                    document.getElementById(inputId + "_country").value = div.dataset.country;
+        if(query.length < 2) return;
 
-                    // Log
-                    console.log(`[Selection] ${inputId}: city=${div.dataset.city}, zip=${div.dataset.zipcode}, country=${div.dataset.country}`);
+        searchTimer = setTimeout(() => {
+            // A query szóközökre darabolása
+            const terms = query.split(" ").filter(t => t.length > 0);
 
-                    container.innerHTML = ""; // elrejtjük a listát
+            $.get(apiUrl, { q: query }, function(data) {
+                $results.empty();
+
+                if(!data.length) return;
+
+                data.forEach(item => {
+                    // Ellenőrizzük a feltételeket:
+                    // ha számjegy -> zip, ha 2 karakter -> országkód, egyébként city
+                    let matched = false;
+                    for(const term of terms) {
+                        if(/^\d+$/.test(term)) {
+                            matched = item.zipcode && item.zipcode.includes(term);
+                        } else if(term.length === 2) {
+                            matched = item.country_code && item.country_code.toLowerCase().includes(term.toLowerCase());
+                        } else {
+                            matched = item.city_name.toLowerCase().includes(term.toLowerCase());
+                        }
+                        if(!matched) break;
+                    }
+
+                    if(matched) {
+                        const text = `${item.city_name}, ${item.country_code} (${item.zipcode}) `;
+                        const $li = $('<div class="result-item"></div>').text(text).data({
+                            city: item.city_name,
+                            zipcode: item.zipcode,
+                            country: item.country_code
+                        });
+                        $results.append($li);
+                    }
                 });
 
-                container.appendChild(div);
+                if($results.children().length) $results.show();
             });
-
-        } catch (err) {
-            console.error("City fetch error:", err);
-        }
+        }, 300);
     });
 
-    // Ha a felhasználó máshova kattint, eltűnik a lista
-    document.addEventListener("click", function(e) {
-        if (!container.contains(e.target) && e.target !== input) {
-            container.innerHTML = "";
-        }
+    // Click esemény a találatokra
+    $(document).on("click", ".result-item", function() {
+        const $li = $(this);
+        const $input = $li.closest(".autocomplete-wrapper").find("input[type=text]");
+        const fieldset = $input.closest(".autocomplete-wrapper");
+
+        $input.val($li.text());
+
+        // Hidden mezők kitöltése
+        fieldset.find("input[type=hidden][id$='_city']").val($li.data("city"));
+        fieldset.find("input[type=hidden][id$='_zip']").val($li.data("zipcode"));
+        fieldset.find("input[type=hidden][id$='_country']").val($li.data("country"));
+
+        $li.parent().empty().hide();
     });
-}
 
-// Inicializálás
-setupAjaxCityList("origin", "/cargo/api/cities");
-setupAjaxCityList("destination", "/cargo/api/cities");
-
-// Ha a felhasználó kiválaszt egy várost a listából, töltsük ki a hidden inputokat
-// Válasszuk ki az összes inputot, amire alkalmazni akarjuk
-document.querySelectorAll('#origin, #destination').forEach(input => {
-    input.addEventListener("change", function () {
-        const val = this.value;
-        const datalist = document.getElementById(this.getAttribute('list'));
-        if (!datalist) return;
-
-        for (let opt of datalist.options) {
-            if (opt.value === val) {
-                const cityName = opt.value.split(" (")[0];
-                const zip = opt.dataset.zipcode;
-                const country = opt.dataset.country;
-
-                // kitöltjük a hidden inputokat
-                document.getElementById(this.id + "_city").value = cityName;
-                document.getElementById(this.id + "_zip").value = zip;
-                document.getElementById(this.id + "_country").value = country;
-
-                // --- LOG FRONTENDEN ---
-                console.log(`[Frontend] ${this.id}: city=${cityName}, zip=${zip}, country=${country}`);
-                break;
-            }
-        }
+    // Blur esemény a találati lista bezárásához
+    $(document).on("blur", "#origin, #destination", function() {
+        const $results = $(this).siblings(".suggestions");
+        setTimeout(() => $results.hide(), 200);
     });
 });
 
-
+//
+// // city autocomplete AJAX
+// function setupAjaxCityList(inputId, apiUrl) {
+//     const input = document.getElementById(inputId);
+//     const container = document.getElementById(inputId + "_suggestions");
+//
+//     input.addEventListener("input", async function() {
+//         const query = this.value.trim();
+//         container.innerHTML = "";
+//         if (query.length < 2) return;
+//
+//         try {
+//             const res = await fetch(`${apiUrl}?q=${encodeURIComponent(query)}`);
+//             const cities = await res.json();
+//
+//             cities.slice(0, 10).forEach(city => {
+//                 const div = document.createElement("div");
+//                 div.classList.add("suggestion-item");
+//                 div.textContent = `${city.city_name} (${city.zipcode})`;
+//                 div.dataset.city = city.city_name;
+//                 div.dataset.zipcode = city.zipcode;
+//                 div.dataset.country = city.country_code;
+//
+//                 div.addEventListener("click", () => {
+//                     const fieldset = input.closest("fieldset");
+//
+//                     input.value = div.textContent;
+//
+//                     const countryInput = fieldset.querySelector(`#${inputId}_country`);
+//                     const zipInput = fieldset.querySelector(`#${inputId}_zip`);
+//                     const cityInput = fieldset.querySelector(`#${inputId}_city`);
+//                     const validInput = fieldset.querySelector(`#${inputId}_valid`);
+//
+//                     if(cityInput) cityInput.value = div.dataset.city;
+//                     if(zipInput) zipInput.value = div.dataset.zipcode;
+//                     if(countryInput) countryInput.value = div.dataset.country;
+//                     if(validInput) validInput.value = 1;
+//
+//                     console.log(`[Selection] ${inputId}: city=${div.dataset.city}, zip=${div.dataset.zipcode}, country=${div.dataset.country}`);
+//
+//                     container.innerHTML = "";
+//                 });
+//
+//
+//                 container.appendChild(div);
+//             });
+//
+//         } catch (err) {
+//             console.error("City fetch error:", err);
+//         }
+//     });
+//
+//     // Ha a felhasználó máshova kattint, eltűnik a lista
+//     document.addEventListener("click", function(e) {
+//         if (!container.contains(e.target) && e.target !== input) {
+//             container.innerHTML = "";
+//         }
+//     });
+// }
+//
+// // Inicializálás
+// setupAjaxCityList("origin", "/cargo/api/cities");
+// setupAjaxCityList("destination", "/cargo/api/cities");
+//
+// $(document).ready(function() {
+//     let searchTimer;
+//
+//     // Mapping az input ID-khoz és API endpointokhoz
+//     const apiMap = {
+//         origin: "/cargo/api/cities",
+//         destination: "/cargo/api/cities"
+//     };
+//     const debounceTimers = {};
+//
+//     $(document).on("input", ".city-search", function() {
+//         const $input = $(this);
+//         const query = $input.val().trim();
+//         const $results = $input.siblings(".suggestions"); // HTML-hez igazítva
+//         const apiUrl = apiMap[$input.attr("id")] || "/cargo/api/cities";
+//
+//         clearTimeout(debounceTimers[$input.attr("id")]);
+//         $results.empty().hide();
+//
+//         if (query.length < 1) return;
+//
+//         debounceTimers[$input.attr("id")] = setTimeout(async () => {
+//             const terms = query.split(/\s+/); // spacek mentén
+//             try {
+//                 const res = await fetch(`${apiUrl}?q=${encodeURIComponent(query)}`);
+//                 let cities = await res.json();
+//
+//                 cities = cities.filter(city => {
+//                     return terms.every(term => {
+//                         if (/^\d+$/.test(term)) {
+//                             return city.zipcode && city.zipcode.includes(term);
+//                         } else if (/^[A-Za-z]{2}$/.test(term)) {
+//                             return city.country_code && city.country_code.toLowerCase().includes(term.toLowerCase());
+//                         } else {
+//                             return city.city_name && city.city_name.toLowerCase().includes(term.toLowerCase());
+//                         }
+//                     });
+//                 });
+//
+//                 if (!cities.length) return;
+//
+//                 cities.slice(0, 10).forEach(city => {
+//                     const text = `${city.city_name} (${city.zipcode}, ${city.country_code})`;
+//                     const $li = $('<div class="result-item"></div>').text(text)
+//                         .data({ city });
+//                     $results.append($li);
+//                 });
+//
+//                 $results.show();
+//             } catch (err) {
+//                 console.error("City fetch error:", err);
+//             }
+//         }, 300); // 0.3s debounce
+//     });
+//
+//
+//
+//     // Delegált click esemény a találatokra
+//     $(document).on("click", ".result-item", function() {
+//         const $li = $(this);
+//         const $ul = $li.parent();
+//         const $input = $ul.siblings(".city-search");
+//         const fieldset = $input.closest("fieldset");
+//
+//         const cityData = {
+//             city: $li.data("city"),
+//             postcode: $li.data("zipcode"),
+//             country: $li.data("country")
+//         };
+//
+//         // Kitöltjük a mezőket
+//         selectCity($input[0], cityData);
+//
+//         $ul.empty().hide();
+//
+//         console.log(`[Selection] ${$input.attr('id')}: city=${cityData.city}, zip=${cityData.postcode}, country=${cityData.country}`);
+//     });
+//
+//     // Blur esemény, hogy eltűnjön a lista, ha elhagyja az input
+//     $(document).on("blur", ".city-search", function() {
+//         const $ul = $(this).siblings(".search-results");
+//         setTimeout(() => $ul.hide(), 200);
+//     });
+//
+//     // Ha a felhasználó ír az inputba, reseteljük az érvényességet
+//     $(document).on("input", ".city-search", function() {
+//         const $valid = $(this).siblings(".city-valid");
+//         $valid.val("0");
+//     });
+//
+//     // Form submit validáció
+//     $(".freight-form").on("submit", function(e) {
+//         let allValid = true;
+//         $(this).find(".city-valid").each(function() {
+//             if ($(this).val() !== "1") {
+//                 allValid = false;
+//                 return false;
+//             }
+//         });
+//
+//         if (!allValid) {
+//             e.preventDefault();
+//             alert("Minden városnál érvényes értéket kell kiválasztani a listából!");
+//         }
+//     });
+// });
+//
+// // --- Segédfüggvény a kiválasztott város mezők kitöltésére ---
+// function selectCity(element, cityData) {
+//     const fieldset = element.closest("fieldset");
+//
+//     // City input
+//     element.value = cityData.city;
+//
+//     // Hidden mezők
+//     const countryInput = fieldset.querySelector(".city-country");
+//     const postcodeInput = fieldset.querySelector(".city-postcode");
+//     if (countryInput) countryInput.value = cityData.country;
+//     if (postcodeInput) postcodeInput.value = cityData.postcode;
+//
+//     // Valid mező
+//     const validInput = fieldset.querySelector(".city-valid");
+//     if (validInput) validInput.value = 1;
+// }
 </script>
 {% endblock %}
 
