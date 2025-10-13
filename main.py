@@ -265,6 +265,35 @@ def shipments():
     )
 
 
+# ONLY TEMPORARY - BIG FILE UPLOAD
+@app.route("/load-big-files")
+def load_big_files():
+    from extensions import db
+    from models import Country, City
+
+    countries_path = "/opt/render/project/src/alternateNamesV2.txt"
+    cities_path = "/opt/render/project/src/allCountries.txt"
+
+    try:
+        with open(countries_path, "r", encoding="utf-8") as f:
+            for line in f:
+                code, name = line.strip().split(";")
+                if not Country.query.get(code):
+                    db.session.add(Country(code=code, name=name))
+        db.session.commit()
+
+        with open(cities_path, "r", encoding="utf-8") as f:
+            for line in f:
+                name, lat, lon, zipc, country = line.strip().split(";")
+                db.session.add(City(city_name=name, latitude=float(lat),
+                                    longitude=float(lon), zipcode=int(zipc), country_code=country))
+        db.session.commit()
+        return "Feltöltés kész ✅"
+
+    except Exception as e:
+        return str(e), 500
+
+
 # -------------------------
 # RUN APP
 # -------------------------
