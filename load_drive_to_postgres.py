@@ -99,7 +99,11 @@ def main():
         valid_codes = {row[0] for row in cur.fetchall()}
 
     before_count = len(cities_df)
-    cities_df = cities_df[cities_df['country_code'].isin(valid_codes)]
+    cities_df = cities_df[
+        cities_df["country_code"].isin(valid_country_codes) &
+        cities_df["country_code"].notnull() &
+        (cities_df["country_code"] != "0")
+    ]
     after_count = len(cities_df)
 
     print(f"✅ {before_count - after_count} város kihagyva (nem EU-s ország).")
