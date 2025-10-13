@@ -266,32 +266,59 @@ def shipments():
 
 
 # ONLY TEMPORARY - BIG FILE UPLOAD
-@app.route("/load-big-files")
-def load_big_files():
-    from extensions import db
-    from models import Country, City
+def process_countries_or_cities(filepath):
+    records_added = 0
+    with open(filepath, encoding="utf-8") as f:
+        for line in f:
+            parts = line.strip().split("\t")  # GeoNames txt fájlok tab-delimited
+            if len(parts) < 2:
+                continue
 
-    countries_path = "/opt/render/project/src/alternateNamesV2.txt"
-    cities_path = "/opt/render/project/src/allCountries.txt"
+            # Felismerjük, hogy ország vagy város
+            if "allCountries" in filepath:
+                # Város feltöltés
+                city_id = parts[0]
+                city_name = parts[1]
+                country_code = parts[8]  # GeoNames formátum
+                # ellenőrzés
+                if not City.query.filter_by(id=city_id).first():
+                    city = City(id=city_id, city_name=city_name, country_code=country_code)
+                    db.session.add(city)
+                    records_added += 1
+            else:
+                # Ország feltöltés
+                country_code = parts[0]
+                country_name = parts[1]
+                if not Country.query.filter_by(code=country_code).first():
+                    country = Country(code=country_code, name=country_name)
+                    db.session.add(country)
+                    records_added += 1
 
-    try:
-        with open(countries_path, "r", encoding="utf-8") as f:
-            for line in f:
-                code, name = line.strip().split(";")
-                if not Country.query.get(code):
-                    db.session.add(Country(code=code, name=name))
-        db.session.commit()
+    db.session.commit()
+    return records_added
 
-        with open(cities_path, "r", encoding="utf-8") as f:
-            for line in f:
-                name, lat, lon, zipc, country = line.strip().split(";")
-                db.session.add(City(city_name=name, latitude=float(lat),
-                                    longitude=float(lon), zipcode=int(zipc), country_code=country))
-        db.session.commit()
-        return "Feltöltés kész ✅"
+UPLOAD_FOLDER = "/tmp/uploads"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-    except Exception as e:
-        return str(e), 500
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    if 'file' not in request.files:
+        return "Nincs fájl a POST-ban", 400
+
+    file = request.files['file']
+    if file.filename == '':
+        return "Üres fájl név", 400
+
+    filepath = os.path.join(UPLOAD_FOLDER, file.filename)
+    file.save(filepath)
+
+    # Hívjuk a feldolgozó függvényt
+    if "Countries" in file.filename or "alternateNames" in file.filename:
+        records_added = process_countries_or_cities(filepath)
+    else:
+        records_added = 0
+
+    return f"File sikeresen feltöltve és {records_added} rekord hozzáadva!"
 
 
 # -------------------------
