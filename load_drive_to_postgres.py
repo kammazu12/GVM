@@ -8,19 +8,15 @@ import gdown
 # 🔧 KONFIGURÁCIÓ
 # ============================================================
 
-# Google Drive fájlok azonosítói — IDE ÍRD A SAJÁTJAID
 FILE_IDS = {
     "cities": "12hYD2xgfPR2lB4X7wwUmp4uggUJEWK0q",
     "alt_names": "1203x6RunopUNJL9q5ZIeI-qrtrl9qg5d",
     "all_countries": "1ndBCWXe17JBKRvUkTcgl4lKiSx7K3kkz"
 }
 
-# PostgreSQL adatbázisod Renderről
 DB_URL = "postgresql://freight_166g_user:oGP8kBqOmS6KsefJedLSIkbyA0KSu15n@dpg-d3m9usp5pdvs73b2ufe0-a/freight_166g"
 
-# Batch méret — egyszerre ennyi sort szúr be
 BATCH_SIZE = 5000
-# Ennyi rekordot ír ki mintaként
 PREVIEW = 5
 
 
@@ -34,7 +30,6 @@ def download_file_from_drive(file_id, file_name):
     url = f"https://drive.google.com/uc?id={file_id}"
     out_path = f"/tmp/{file_name}"
 
-    # letöltés
     gdown.download(url, out_path, quiet=False)
 
     if not os.path.exists(out_path):
@@ -85,23 +80,55 @@ def main():
     conn = psycopg2.connect(DB_URL)
     print("✔ Kapcsolódva.\n")
 
-    # 1️⃣ Cities1000
+    # --------------------------------------------------------
+    # 1️⃣ Városok (cities1000.txt)
+    # --------------------------------------------------------
     cities_file = download_file_from_drive(FILE_IDS["cities"], "cities1000.txt")
-    cities_df = pd.read_csv(io.TextIOWrapper(cities_file, encoding='utf-8'), sep='\t', header=None,
-                            usecols=[0,1,4,5,8], names=['id','city_name','latitude','longitude','country_code'])
+    cities_df = pd.read_csv(
+        io.TextIOWrapper(cities_file, encoding='utf-8'),
+        sep='\t', header=None,
+        usecols=[0, 1, 4, 5, 8],
+        names=['id', 'city_name', 'latitude', 'longitude', 'country_code']
+    )
     cities_df['zipcode'] = 0  # ideiglenes default
+
+    # 💡 Itt szűrjük ki az érvénytelen országkódokat:
+    print("\n🔎 Országkódok ellenőrzése az adatbázisban...")
+    with conn.cursor() as cur:
+        cur.execute("SELECT country_code FROM countries")
+        valid_codes = {row[0] for row in cur.fetchall()}
+
+    before_count = len(cities_df)
+    cities_df = cities_df[cities_df['country_code'].isin(valid_codes)]
+    after_count = len(cities_df)
+
+    print(f"✅ {before_count - after_count} város kihagyva (nem EU-s ország).")
+    print(f"📍 Maradt {after_count} város, amelyek érvényes országkódhoz tartoznak.")
+
     copy_df_to_postgres(conn, cities_df, 'city')
 
+    # --------------------------------------------------------
     # 2️⃣ Alternate Names
+    # --------------------------------------------------------
     alt_file = download_file_from_drive(FILE_IDS["alt_names"], "alternateNamesV2.txt")
-    alt_df = pd.read_csv(io.TextIOWrapper(alt_file, encoding='utf-8'), sep='\t', header=None,
-                         usecols=[1,3], names=['city_id','alternames'])
+    alt_df = pd.read_csv(
+        io.TextIOWrapper(alt_file, encoding='utf-8'),
+        sep='\t', header=None,
+        usecols=[1, 3],
+        names=['city_id', 'alternames']
+    )
     copy_df_to_postgres(conn, alt_df, 'altername')
 
-    # 3️⃣ All Countries (zipkódok)
+    # --------------------------------------------------------
+    # 3️⃣ Zipkódok (allCountries.txt)
+    # --------------------------------------------------------
     zip_file = download_file_from_drive(FILE_IDS["all_countries"], "allCountries.txt")
-    zip_df = pd.read_csv(io.TextIOWrapper(zip_file, encoding='utf-8'), sep='\t', header=None,
-                         usecols=[0,1,2], names=['country_code','zipcode','place_name'])
+    zip_df = pd.read_csv(
+        io.TextIOWrapper(zip_file, encoding='utf-8'),
+        sep='\t', header=None,
+        usecols=[0, 1, 2],
+        names=['country_code', 'zipcode', 'place_name']
+    )
     copy_df_to_postgres(conn, zip_df, 'cityzipcode')
 
     conn.close()
