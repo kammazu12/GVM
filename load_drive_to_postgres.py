@@ -95,7 +95,7 @@ def main():
     # 💡 Itt szűrjük ki az érvénytelen országkódokat:
     print("\n🔎 Országkódok ellenőrzése az adatbázisban...")
     with conn.cursor() as cur:
-        cur.execute("SELECT country_code FROM countries")
+        cur.execute("SELECT code FROM countries")
         valid_codes = {row[0] for row in cur.fetchall()}
 
     before_count = len(cities_df)
