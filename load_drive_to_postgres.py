@@ -96,7 +96,7 @@ def main():
     print("\n🔎 Országkódok ellenőrzése az adatbázisban...")
     with conn.cursor() as cur:
         cur.execute("SELECT code FROM countries")
-        valid_codes = {row[0] for row in cur.fetchall()}
+        valid_country_codes = {row[0] for row in cur.fetchall()}
 
     before_count = len(cities_df)
     cities_df = cities_df[
