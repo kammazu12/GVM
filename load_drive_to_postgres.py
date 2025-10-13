@@ -4,73 +4,92 @@ import pandas as pd
 import psycopg2
 import gdown
 
-# ----------------------
-# KONFIG
-# ----------------------
-# Google Drive file IDs
+# ============================================================
+# 🔧 KONFIGURÁCIÓ
+# ============================================================
+
+# Google Drive fájlok azonosítói — IDE ÍRD A SAJÁTJAID
 FILE_IDS = {
-    "cities": "YOUR_CITIES1000_FILE_ID",
-    "alt_names": "YOUR_ALTERNATENAMES_FILE_ID",
-    "all_countries": "YOUR_ALLCOUNTRIES_FILE_ID",
+    "cities": "12hYD2xgfPR2lB4X7wwUmp4uggUJEWK0q",
+    "alt_names": "1203x6RunopUNJL9q5ZIeI-qrtrl9qg5d",
+    "all_countries": "1ndBCWXe17JBKRvUkTcgl4lKiSx7K3kkz"
 }
 
-# PostgreSQL connection
+# PostgreSQL adatbázisod Renderről
 DB_URL = "postgresql://freight_166g_user:oGP8kBqOmS6KsefJedLSIkbyA0KSu15n@dpg-d3m9usp5pdvs73b2ufe0-a/freight_166g"
 
-# Batch size
+# Batch méret — egyszerre ennyi sort szúr be
 BATCH_SIZE = 5000
-PREVIEW = 100  # első N rekord részletes logolása
+# Ennyi rekordot ír ki mintaként
+PREVIEW = 5
 
-# ----------------------
-# SEGÉDFÜGGVÉNYEK
-# ----------------------
+
+# ============================================================
+# 🧩 SEGÉDFÜGGVÉNYEK
+# ============================================================
+
 def download_file_from_drive(file_id, file_name):
-    """Drive-ról letöltés memória-ba"""
-    print(f"Letöltés: {file_name} ...")
+    """Letölti a Google Drive fájlt a /tmp mappába, és megnyitja olvasásra."""
+    print(f"\n⬇ Letöltés a Drive-ról: {file_name}")
     url = f"https://drive.google.com/uc?id={file_id}"
-    out = io.BytesIO()
-    gdown.download(url, output=out, quiet=False, fuzzy=True)
-    out.seek(0)
-    return out
+    out_path = f"/tmp/{file_name}"
+
+    # letöltés
+    gdown.download(url, out_path, quiet=False)
+
+    if not os.path.exists(out_path):
+        raise FileNotFoundError(f"Hiba: a fájl nem található a letöltés után: {out_path}")
+
+    print(f"✔ Letöltve: {out_path}")
+    return open(out_path, 'rb')
+
 
 def copy_df_to_postgres(conn, df, table_name, preview=PREVIEW):
-    """Batch-esen másoljuk a DataFrame-et PostgreSQL-be részletes loggal"""
+    """Batch-enként feltölti a DataFrame tartalmát a megadott Postgres táblába."""
+    print(f"\n➡ Feltöltés indul: {table_name} ({len(df)} rekord)")
+
     cur = conn.cursor()
-    total_rows = len(df)
     batch_count = 0
+    inserted_total = 0
 
-    for start in range(0, total_rows, BATCH_SIZE):
-        batch = df.iloc[start:start+BATCH_SIZE]
-
-        # Preview log az első N rekordhoz
-        if start < preview:
-            for idx, row in batch.head(preview-start).iterrows():
-                print(f"[{table_name}] beszúrt rekord: {row.to_dict()}")
-
-        # CSV-ba bufferelve COPY
-        buffer = io.StringIO()
-        batch.to_csv(buffer, sep='\t', header=False, index=False, na_rep='', quoting=3)
-        buffer.seek(0)
-
-        cur.copy_from(buffer, table_name, sep='\t', null='')
-        conn.commit()
+    for start in range(0, len(df), BATCH_SIZE):
+        end = start + BATCH_SIZE
+        batch = df.iloc[start:end]
         batch_count += 1
-        print(f"[{table_name}] {min(start+BATCH_SIZE, total_rows)} / {total_rows} rekord feldolgozva, commit #{batch_count}")
 
-    print(f"[{table_name}] Összesen {total_rows} rekord commit-olva ✅")
+        print(f"  🟡 Batch {batch_count}: {len(batch)} sor beszúrása...")
+
+        output = io.StringIO()
+        batch.to_csv(output, sep='\t', header=False, index=False)
+        output.seek(0)
+
+        cur.copy_from(output, table_name, null="", sep='\t')
+        conn.commit()
+        inserted_total += len(batch)
+
+    print(f"✅ {inserted_total} rekord feltöltve a(z) {table_name} táblába.")
+
+    if len(df) > 0:
+        print(f"📋 Első {preview} rekord mintaként:")
+        print(df.head(preview).to_string(index=False))
+
     cur.close()
 
-# ----------------------
-# FŐ FÜGGVÉNY
-# ----------------------
-def main():
-    conn = psycopg2.connect(DB_URL)
 
-    # 1️⃣ Cities
+# ============================================================
+# 🚀 FŐ FÜGGVÉNY
+# ============================================================
+
+def main():
+    print("📡 Kapcsolódás az adatbázishoz...")
+    conn = psycopg2.connect(DB_URL)
+    print("✔ Kapcsolódva.\n")
+
+    # 1️⃣ Cities1000
     cities_file = download_file_from_drive(FILE_IDS["cities"], "cities1000.txt")
     cities_df = pd.read_csv(io.TextIOWrapper(cities_file, encoding='utf-8'), sep='\t', header=None,
                             usecols=[0,1,4,5,8], names=['id','city_name','latitude','longitude','country_code'])
-    cities_df['zipcode'] = 0  # default
+    cities_df['zipcode'] = 0  # ideiglenes default
     copy_df_to_postgres(conn, cities_df, 'city')
 
     # 2️⃣ Alternate Names
@@ -79,14 +98,19 @@ def main():
                          usecols=[1,3], names=['city_id','alternames'])
     copy_df_to_postgres(conn, alt_df, 'altername')
 
-    # 3️⃣ All Countries (ZIP)
+    # 3️⃣ All Countries (zipkódok)
     zip_file = download_file_from_drive(FILE_IDS["all_countries"], "allCountries.txt")
     zip_df = pd.read_csv(io.TextIOWrapper(zip_file, encoding='utf-8'), sep='\t', header=None,
                          usecols=[0,1,2], names=['country_code','zipcode','place_name'])
     copy_df_to_postgres(conn, zip_df, 'cityzipcode')
 
     conn.close()
-    print("Minden adat feltöltve ✅")
+    print("\n🎉 Minden adat sikeresen feltöltve az adatbázisba!")
+
+
+# ============================================================
+# 🏁 INDÍTÁS
+# ============================================================
 
 if __name__ == "__main__":
     main()
