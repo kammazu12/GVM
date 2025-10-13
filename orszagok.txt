@@ -1,0 +1,2095 @@
+-- Crear tabla para las monedas
+CREATE TABLE IF NOT EXISTS currencies (
+code CHAR(3) PRIMARY KEY,
+name VARCHAR(255),
+symbol VARCHAR(10)
+);
+
+-- Crear tabla para los idiomas
+CREATE TABLE IF NOT EXISTS languages (
+code CHAR(2) PRIMARY KEY,
+name VARCHAR(255)
+);
+
+-- Crear tabla para los países
+CREATE TABLE IF NOT EXISTS countries (
+id INT AUTO_INCREMENT PRIMARY KEY,
+name VARCHAR(255),
+code CHAR(2),
+capital VARCHAR(255),
+region CHAR(2),
+currency_code CHAR(3),
+language_code CHAR(2),
+flag_url TEXT,
+dialling_code VARCHAR(10),
+iso_code CHAR(3),
+FOREIGN KEY (currency_code) REFERENCES currencies(code),
+FOREIGN KEY (language_code) REFERENCES languages(code)
+);
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('AFN', 'Afghan afghani', '؋');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('ALL', 'Albanian lek', 'L');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('DZD', 'Algerian dinar', 'د.ج');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('USD', 'United State Dollar', '$');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('EUR', 'Euro', '€');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('AOA', 'Angolan kwanza', 'Kz');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('XCD', 'East Caribbean dollar', '$');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('ARS', 'Argentine peso', '$');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('AMD', 'Armenian dram', NULL);
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('AWG', 'Aruban florin', 'ƒ');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('AUD', 'Australian dollar', '$');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('AZN', 'Azerbaijani manat', NULL);
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('BSD', 'Bahamian dollar', '$');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('BHD', 'Bahraini dinar', '.د.ب');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('BDT', 'Bangladeshi taka', '৳');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('BBD', 'Barbadian dollar', '$');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('BYN', 'New Belarusian ruble', 'Br');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('BZD', 'Belize dollar', '$');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('XOF', 'West African CFA franc', 'Fr');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('BMD', 'Bermudian dollar', '$');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('BTN', 'Bhutanese ngultrum', 'Nu.');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('BOB', 'Bolivian boliviano', 'Bs.');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('BAM', 'Bosnia and Herzegovina convertible mark', NULL);
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('BWP', 'Botswana pula', 'P');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('BRL', 'Brazilian real', 'R$');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('USD', 'United States dollar', '$');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('BND', 'Brunei dollar', '$');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('BGN', 'Bulgarian lev', 'лв');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('BIF', 'Burundian franc', 'Fr');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('KHR', 'Cambodian riel', '៛');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('XAF', 'Central African CFA franc', 'Fr');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('CAD', 'Canadian dollar', '$');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('CVE', 'Cape Verdean escudo', 'Esc');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('KYD', 'Cayman Islands dollar', '$');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('CLP', 'Chilean peso', '$');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('CNY', 'Chinese yuan', '¥');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('COP', 'Colombian peso', '$');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('KMF', 'Comorian franc', 'Fr');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('CDF', 'Congolese franc', 'Fr');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('NZD', 'New Zealand dollar', '$');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('CRC', 'Costa Rican colón', '₡');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('HRK', 'Croatian kuna', 'kn');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('CUC', 'Cuban convertible peso', '$');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('CZK', 'Czech koruna', 'Kč');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('DKK', 'Danish krone', 'kr');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('DJF', 'Djiboutian franc', 'Fr');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('DOP', 'Dominican peso', '$');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('EGP', 'Egyptian pound', '£');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('ERN', 'Eritrean nakfa', 'Nfk');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('ETB', 'Ethiopian birr', 'Br');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('FKP', 'Falkland Islands pound', '£');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('FJD', 'Fijian dollar', '$');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('XPF', 'CFP franc', 'Fr');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('GMD', 'Gambian dalasi', 'D');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('GEL', 'Georgian Lari', 'ლ');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('GHS', 'Ghanaian cedi', '₵');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('GIP', 'Gibraltar pound', '£');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('GTQ', 'Guatemalan quetzal', 'Q');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('GNF', 'Guinean franc', 'Fr');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('GYD', 'Guyanese dollar', '$');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('HTG', 'Haitian gourde', 'G');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('HNL', 'Honduran lempira', 'L');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('HKD', 'Hong Kong dollar', '$');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('HUF', 'Hungarian forint', 'Ft');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('ISK', 'Icelandic króna', 'kr');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('INR', 'Indian rupee', '₹');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('IDR', 'Indonesian rupiah', 'Rp');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('IRR', 'Iranian rial', '﷼');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('IQD', 'Iraqi dinar', 'ع.د');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('ILS', 'Israeli new shekel', '₪');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('JMD', 'Jamaican dollar', '$');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('JPY', 'Japanese yen', '¥');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('JOD', 'Jordanian dinar', 'د.ا');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('KZT', 'Kazakhstani tenge', NULL);
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('KES', 'Kenyan shilling', 'Sh');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('KWD', 'Kuwaiti dinar', 'د.ك');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('KGS', 'Kyrgyzstani som', 'с');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('LAK', 'Lao kip', '₭');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('LBP', 'Lebanese pound', 'ل.ل');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('LSL', 'Lesotho loti', 'L');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('LRD', 'Liberian dollar', '$');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('LYD', 'Libyan dinar', 'ل.د');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('CHF', 'Swiss franc', 'Fr');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('MOP', 'Macanese pataca', 'P');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('MKD', 'Macedonian denar', 'ден');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('MGA', 'Malagasy ariary', 'Ar');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('MWK', 'Malawian kwacha', 'MK');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('MYR', 'Malaysian ringgit', 'RM');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('MVR', 'Maldivian rufiyaa', '.ރ');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('MRO', 'Mauritanian ouguiya', 'UM');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('MUR', 'Mauritian rupee', '₨');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('MXN', 'Mexican peso', '$');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('MDL', 'Moldovan leu', 'L');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('MNT', 'Mongolian tögrög', '₮');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('MAD', 'Moroccan dirham', 'د.م.');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('MZN', 'Mozambican metical', 'MT');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('MMK', 'Burmese kyat', 'Ks');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('NAD', 'Namibian dollar', '$');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('NPR', 'Nepalese rupee', '₨');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('NIO', 'Nicaraguan córdoba', 'C$');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('NGN', 'Nigerian naira', '₦');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('KPW', 'North Korean won', '₩');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('NOK', 'Norwegian krone', 'kr');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('OMR', 'Omani rial', 'ر.ع.');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('PKR', 'Pakistani rupee', '₨');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('ILS', 'Israeli new sheqel', '₪');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('PGK', 'Papua New Guinean kina', 'K');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('PYG', 'Paraguayan guaraní', '₲');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('PEN', 'Peruvian sol', 'S/.');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('PHP', 'Philippine peso', '₱');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('PLN', 'Polish złoty', 'zł');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('QAR', 'Qatari riyal', 'ر.ق');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('RON', 'Romanian leu', 'lei');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('RUB', 'Russian ruble', '₽');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('RWF', 'Rwandan franc', 'Fr');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('SHP', 'Saint Helena pound', '£');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('WST', 'Samoan tālā', 'T');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('STD', 'São Tomé and Príncipe dobra', 'Db');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('SAR', 'Saudi riyal', 'ر.س');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('RSD', 'Serbian dinar', 'дин.');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('SCR', 'Seychellois rupee', '₨');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('SLL', 'Sierra Leonean leone', 'Le');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('SGD', 'Singapore dollar', '$');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('SBD', 'Solomon Islands dollar', '$');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('SOS', 'Somali shilling', 'Sh');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('ZAR', 'South African rand', 'R');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('KRW', 'South Korean won', '₩');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('LKR', 'Sri Lankan rupee', 'Rs');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('SDG', 'Sudanese pound', 'ج.س.');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('SRD', 'Surinamese dollar', '$');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('SZL', 'Swazi lilangeni', 'L');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('SEK', 'Swedish krona', 'kr');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('SYP', 'Syrian pound', '£');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('TWD', 'New Taiwan dollar', '$');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('TJS', 'Tajikistani somoni', 'ЅМ');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('TZS', 'Tanzanian shilling', 'Sh');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('THB', 'Thai baht', '฿');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('TOP', 'Tongan paʻanga', 'T$');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('TTD', 'Trinidad and Tobago dollar', '$');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('TND', 'Tunisian dinar', 'د.ت');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('TRY', 'Turkish lira', NULL);
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('TMT', 'Turkmenistan manat', 'm');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('UGX', 'Ugandan shilling', 'Sh');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('UAH', 'Ukrainian hryvnia', '₴');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('AED', 'United Arab Emirates dirham', 'د.إ');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('GBP', 'British pound', '£');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('UYU', 'Uruguayan peso', '$');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('UZS', 'Uzbekistani so''m', NULL);
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('VUV', 'Vanuatu vatu', 'Vt');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('VEF', 'Venezuelan bolívar', 'Bs F');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('VND', 'Vietnamese đồng', '₫');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('YER', 'Yemeni rial', '﷼');
+
+    INSERT IGNORE INTO currencies (code, name, symbol)
+    VALUES ('ZMW', 'Zambian kwacha', 'ZK');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('ps', 'Pashto');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('sq', 'Albanian');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('ar', 'Arabic');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('en', 'English');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('ca', 'Catalan');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('pt', 'Portuguese');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('es', 'Spanish');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('hy', 'Armenian');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('nl', 'Dutch');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('az', 'Azerbaijani');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('bn', 'Bengali');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('be', 'Belarusian');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('fr', 'French');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('dz', 'Dzongkha');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('bs', 'Bosnian');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('ms', 'Malay');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('bg', 'Bulgarian');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('km', 'Khmer');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('zh', 'Chinese');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('hr', 'Croatian');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('tr', 'Turkish');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('cs', 'Czech');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('da', 'Danish');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('et', 'Estonian');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('am', 'Amharic');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('fo', 'Faroese');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('fi', 'Finnish');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('ka', 'Georgian');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('de', 'German');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('el', 'Greek (modern)');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('kl', 'Kalaallisut');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('hu', 'Hungarian');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('is', 'Icelandic');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('hi', 'Hindi');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('id', 'Indonesian');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('fa', 'Persian (Farsi)');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('ga', 'Irish');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('he', 'Hebrew (modern)');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('it', 'Italian');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('ja', 'Japanese');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('kk', 'Kazakh');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('ky', 'Kyrgyz');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('lo', 'Lao');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('lv', 'Latvian');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('lt', 'Lithuanian');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('mk', 'Macedonian');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES (NULL, 'Malaysian');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('dv', 'Divehi');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('mt', 'Maltese');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('ro', 'Romanian');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('mn', 'Mongolian');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('sr', 'Serbian');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('my', 'Burmese');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('ne', 'Nepali');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('ko', 'Korean');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('no', 'Norwegian');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('pl', 'Polish');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('ru', 'Russian');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('rw', 'Kinyarwanda');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('sm', 'Samoan');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('sk', 'Slovak');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('sl', 'Slovene');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('si', 'Sinhalese');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('sv', 'Swedish');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('tg', 'Tajik');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('th', 'Thai');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('tk', 'Turkmen');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('uk', 'Ukrainian');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('uz', 'Uzbek');
+
+    INSERT IGNORE INTO languages (code, name)
+    VALUES ('vi', 'Vietnamese');
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Afghanistan', 'AF', 'Kabul', 'AS', 'AFN', 'ps', 'https://restcountries.eu/data/afg.svg', '+93', '004'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Albania', 'AL', 'Tirana', 'EU', 'ALL', 'sq', 'https://restcountries.eu/data/alb.svg', '+355', '008'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Algeria', 'DZ', 'Algiers', 'AF', 'DZD', 'ar', 'https://restcountries.eu/data/dza.svg', '+213', '012'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'American Samoa', 'AS', 'Pago Pago', 'OC', 'USD', 'en', 'https://restcountries.eu/data/asm.svg', '+1', '016'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Andorra', 'AD', 'Andorra la Vella', 'EU', 'EUR', 'ca', 'https://restcountries.eu/data/and.svg', '+376', '020'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Angola', 'AO', 'Luanda', 'AF', 'AOA', 'pt', 'https://restcountries.eu/data/ago.svg', '+244', '024'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Anguilla', 'AI', 'The Valley', 'NA', 'XCD', 'en', 'https://restcountries.eu/data/aia.svg', '+43', '660'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Antigua and Barbuda', 'AG', 'Saint John''s', 'NA', 'XCD', 'en', 'https://restcountries.eu/data/atg.svg', '+1', '028'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Argentina', 'AR', 'Buenos Aires', 'SA', 'ARS', 'es', 'https://restcountries.eu/data/arg.svg', '+54', '032'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Armenia', 'AM', 'Yerevan', 'AS', 'AMD', 'hy', 'https://restcountries.eu/data/arm.svg', '+374', '051'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Aruba', 'AW', 'Oranjestad', 'SA', 'AWG', 'nl', 'https://restcountries.eu/data/abw.svg', '+297', '533'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Australia', 'AU', 'Canberra', 'OC', 'AUD', 'en', 'https://restcountries.eu/data/aus.svg', '+61', '036'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Azerbaijan', 'AZ', 'Baku', 'AS', 'AZN', 'az', 'https://restcountries.eu/data/aze.svg', '+994', '031'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Bahamas', 'BS', 'Nassau', 'NA', 'BSD', 'en', 'https://restcountries.eu/data/bhs.svg', '+1', '044'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Bahrain', 'BH', 'Manama', 'AS', 'BHD', 'ar', 'https://restcountries.eu/data/bhr.svg', '+973', '048'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Bangladesh', 'BD', 'Dhaka', 'AS', 'BDT', 'bn', 'https://restcountries.eu/data/bgd.svg', '+880', '050'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Barbados', 'BB', 'Bridgetown', 'NA', 'BBD', 'en', 'https://restcountries.eu/data/brb.svg', '+1', '052'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Belarus', 'BY', 'Minsk', 'EU', 'BYN', 'be', 'https://restcountries.eu/data/blr.svg', '+375', '112'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Belgium', 'BE', 'Brussels', 'EU', 'EUR', 'nl', 'https://restcountries.eu/data/bel.svg', '+32', '056'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Belize', 'BZ', 'Belmopan', 'NA', 'BZD', 'en', 'https://restcountries.eu/data/blz.svg', '+501', '084'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Benin', 'BJ', 'Porto-Novo', 'AF', 'XOF', 'fr', 'https://restcountries.eu/data/ben.svg', '+229', '204'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Bermuda', 'BM', 'Hamilton', 'NA', 'BMD', 'en', 'https://restcountries.eu/data/bmu.svg', '+1', '060'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Bhutan', 'BT', 'Thimphu', 'AS', 'BTN', 'dz', 'https://restcountries.eu/data/btn.svg', '+975', '064'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Bolivia (Plurinational State of)', 'BO', 'Sucre', 'SA', 'BOB', 'es', 'https://restcountries.eu/data/bol.svg', '+591', '068'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Bosnia and Herzegovina', 'BA', 'Sarajevo', 'EU', 'BAM', 'bs', 'https://restcountries.eu/data/bih.svg', '+387', '070'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Botswana', 'BW', 'Gaborone', 'AF', 'BWP', 'en', 'https://restcountries.eu/data/bwa.svg', '+267', '072'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Brazil', 'BR', 'Brasília', 'SA', 'BRL', 'pt', 'https://restcountries.eu/data/bra.svg', '+55', '076'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'British Indian Ocean Territory', 'IO', 'Diego Garcia', 'AF', 'USD', 'en', 'https://restcountries.eu/data/iot.svg', '+246', '086'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Virgin Islands (British)', 'VG', 'Road Town', 'NA', 'USD', 'en', 'https://restcountries.eu/data/vgb.svg', '+1', '092'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Virgin Islands (U.S.)', 'VI', 'Charlotte Amalie', 'NA', 'USD', 'en', 'https://restcountries.eu/data/vir.svg', '+1', '850'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Brunei Darussalam', 'BN', 'Bandar Seri Begawan', 'AS', 'BND', 'ms', 'https://restcountries.eu/data/brn.svg', '+673', '096'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Bulgaria', 'BG', 'Sofia', 'EU', 'BGN', 'bg', 'https://restcountries.eu/data/bgr.svg', '+359', '100'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Burkina Faso', 'BF', 'Ouagadougou', 'AF', 'XOF', 'fr', 'https://restcountries.eu/data/bfa.svg', '+226', '854'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Burundi', 'BI', 'Bujumbura', 'AF', 'BIF', 'fr', 'https://restcountries.eu/data/bdi.svg', '+257', '108'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Cambodia', 'KH', 'Phnom Penh', 'AS', 'KHR', 'km', 'https://restcountries.eu/data/khm.svg', '+855', '116'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Cameroon', 'CM', 'Yaoundé', 'AF', 'XAF', 'en', 'https://restcountries.eu/data/cmr.svg', '+237', '120'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Canada', 'CA', 'Ottawa', 'NA', 'CAD', 'en', 'https://restcountries.eu/data/can.svg', '+1', '124'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Cabo Verde', 'CV', 'Praia', 'AF', 'CVE', 'pt', 'https://restcountries.eu/data/cpv.svg', '+238', '132'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Cayman Islands', 'KY', 'George Town', 'NA', 'KYD', 'en', 'https://restcountries.eu/data/cym.svg', '+1', '136'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Central African Republic', 'CF', 'Bangui', 'AF', 'XAF', 'fr', 'https://restcountries.eu/data/caf.svg', '+236', '140'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Central African Republic', 'CF', 'Bangui', 'AF', 'XAF', 'fr', 'https://restcountries.eu/data/caf.svg', '+236', '140'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Chile', 'CL', 'Santiago', 'SA', 'CLP', 'es', 'https://restcountries.eu/data/chl.svg', '+56', '152'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'China', 'CN', 'Beijing', 'AS', 'CNY', 'zh', 'https://restcountries.eu/data/chn.svg', '+86', '156'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Colombia', 'CO', 'Bogotá', 'SA', 'COP', 'es', 'https://restcountries.eu/data/col.svg', '+57', '170'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Comoros', 'KM', 'Moroni', 'AF', 'KMF', 'fr', 'https://restcountries.eu/data/com.svg', '+269', '174'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Congo', 'CG', 'Brazzaville', 'AF', 'XAF', 'fr', 'https://restcountries.eu/data/cog.svg', '+242', '178'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Congo (Democratic Republic of the)', 'CD', 'Kinshasa', 'AF', 'CDF', 'fr', 'https://restcountries.eu/data/cod.svg', '+243', '180'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Cook Islands', 'CK', 'Avarua', 'OC', 'NZD', 'en', 'https://restcountries.eu/data/cok.svg', '+682', '184'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Costa Rica', 'CR', 'San José', 'NA', 'CRC', 'es', 'https://restcountries.eu/data/cri.svg', '+506', '188'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Croatia', 'HR', 'Zagreb', 'EU', 'HRK', 'hr', 'https://restcountries.eu/data/hrv.svg', '+385', '191'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Cuba', 'CU', 'Havana', 'NA', 'CUC', 'es', 'https://restcountries.eu/data/cub.svg', '+53', '192'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Cuba', 'CU', 'Havana', 'NA', 'CUC', 'es', 'https://restcountries.eu/data/cub.svg', '+53', '192'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Cyprus', 'CY', 'Nicosia', 'EU', 'EUR', 'tr', 'https://restcountries.eu/data/cyp.svg', '+357', '196'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Czech Republic', 'CZ', 'Prague', 'EU', 'CZK', 'cs', 'https://restcountries.eu/data/cze.svg', '+420', '203'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Denmark', 'DK', 'Copenhagen', 'EU', 'DKK', 'da', 'https://restcountries.eu/data/dnk.svg', '+45', '208'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Djibouti', 'DJ', 'Djibouti', 'AF', 'DJF', 'fr', 'https://restcountries.eu/data/dji.svg', '+253', '262'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Dominica', 'DM', 'Roseau', 'NA', 'XCD', 'en', 'https://restcountries.eu/data/dma.svg', '+1', '212'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Dominican Republic', 'DO', 'Santo Domingo', 'NA', 'DOP', 'es', 'https://restcountries.eu/data/dom.svg', '+1', '214'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Ecuador', 'EC', 'Quito', 'SA', 'USD', 'es', 'https://restcountries.eu/data/ecu.svg', '+593', '218'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Egypt', 'EG', 'Cairo', 'AF', 'EGP', 'ar', 'https://restcountries.eu/data/egy.svg', '+20', '818'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'El Salvador', 'SV', 'San Salvador', 'NA', 'USD', 'es', 'https://restcountries.eu/data/slv.svg', '+503', '222'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Equatorial Guinea', 'GQ', 'Malabo', 'AF', 'XAF', 'es', 'https://restcountries.eu/data/gnq.svg', '+240', '226'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Eritrea', 'ER', 'Asmara', 'AF', 'ERN', 'en', 'https://restcountries.eu/data/eri.svg', '+291', '232'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Estonia', 'EE', 'Tallinn', 'EU', 'EUR', 'et', 'https://restcountries.eu/data/est.svg', '+372', '233'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Ethiopia', 'ET', 'Addis Ababa', 'AF', 'ETB', 'am', 'https://restcountries.eu/data/eth.svg', '+251', '231'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Falkland Islands (Malvinas)', 'FK', 'Stanley', 'SA', 'FKP', 'en', 'https://restcountries.eu/data/flk.svg', '+500', '238'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Faroe Islands', 'FO', 'Tórshavn', 'EU', 'DKK', 'fo', 'https://restcountries.eu/data/fro.svg', '+298', '234'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Fiji', 'FJ', 'Suva', 'OC', 'FJD', 'en', 'https://restcountries.eu/data/fji.svg', '+679', '242'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Finland', 'FI', 'Helsinki', 'EU', 'EUR', 'fi', 'https://restcountries.eu/data/fin.svg', '+358', '246'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'France', 'FR', 'Paris', 'EU', 'EUR', 'fr', 'https://restcountries.eu/data/fra.svg', '+33', '250'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'French Guiana', 'GF', 'Cayenne', 'SA', 'EUR', 'fr', 'https://restcountries.eu/data/guf.svg', '+594', '254'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'French Polynesia', 'PF', 'Papeetē', 'OC', 'XPF', 'fr', 'https://restcountries.eu/data/pyf.svg', '+689', '258'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Gabon', 'GA', 'Libreville', 'AF', 'XAF', 'fr', 'https://restcountries.eu/data/gab.svg', '+241', '266'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Gambia', 'GM', 'Banjul', 'AF', 'GMD', 'en', 'https://restcountries.eu/data/gmb.svg', '+220', '270'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Georgia', 'GE', 'Tbilisi', 'AS', 'GEL', 'ka', 'https://restcountries.eu/data/geo.svg', '+995', '268'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Germany', 'DE', 'Berlin', 'EU', 'EUR', 'de', 'https://restcountries.eu/data/deu.svg', '+49', '276'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Ghana', 'GH', 'Accra', 'AF', 'GHS', 'en', 'https://restcountries.eu/data/gha.svg', '+233', '288'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Gibraltar', 'GI', 'Gibraltar', 'EU', 'GIP', 'en', 'https://restcountries.eu/data/gib.svg', '+350', '292'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Greece', 'GR', 'Athens', 'EU', 'EUR', 'el', 'https://restcountries.eu/data/grc.svg', '+30', '300'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Greenland', 'GL', 'Nuuk', 'NA', 'DKK', 'kl', 'https://restcountries.eu/data/grl.svg', '+299', '304'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Grenada', 'GD', 'St. George''s', 'NA', 'XCD', 'en', 'https://restcountries.eu/data/grd.svg', '+1', '308'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Guadeloupe', 'GP', 'Basse-Terre', 'NA', 'EUR', 'fr', 'https://restcountries.eu/data/glp.svg', '+590', '312'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Guam', 'GU', 'Hagåtña', 'OC', 'USD', 'en', 'https://restcountries.eu/data/gum.svg', '+1', '316'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Guatemala', 'GT', 'Guatemala City', 'NA', 'GTQ', 'es', 'https://restcountries.eu/data/gtm.svg', '+502', '320'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Guinea', 'GN', 'Conakry', 'AF', 'GNF', 'fr', 'https://restcountries.eu/data/gin.svg', '+224', '324'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Guinea-Bissau', 'GW', 'Bissau', 'AF', 'XOF', 'pt', 'https://restcountries.eu/data/gnb.svg', '+245', '624'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Guyana', 'GY', 'Georgetown', 'SA', 'GYD', 'en', 'https://restcountries.eu/data/guy.svg', '+592', '328'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Haiti', 'HT', 'Port-au-Prince', 'Americas', 'HTG', 'fr', 'https://restcountries.eu/data/hti.svg', '+509', '332'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Holy See', 'VA', 'Rome', 'EU', 'EUR', 'fr', 'https://restcountries.eu/data/vat.svg', '+39', '336'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Honduras', 'HN', 'Tegucigalpa', 'NA', 'HNL', 'es', 'https://restcountries.eu/data/hnd.svg', '+504', '340'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Hong Kong', 'HK', 'City of Victoria', 'AS', 'HKD', 'en', 'https://restcountries.eu/data/hkg.svg', '+852', '344'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Hungary', 'HU', 'Budapest', 'EU', 'HUF', 'hu', 'https://restcountries.eu/data/hun.svg', '+36', '348'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Iceland', 'IS', 'Reykjavík', 'EU', 'ISK', 'is', 'https://restcountries.eu/data/isl.svg', '+354', '352'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'India', 'IN', 'New Delhi', 'AS', 'INR', 'hi', 'https://restcountries.eu/data/ind.svg', '+91', '356'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Indonesia', 'ID', 'Jakarta', 'AS', 'IDR', 'id', 'https://restcountries.eu/data/idn.svg', '+62', '360'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Côte d''Ivoire', 'CI', 'Yamoussoukro', 'AF', 'XOF', 'fr', 'https://restcountries.eu/data/civ.svg', '+225', '384'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Iran (Islamic Republic of)', 'IR', 'Tehran', 'AS', 'IRR', 'fa', 'https://restcountries.eu/data/irn.svg', '+98', '364'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Iraq', 'IQ', 'Baghdad', 'AS', 'IQD', 'ar', 'https://restcountries.eu/data/irq.svg', '+964', '368'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Ireland', 'IE', 'Dublin', 'EU', 'EUR', 'ga', 'https://restcountries.eu/data/irl.svg', '+353', '372'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Israel', 'IL', 'Jerusalem', 'AS', 'ILS', 'he', 'https://restcountries.eu/data/isr.svg', '+972', '376'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Italy', 'IT', 'Rome', 'EU', 'EUR', 'it', 'https://restcountries.eu/data/ita.svg', '+39', '380'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Jamaica', 'JM', 'Kingston', 'NA', 'JMD', 'en', 'https://restcountries.eu/data/jam.svg', '+1', '388'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Japan', 'JP', 'Tokyo', 'AS', 'JPY', 'ja', 'https://restcountries.eu/data/jpn.svg', '+81', '392'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Jordan', 'JO', 'Amman', 'AS', 'JOD', 'ar', 'https://restcountries.eu/data/jor.svg', '+962', '400'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Kazakhstan', 'KZ', 'Astana', 'AS', 'KZT', 'kk', 'https://restcountries.eu/data/kaz.svg', '+7', '398'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Kenya', 'KE', 'Nairobi', 'AF', 'KES', 'en', 'https://restcountries.eu/data/ken.svg', '+254', '404'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Kiribati', 'KI', 'South Tarawa', 'OC', 'AUD', 'en', 'https://restcountries.eu/data/kir.svg', '+686', '296'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Kuwait', 'KW', 'Kuwait City', 'AS', 'KWD', 'ar', 'https://restcountries.eu/data/kwt.svg', '+965', '414'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Kyrgyzstan', 'KG', 'Bishkek', 'AS', 'KGS', 'ky', 'https://restcountries.eu/data/kgz.svg', '+996', '417'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Lao People''s Democratic Republic', 'LA', 'Vientiane', 'AS', 'LAK', 'lo', 'https://restcountries.eu/data/lao.svg', '+856', '418'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Latvia', 'LV', 'Riga', 'EU', 'EUR', 'lv', 'https://restcountries.eu/data/lva.svg', '+371', '428'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Lebanon', 'LB', 'Beirut', 'AS', 'LBP', 'ar', 'https://restcountries.eu/data/lbn.svg', '+961', '422'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Lesotho', 'LS', 'Maseru', 'AF', 'LSL', 'en', 'https://restcountries.eu/data/lso.svg', '+266', '426'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Liberia', 'LR', 'Monrovia', 'AF', 'LRD', 'en', 'https://restcountries.eu/data/lbr.svg', '+231', '430'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Libya', 'LY', 'Tripoli', 'AF', 'LYD', 'ar', 'https://restcountries.eu/data/lby.svg', '+218', '434'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Liechtenstein', 'LI', 'Vaduz', 'EU', 'CHF', 'de', 'https://restcountries.eu/data/lie.svg', '+423', '438'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Lithuania', 'LT', 'Vilnius', 'EU', 'EUR', 'lt', 'https://restcountries.eu/data/ltu.svg', '+370', '440'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Luxembourg', 'LU', 'Luxembourg', 'EU', 'EUR', 'fr', 'https://restcountries.eu/data/lux.svg', '+352', '442'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Macao', 'MO', '', 'AS', 'MOP', 'zh', 'https://restcountries.eu/data/mac.svg', '+853', '446'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Macedonia (the former Yugoslav Republic of)', 'MK', 'Skopje', 'EU', 'MKD', 'mk', 'https://restcountries.eu/data/mkd.svg', '+389', '807'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Madagascar', 'MG', 'Antananarivo', 'AF', 'MGA', 'fr', 'https://restcountries.eu/data/mdg.svg', '+261', '450'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Malawi', 'MW', 'Lilongwe', 'AF', 'MWK', 'en', 'https://restcountries.eu/data/mwi.svg', '+265', '454'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Malaysia', 'MY', 'Kuala Lumpur', 'AS', 'MYR', NULL, 'https://restcountries.eu/data/mys.svg', '+60', '458'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Maldives', 'MV', 'Malé', 'AS', 'MVR', 'dv', 'https://restcountries.eu/data/mdv.svg', '+960', '462'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Mali', 'ML', 'Bamako', 'AF', 'XOF', 'fr', 'https://restcountries.eu/data/mli.svg', '+223', '466'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Malta', 'MT', 'Valletta', 'EU', 'EUR', 'mt', 'https://restcountries.eu/data/mlt.svg', '+356', '470'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Marshall Islands', 'MH', 'Majuro', 'OC', 'USD', 'en', 'https://restcountries.eu/data/mhl.svg', '+692', '584'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Martinique', 'MQ', 'Fort-de-France', 'Americas', 'EUR', 'fr', 'https://restcountries.eu/data/mtq.svg', '+596', '474'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Mauritania', 'MR', 'Nouakchott', 'AF', 'MRO', 'ar', 'https://restcountries.eu/data/mrt.svg', '+222', '478'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Mauritius', 'MU', 'Port Louis', 'AF', 'MUR', 'en', 'https://restcountries.eu/data/mus.svg', '+230', '480'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Mayotte', 'YT', 'Mamoudzou', 'AF', 'EUR', 'fr', 'https://restcountries.eu/data/myt.svg', '+262', '175'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Mexico', 'MX', 'Mexico City', 'NA', 'MXN', 'es', 'https://restcountries.eu/data/mex.svg', '+52', '484'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Micronesia (Federated States of)', 'FM', 'Palikir', 'OC', 'USD', 'en', 'https://restcountries.eu/data/fsm.svg', '+691', '583'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Moldova (Republic of)', 'MD', 'Chișinău', 'EU', 'MDL', 'ro', 'https://restcountries.eu/data/mda.svg', '+373', '498'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Monaco', 'MC', 'Monaco', 'EU', 'EUR', 'fr', 'https://restcountries.eu/data/mco.svg', '+377', '492'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Mongolia', 'MN', 'Ulan Bator', 'AS', 'MNT', 'mn', 'https://restcountries.eu/data/mng.svg', '+976', '496'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Montenegro', 'ME', 'Podgorica', 'EU', 'EUR', 'sr', 'https://restcountries.eu/data/mne.svg', '+382', '499'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Montserrat', 'MS', 'Plymouth', 'NA', 'XCD', 'en', 'https://restcountries.eu/data/msr.svg', '+1', '500'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Morocco', 'MA', 'Rabat', 'AF', 'MAD', 'ar', 'https://restcountries.eu/data/mar.svg', '+212', '504'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Mozambique', 'MZ', 'Maputo', 'AF', 'MZN', 'pt', 'https://restcountries.eu/data/moz.svg', '+258', '508'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Myanmar', 'MM', 'Naypyidaw', 'AS', 'MMK', 'my', 'https://restcountries.eu/data/mmr.svg', '+95', '104'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Namibia', 'NA', 'Windhoek', 'AF', 'NAD', 'en', 'https://restcountries.eu/data/nam.svg', '+264', '516'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Nauru', 'NR', 'Yaren', 'OC', 'AUD', 'en', 'https://restcountries.eu/data/nru.svg', '+674', '520'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Nepal', 'NP', 'Kathmandu', 'AS', 'NPR', 'ne', 'https://restcountries.eu/data/npl.svg', '+977', '524'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Netherlands', 'NL', 'Amsterdam', 'EU', 'EUR', 'nl', 'https://restcountries.eu/data/nld.svg', '+31', '528'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'New Caledonia', 'NC', 'Nouméa', 'OC', 'XPF', 'fr', 'https://restcountries.eu/data/ncl.svg', '+687', '540'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'New Zealand', 'NZ', 'Wellington', 'OC', 'NZD', 'en', 'https://restcountries.eu/data/nzl.svg', '+64', '554'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Nicaragua', 'NI', 'Managua', 'NA', 'NIO', 'es', 'https://restcountries.eu/data/nic.svg', '+505', '558'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Niger', 'NE', 'Niamey', 'AF', 'XOF', 'fr', 'https://restcountries.eu/data/ner.svg', '+227', '562'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Nigeria', 'NG', 'Abuja', 'AF', 'NGN', 'en', 'https://restcountries.eu/data/nga.svg', '+234', '566'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Niue', 'NU', 'Alofi', 'OC', 'NZD', 'en', 'https://restcountries.eu/data/niu.svg', '+683', '570'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Norfolk Island', 'NF', 'Kingston', 'OC', 'AUD', 'en', 'https://restcountries.eu/data/nfk.svg', '+672', '574'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Korea (Democratic People''s Republic of)', 'KP', 'Pyongyang', 'AS', 'KPW', 'ko', 'https://restcountries.eu/data/prk.svg', '+850', '408'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Northern Mariana Islands', 'MP', 'Saipan', 'OC', 'USD', 'en', 'https://restcountries.eu/data/mnp.svg', '+1', '580'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Norway', 'NO', 'Oslo', 'EU', 'NOK', 'no', 'https://restcountries.eu/data/nor.svg', '+47', '578'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Oman', 'OM', 'Muscat', 'AS', 'OMR', 'ar', 'https://restcountries.eu/data/omn.svg', '+968', '512'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Pakistan', 'PK', 'Islamabad', 'AS', 'PKR', 'en', 'https://restcountries.eu/data/pak.svg', '+92', '586'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Palau', 'PW', 'Ngerulmud', 'OC', 'USD', 'en', 'https://restcountries.eu/data/plw.svg', '+680', '585'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Palestine, State of', 'PS', 'Ramallah', 'AS', 'ILS', 'ar', 'https://restcountries.eu/data/pse.svg', '+970', '275'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Panama', 'PA', 'Panama City', 'NA', 'USD', 'es', 'https://restcountries.eu/data/pan.svg', '+507', '591'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Papua New Guinea', 'PG', 'Port Moresby', 'OC', 'PGK', 'en', 'https://restcountries.eu/data/png.svg', '+675', '598'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Paraguay', 'PY', 'Asunción', 'SA', 'PYG', 'es', 'https://restcountries.eu/data/pry.svg', '+595', '600'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Peru', 'PE', 'Lima', 'SA', 'PEN', 'es', 'https://restcountries.eu/data/per.svg', '+51', '604'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Philippines', 'PH', 'Manila', 'AS', 'PHP', 'en', 'https://restcountries.eu/data/phl.svg', '+63', '608'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Poland', 'PL', 'Warsaw', 'EU', 'PLN', 'pl', 'https://restcountries.eu/data/pol.svg', '+48', '616'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Portugal', 'PT', 'Lisbon', 'EU', 'EUR', 'pt', 'https://restcountries.eu/data/prt.svg', '+351', '620'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Puerto Rico', 'PR', 'San Juan', 'NA', 'USD', 'es', 'https://restcountries.eu/data/pri.svg', '+1', '630'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Qatar', 'QA', 'Doha', 'AS', 'QAR', 'ar', 'https://restcountries.eu/data/qat.svg', '+974', '634'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Republic of Kosovo', 'XK', 'Pristina', 'EU', 'EUR', 'sq', 'https://restcountries.eu/data/kos.svg', '+381', '383'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Réunion', 'RE', 'Saint-Denis', 'AF', 'EUR', 'fr', 'https://restcountries.eu/data/reu.svg', '+262', '638'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Romania', 'RO', 'Bucharest', 'EU', 'RON', 'ro', 'https://restcountries.eu/data/rou.svg', '+40', '642'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Russian Federation', 'RU', 'Moscow', 'EU', 'RUB', 'ru', 'https://restcountries.eu/data/rus.svg', '+7', '643'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Rwanda', 'RW', 'Kigali', 'AF', 'RWF', 'rw', 'https://restcountries.eu/data/rwa.svg', '+250', '646'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Saint Barthélemy', 'BL', 'Gustavia', 'NA', 'EUR', 'fr', 'https://restcountries.eu/data/blm.svg', '+590', '652'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Saint Helena, Ascension and Tristan da Cunha', 'SH', 'Jamestown', 'AF', 'SHP', 'en', 'https://restcountries.eu/data/shn.svg', '+290', '654'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Saint Kitts and Nevis', 'KN', 'Basseterre', 'NA', 'XCD', 'en', 'https://restcountries.eu/data/kna.svg', '+1', '659'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Saint Lucia', 'LC', 'Castries', 'NA', 'XCD', 'en', 'https://restcountries.eu/data/lca.svg', '+1', '662'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Saint Martin (French part)', 'MF', 'Marigot', 'NA', 'EUR', 'en', 'https://restcountries.eu/data/maf.svg', '+590', '663'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Saint Pierre and Miquelon', 'PM', 'Saint-Pierre', 'NA', 'EUR', 'fr', 'https://restcountries.eu/data/spm.svg', '+508', '666'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Saint Vincent and the Grenadines', 'VC', 'Kingstown', 'NA', 'XCD', 'en', 'https://restcountries.eu/data/vct.svg', '+1', '670'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Samoa', 'WS', 'Apia', 'OC', 'WST', 'sm', 'https://restcountries.eu/data/wsm.svg', '+685', '882'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'San Marino', 'SM', 'City of San Marino', 'EU', 'EUR', 'it', 'https://restcountries.eu/data/smr.svg', '+378', '674'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Sao Tome and Principe', 'ST', 'São Tomé', 'AF', 'STD', 'pt', 'https://restcountries.eu/data/stp.svg', '+239', '678'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Saudi Arabia', 'SA', 'Riyadh', 'AS', 'SAR', 'ar', 'https://restcountries.eu/data/sau.svg', '+966', '682'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Senegal', 'SN', 'Dakar', 'AF', 'XOF', 'fr', 'https://restcountries.eu/data/sen.svg', '+221', '686'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Serbia', 'RS', 'Belgrade', 'EU', 'RSD', 'sr', 'https://restcountries.eu/data/srb.svg', '+381', '688'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Seychelles', 'SC', 'Victoria', 'AF', 'SCR', 'fr', 'https://restcountries.eu/data/syc.svg', '+248', '690'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Sierra Leone', 'SL', 'Freetown', 'AF', 'SLL', 'en', 'https://restcountries.eu/data/sle.svg', '+232', '694'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Singapore', 'SG', 'Singapore', 'AS', 'SGD', 'en', 'https://restcountries.eu/data/sgp.svg', '+65', '702'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Singapore', 'SG', 'Singapore', 'AS', 'SGD', 'en', 'https://restcountries.eu/data/sgp.svg', '+65', '702'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Slovakia', 'SK', 'Bratislava', 'EU', 'EUR', 'sk', 'https://restcountries.eu/data/svk.svg', '+421', '703'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Slovenia', 'SI', 'Ljubljana', 'EU', 'EUR', 'sl', 'https://restcountries.eu/data/svn.svg', '+386', '705'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Solomon Islands', 'SB', 'Honiara', 'OC', 'SBD', 'en', 'https://restcountries.eu/data/slb.svg', '+677', '090'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Somalia', 'SO', 'Mogadishu', 'AF', 'SOS', 'ar', 'https://restcountries.eu/data/som.svg', '+252', '706'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'South Africa', 'ZA', 'Pretoria', 'AF', 'ZAR', 'en', 'https://restcountries.eu/data/zaf.svg', '+27', '710'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Korea (Republic of)', 'KR', 'Seoul', 'AS', 'KRW', 'ko', 'https://restcountries.eu/data/kor.svg', '+82', '410'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Spain', 'ES', 'Madrid', 'EU', 'EUR', 'es', 'https://restcountries.eu/data/esp.svg', '+34', '724'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Sri Lanka', 'LK', 'Colombo', 'AS', 'LKR', 'si', 'https://restcountries.eu/data/lka.svg', '+94', '144'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Sudan', 'SD', 'Khartoum', 'AF', 'SDG', 'ar', 'https://restcountries.eu/data/sdn.svg', '+249', '729'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Suriname', 'SR', 'Paramaribo', 'SA', 'SRD', 'nl', 'https://restcountries.eu/data/sur.svg', '+597', '740'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Swaziland', 'SZ', 'Lobamba', 'AF', 'SZL', 'en', 'https://restcountries.eu/data/swz.svg', '+268', '748'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Sweden', 'SE', 'Stockholm', 'EU', 'SEK', 'sv', 'https://restcountries.eu/data/swe.svg', '+46', '752'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Switzerland', 'CH', 'Bern', 'EU', 'CHF', 'de', 'https://restcountries.eu/data/che.svg', '+41', '756'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Syrian Arab Republic', 'SY', 'Damascus', 'AS', 'SYP', 'ar', 'https://restcountries.eu/data/syr.svg', '+963', '760'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Taiwan', 'TW', 'Taipei', 'AS', 'TWD', 'zh', 'https://restcountries.eu/data/twn.svg', '+886', '158'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Tajikistan', 'TJ', 'Dushanbe', 'AS', 'TJS', 'tg', 'https://restcountries.eu/data/tjk.svg', '+992', '762'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Tanzania, United Republic of', 'TZ', 'Dodoma', 'AF', 'TZS', 'en', 'https://restcountries.eu/data/tza.svg', '+255', '834'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Thailand', 'TH', 'Bangkok', 'AS', 'THB', 'th', 'https://restcountries.eu/data/tha.svg', '+66', '764'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Timor-Leste', 'TL', 'Dili', 'AS', 'USD', 'pt', 'https://restcountries.eu/data/tls.svg', '+670', '626'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Togo', 'TG', 'Lomé', 'AF', 'XOF', 'fr', 'https://restcountries.eu/data/tgo.svg', '+228', '768'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Tokelau', 'TK', 'Fakaofo', 'OC', 'NZD', 'en', 'https://restcountries.eu/data/tkl.svg', '+690', '772'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Tonga', 'TO', 'Nuku''alofa', 'OC', 'TOP', 'en', 'https://restcountries.eu/data/ton.svg', '+676', '776'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Trinidad and Tobago', 'TT', 'Port of Spain', 'SA', 'TTD', 'en', 'https://restcountries.eu/data/tto.svg', '+1', '780'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Tunisia', 'TN', 'Tunis', 'AF', 'TND', 'ar', 'https://restcountries.eu/data/tun.svg', '+216', '788'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Turkey', 'TR', 'Ankara', 'AS', 'TRY', 'tr', 'https://restcountries.eu/data/tur.svg', '+90', '792'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Turkmenistan', 'TM', 'Ashgabat', 'AS', 'TMT', 'tk', 'https://restcountries.eu/data/tkm.svg', '+993', '795'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Turks and Caicos Islands', 'TC', 'Cockburn Town', 'NA', 'USD', 'en', 'https://restcountries.eu/data/tca.svg', '+1', '796'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Tuvalu', 'TV', 'Funafuti', 'OC', 'AUD', 'en', 'https://restcountries.eu/data/tuv.svg', '+688', '798'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Uganda', 'UG', 'Kampala', 'AF', 'UGX', 'en', 'https://restcountries.eu/data/uga.svg', '+256', '800'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Ukraine', 'UA', 'Kyiv', 'EU', 'UAH', 'uk', 'https://restcountries.eu/data/ukr.svg', '+380', '804'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'United Arab Emirates', 'AE', 'Abu Dhabi', 'AS', 'AED', 'ar', 'https://restcountries.eu/data/are.svg', '+971', '784'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'United Kingdom of Great Britain and Northern Ireland', 'GB', 'London', 'EU', 'GBP', 'en', 'https://restcountries.eu/data/gbr.svg', '+44', '826'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'United States of America', 'US', 'Washington, D.C.', 'NA', 'USD', 'en', 'https://restcountries.eu/data/usa.svg', '+1', '840'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Uruguay', 'UY', 'Montevideo', 'SA', 'UYU', 'es', 'https://restcountries.eu/data/ury.svg', '+598', '858'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Uzbekistan', 'UZ', 'Tashkent', 'AS', 'UZS', 'uz', 'https://restcountries.eu/data/uzb.svg', '+998', '860'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Vanuatu', 'VU', 'Port Vila', 'OC', 'VUV', 'en', 'https://restcountries.eu/data/vut.svg', '+678', '548'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Venezuela (Bolivarian Republic of)', 'VE', 'Caracas', 'SA', 'VEF', 'es', 'https://restcountries.eu/data/ven.svg', '+58', '862'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Viet Nam', 'VN', 'Hanoi', 'AS', 'VND', 'vi', 'https://restcountries.eu/data/vnm.svg', '+84', '704'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Wallis and Futuna', 'WF', 'Mata-Utu', 'OC', 'XPF', 'fr', 'https://restcountries.eu/data/wlf.svg', '+681', '876'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Wallis and Futuna', 'WF', 'Mata-Utu', 'OC', 'XPF', 'fr', 'https://restcountries.eu/data/wlf.svg', '+681', '876'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Yemen', 'YE', 'Sana''a', 'AS', 'YER', 'ar', 'https://restcountries.eu/data/yem.svg', '+967', '887'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Zambia', 'ZM', 'Lusaka', 'AF', 'ZMW', 'en', 'https://restcountries.eu/data/zmb.svg', '+260', '894'
+    );
+
+    INSERT INTO countries (
+        name, code, capital, region, currency_code, language_code, flag_url, dialling_code, iso_code
+    ) VALUES (
+        'Zimbabwe', 'ZW', 'Harare', 'AF', 'BWP', 'en', 'https://restcountries.eu/data/zwe.svg', '+263', '716'
+    );
