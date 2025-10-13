@@ -265,8 +265,61 @@ def shipments():
     )
 
 
-# ONLY TEMPORARY - BIG FILE UPLOAD
+BATCH_SIZE = 1000
+
 def process_countries_or_cities(filepath):
+    records_added = 0
+    batch = []
+
+    with open(filepath, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue  # üres sor vagy komment
+
+            parts = line.split("\t")  # GeoNames TSV
+            if len(parts) < 9:
+                print(f"Skipping malformed line: {line[:50]}...")
+                continue
+
+            try:
+                city_id = int(parts[0])       # ID numerikus
+                city_name = parts[1]          # város neve
+                latitude = float(parts[4])
+                longitude = float(parts[5])
+                country_code = parts[8]       # kétbetűs ország kód
+            except ValueError as e:
+                print(f"Skipping line due to conversion error: {line[:50]}...")
+                continue
+
+            # Ellenőrizzük, hogy létezik-e a rekord
+            if City.query.filter_by(id=city_id).first():
+                continue
+
+            city = City(
+                id=city_id,
+                city_name=city_name,
+                latitude=latitude,
+                longitude=longitude,
+                zipcode=0,            # ha nincs a fájlban
+                country_code=country_code
+            )
+            batch.append(city)
+
+            if len(batch) >= BATCH_SIZE:
+                db.session.bulk_save_objects(batch)
+                db.session.commit()
+                records_added += len(batch)
+                batch = []
+
+    # Maradék batch mentése
+    if batch:
+        db.session.bulk_save_objects(batch)
+        db.session.commit()
+        records_added += len(batch)
+
+    print(f"{records_added} records added from {os.path.basename(filepath)}")
+    return records_added
     records_added = 0
     with open(filepath, encoding="utf-8") as f:
         for line in f:
