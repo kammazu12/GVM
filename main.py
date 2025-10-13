@@ -18,6 +18,12 @@ app.config['BABEL_DEFAULT_LOCALE'] = 'hu'
 app.config['BABEL_SUPPORTED_LOCALES'] = ['hu', 'en', 'de']
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB
 app.config.from_object(Config)
+# --- DATABASE_URL fix Renderhez ---
+uri = app.config["SQLALCHEMY_DATABASE_URI"]
+if uri.startswith("postgres://"):
+    uri = uri.replace("postgres://", "postgresql://", 1)
+app.config["SQLALCHEMY_DATABASE_URI"] = uri
+
 with app.app_context():
     db.init_app(app)
 bcrypt.init_app(app)
@@ -268,4 +274,5 @@ if __name__ == "__main__":
         db.create_all()
     start_scheduler(app)
     # app.run(debug=True)
+    print("[DB URI]:", app.config["SQLALCHEMY_DATABASE_URI"])
     socketio.run(app, '0.0.0.0', port=port, debug=True)
