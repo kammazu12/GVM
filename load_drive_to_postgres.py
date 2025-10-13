@@ -15,7 +15,7 @@ FILE_IDS = {
 }
 
 # PostgreSQL connection
-DB_URL = "postgresql://username:password@host:port/dbname"
+DB_URL = "postgresql://freight_166g_user:oGP8kBqOmS6KsefJedLSIkbyA0KSu15n@dpg-d3m9usp5pdvs73b2ufe0-a/freight_166g"
 
 # Batch size
 BATCH_SIZE = 5000
