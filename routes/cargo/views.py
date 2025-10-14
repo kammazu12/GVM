@@ -149,8 +149,9 @@ def handle_expired_action():
             vehicle.available_from = today
             vehicle.available_until = today + timedelta(days=days)
 
-    notif.resolved = True
+    db.session.delete(notif)
     db.session.commit()
+
     return jsonify({"success": True})
 
 
