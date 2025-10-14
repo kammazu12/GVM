@@ -46,9 +46,13 @@ def change_password():
 def profile():
     user = current_user
     # Csak bejövő, még nem látott ajánlatok
-    unseen_incoming_offers_count = Offer.query.join(Cargo)\
-        .filter(Offer.offer_user_id == user.user_id, Offer.seen==0, Cargo.user_id != user.user_id)\
-        .count()
+    unseen_incoming_offers_count = Offer.query.join(Cargo) \
+        .filter(
+        Offer.offer_user_id == user.user_id,
+        Offer.seen == False,  # <-- boolean literál
+        Cargo.user_id != user.user_id
+    ).count()
+
     return render_template("profile.html", user=user, unseen_incoming_offers_count=unseen_incoming_offers_count)
 
 
