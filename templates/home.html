@@ -521,8 +521,11 @@ function hideExpiredModal() {
     modal.classList.add('hidden');
     modal.style.display = 'none';
     currentItem = null;
-  }, 200);
+    // Csak most hívjuk a következőt
+    checkNextExpired();
+  }, 200); // megegyezik az animáció hosszával
 }
+
 
 // Bal oldal törlés
 document.getElementById('expiredDeleteArea').addEventListener('click', () => handleAction('delete'));
@@ -539,7 +542,6 @@ document.getElementById('expiredExtendArea').addEventListener('click', (e) => {
   const days = parseInt(extendInput.value);
   handleAction('extend', days);
 });
-
 
 // Overlay kattintás vagy ESC
 window.addEventListener('click', e => {
@@ -562,7 +564,6 @@ async function handleAction(action, days = 0) {
   console.log("[DEBUG] Action response:", data);
 
   hideExpiredModal();
-  checkNextExpired();
 }
 
 // Check expired items
@@ -608,7 +609,6 @@ extendInput.addEventListener("blur", () => {
     extendInput.style.opacity = "0.8";
   }, 150);
 });
-
 
 document.getElementById('expiredExtendArea').addEventListener('mouseenter', () => {
   extendInput.style.pointerEvents = "auto";
@@ -2737,4 +2737,3 @@ span img{ width: 20px; }
 textarea { max-height: 110px; width: 100% }
 </style>
 {% endblock %}
-
