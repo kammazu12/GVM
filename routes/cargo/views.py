@@ -10,6 +10,24 @@ from models import *
 from extensions import *
 from matching import find_matches_for_cargo
 
+
+# --- routes/cargo/views.py vagy routes/expired.py tetejére ---
+def cargo_to_dict(cargo):
+    pickups = [loc for loc in cargo.locations if loc.type == 'pickup']
+    dropoffs = [loc for loc in cargo.locations if loc.type == 'dropoff']
+
+    first_city = min(pickups, key=lambda l: l.id).city if pickups else "?"
+    last_city = max(dropoffs, key=lambda l: l.id).city if dropoffs else "?"
+
+    return {
+        "cargo_id": cargo.cargo_id,
+        "title": cargo.description or "Lejárt tétel",
+        "first_city": first_city,
+        "last_city": last_city,
+        "end_date": cargo.last_republished_at or cargo.created_at,
+    }
+
+
 @cargo_bp.route('/delete_cargos', methods=['POST'])
 @login_required
 @no_cache
@@ -167,6 +185,7 @@ def handle_expired_action():
     notif.resolved = True
     db.session.commit()
     return jsonify({"success": True})
+
 
 
 @cargo_bp.route('/republish_cargos', methods=['POST'])
