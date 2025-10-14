@@ -10,7 +10,7 @@ class ExpiredNotification(db.Model):
     id = db.Column(db.Integer, primary_key=True)
 
     # --- kapcsolatok ---
-    user_id = db.Column(db.Integer, db.ForeignKey("user.user_id", ondelete="CASCADE"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False)
     item_id = db.Column(db.Integer, nullable=False)
     item_type = db.Column(db.String(20), nullable=False)  # 'cargo' vagy 'storage'
 

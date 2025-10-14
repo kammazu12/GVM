@@ -4,7 +4,7 @@ from extensions import db
 class Vehicle(db.Model):
     vehicle_id = db.Column(db.Integer, primary_key=True)
     company_id = db.Column(db.Integer, db.ForeignKey("company.company_id", ondelete='CASCADE'))
-    user_id = db.Column(db.Integer, db.ForeignKey("user.user_id", ondelete='SET NULL'), nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.user_id", ondelete='SET NULL'), nullable=True)
 
     # license_plate = db.Column(db.String(10), unique=True, nullable=False)   # nem fog megjelenni a felületen, csak ajánlat elfogadásakor
     vehicle_type = db.Column(db.String(30), nullable=False)  # pl. "kamion", "furgon"

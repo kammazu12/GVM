@@ -41,7 +41,7 @@ class User(db.Model, UserMixin):
 class PasswordResetToken(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     token = db.Column(db.String(128), unique=True, nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.user_id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
     expires_at = db.Column(db.DateTime, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.now())
 
@@ -59,7 +59,7 @@ class PasswordResetToken(db.Model):
 
 class UserSettings(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("user.user_id"), unique=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.user_id"), unique=True)
     dark_mode = db.Column(db.Boolean, default=False)
     colorblind = db.Column(db.Boolean, default=False)
     low_quality = db.Column(db.Boolean, default=False)

@@ -5,7 +5,7 @@ from extensions import *
 class Cargo(db.Model):
     cargo_id = db.Column(db.Integer, primary_key=True)
     company_id = db.Column(db.Integer, db.ForeignKey('company.company_id', ondelete='CASCADE'))
-    user_id = db.Column(db.Integer, db.ForeignKey('user.user_id', ondelete='CASCADE'))
+    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id', ondelete='CASCADE'))
 
     company = db.relationship("Company", back_populates="cargos")
     posted_by = db.relationship("User", back_populates="cargos")
@@ -75,7 +75,7 @@ class CargoLocation(db.Model):
 
 class Templates(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.user_id', ondelete='CASCADE'))
+    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id', ondelete='CASCADE'))
 
     # Rakomány adatok
     weight = db.Column(db.Float)
@@ -121,7 +121,7 @@ class TemplateLocations(db.Model):
 class Offer(db.Model):
     offer_id = db.Column(db.Integer, primary_key=True)
     cargo_id = db.Column(db.Integer, db.ForeignKey('cargo.cargo_id', ondelete='CASCADE'))
-    offer_user_id = db.Column(db.Integer, db.ForeignKey('user.user_id', ondelete='CASCADE'))        # ajánlattevő ID-ja
+    offer_user_id = db.Column(db.Integer, db.ForeignKey('users.user_id', ondelete='CASCADE'))        # ajánlattevő ID-ja
 
     price = db.Column(db.Float, nullable=False)
     currency = db.Column(db.String(10), default="EUR")

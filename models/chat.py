@@ -13,8 +13,8 @@ class ChatMessage(db.Model):
     cargo_id = db.Column(db.Integer, db.ForeignKey("cargo.cargo_id", ondelete="CASCADE"), nullable=False)
     offer_id = db.Column(db.Integer, db.ForeignKey("offer.offer_id", ondelete="CASCADE"), nullable=False)
 
-    from_user_id = db.Column(db.Integer, db.ForeignKey("user.user_id", ondelete='CASCADE'), nullable=False)
-    to_user_id = db.Column(db.Integer, db.ForeignKey("user.user_id", ondelete='CASCADE'), nullable=False)
+    from_user_id = db.Column(db.Integer, db.ForeignKey("users.user_id", ondelete='CASCADE'), nullable=False)
+    to_user_id = db.Column(db.Integer, db.ForeignKey("users.user_id", ondelete='CASCADE'), nullable=False)
 
     message = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.now())  # referencia a függvényre!
