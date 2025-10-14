@@ -27,6 +27,8 @@ from models.company import *
 from models.city import *
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
+from dotenv import load_dotenv
+load_dotenv()
 
 GEONAMES_USERNAME = os.getenv("GEONAMES_USERNAME")
 def get_google_flow():

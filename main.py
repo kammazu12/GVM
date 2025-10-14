@@ -16,7 +16,6 @@ from config import *
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import date, datetime
 import os
-
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 app = Flask(__name__)
 app.config['BABEL_DEFAULT_LOCALE'] = 'hu'
