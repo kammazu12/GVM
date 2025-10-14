@@ -28,23 +28,23 @@ from models.city import *
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-GEONAMES_USERNAME = "kammazu12"
+GEONAMES_USERNAME = os.getenv("GEONAMES_USERNAME")
 def get_google_flow():
     return Flow.from_client_secrets_file(
-        'client_secret.json',
+        os.getenv("GOOGLE_CLIENT_SECRET_FILE"),
         scopes=['https://www.googleapis.com/auth/gmail.readonly'],
-        redirect_uri='http://127.0.0.1:5000/login/oauth2callback'
+        redirect_uri=os.getenv("GOOGLE_REDIRECT_URI")
     )
 
-
 # flow = get_google_flow()
-MAIL_SERVER = 'smtp.gmail.com'       # SMTP szerver címe
-MAIL_PORT = 587                         # Port (pl. 587 TLS-hez)
-MAIL_USE_TLS = True
-MAIL_USE_SSL = False
-MAIL_USERNAME = 'alex@gvmszallitmanyozas.hu'     # SMTP felhasználó
-MAIL_PASSWORD = 'jxow dezy evws fxuo'             # SMTP jelszó
-MAIL_DEFAULT_SENDER = ('GVM Europe', 'alex@gvmszallitmanyozas.hu')
+MAIL_SERVER = os.getenv("MAIL_SERVER", "smtp.gmail.com")
+MAIL_PORT = int(os.getenv("MAIL_PORT", 587))
+MAIL_USE_TLS = os.getenv("MAIL_USE_TLS", "True") == "True"
+MAIL_USE_SSL = os.getenv("MAIL_USE_SSL", "False") == "True"
+MAIL_USERNAME = os.getenv("MAIL_USERNAME")
+MAIL_PASSWORD = os.getenv("MAIL_PASSWORD")
+MAIL_DEFAULT_SENDER = os.environ.get("MAIL_DEFAULT_SENDER")
+
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'heic'}
 
 email_cache = {}  # key: email_id, value: full message

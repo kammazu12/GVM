@@ -1,4 +1,9 @@
 # BIG APP FOR FREIGHTS
+import io
+
+import gdown
+import pandas as pd
+import psycopg2
 from flask import Flask, render_template, session, redirect, url_for, g
 from flask_login import login_required
 from models.cargo import CargoLocation
@@ -18,11 +23,6 @@ app.config['BABEL_DEFAULT_LOCALE'] = 'hu'
 app.config['BABEL_SUPPORTED_LOCALES'] = ['hu', 'en', 'de']
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB
 app.config.from_object(Config)
-# --- DATABASE_URL fix Renderhez ---
-uri = app.config["SQLALCHEMY_DATABASE_URI"]
-if uri.startswith("postgres://"):
-    uri = uri.replace("postgres://", "postgresql://", 1)
-app.config["SQLALCHEMY_DATABASE_URI"] = uri
 
 with app.app_context():
     db.init_app(app)
@@ -190,8 +190,10 @@ def inject_user_and_unseen_count():
         )
     return dict(user=user, unseen_incoming_offers_count=unseen_count)
 
+
 # tegye elérhetővé Jinja-ban is
 app.jinja_env.globals['slugify'] = slugify
+
 
 # -------------------------
 # ROUTES
@@ -263,115 +265,6 @@ def shipments():
         cargos=cargos,
         current_year=date.today().year
     )
-
-
-BATCH_SIZE = 1000
-
-def process_countries_or_cities(filepath):
-    records_added = 0
-    batch = []
-
-    with open(filepath, encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line or line.startswith("#"):
-                continue  # üres sor vagy komment
-
-            parts = line.split("\t")  # GeoNames TSV
-            if len(parts) < 9:
-                print(f"Skipping malformed line: {line[:50]}...")
-                continue
-
-            try:
-                city_id = int(parts[0])       # ID numerikus
-                city_name = parts[1]          # város neve
-                latitude = float(parts[4])
-                longitude = float(parts[5])
-                country_code = parts[8]       # kétbetűs ország kód
-            except ValueError as e:
-                print(f"Skipping line due to conversion error: {line[:50]}...")
-                continue
-
-            # Ellenőrizzük, hogy létezik-e a rekord
-            if City.query.filter_by(id=city_id).first():
-                continue
-
-            city = City(
-                id=city_id,
-                city_name=city_name,
-                latitude=latitude,
-                longitude=longitude,
-                zipcode=0,            # ha nincs a fájlban
-                country_code=country_code
-            )
-            batch.append(city)
-
-            if len(batch) >= BATCH_SIZE:
-                db.session.bulk_save_objects(batch)
-                db.session.commit()
-                records_added += len(batch)
-                batch = []
-
-    # Maradék batch mentése
-    if batch:
-        db.session.bulk_save_objects(batch)
-        db.session.commit()
-        records_added += len(batch)
-
-    print(f"{records_added} records added from {os.path.basename(filepath)}")
-    return records_added
-    records_added = 0
-    with open(filepath, encoding="utf-8") as f:
-        for line in f:
-            parts = line.strip().split("\t")  # GeoNames txt fájlok tab-delimited
-            if len(parts) < 2:
-                continue
-
-            # Felismerjük, hogy ország vagy város
-            if "allCountries" in filepath:
-                # Város feltöltés
-                city_id = parts[0]
-                city_name = parts[1]
-                country_code = parts[8]  # GeoNames formátum
-                # ellenőrzés
-                if not City.query.filter_by(id=city_id).first():
-                    city = City(id=city_id, city_name=city_name, country_code=country_code)
-                    db.session.add(city)
-                    records_added += 1
-            else:
-                # Ország feltöltés
-                country_code = parts[0]
-                country_name = parts[1]
-                if not Country.query.filter_by(code=country_code).first():
-                    country = Country(code=country_code, name=country_name)
-                    db.session.add(country)
-                    records_added += 1
-
-    db.session.commit()
-    return records_added
-
-UPLOAD_FOLDER = "/tmp/uploads"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-@app.route('/upload', methods=['POST'])
-def upload_file():
-    if 'file' not in request.files:
-        return "Nincs fájl a POST-ban", 400
-
-    file = request.files['file']
-    if file.filename == '':
-        return "Üres fájl név", 400
-
-    filepath = os.path.join(UPLOAD_FOLDER, file.filename)
-    file.save(filepath)
-
-    # Hívjuk a feldolgozó függvényt
-    if "Countries" in file.filename or "alternateNames" in file.filename:
-        records_added = process_countries_or_cities(filepath)
-    else:
-        records_added = 0
-
-    return f"File sikeresen feltöltve és {records_added} rekord hozzáadva!"
 
 
 # -------------------------

@@ -1,2 +1,23 @@
 scripts/allCountries.txt
 alternateNamesV2.txt
+
+# Python cache fájlok
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtuális környezet
+venv/
+.env/
+.env.*    # ha több környezet is van, pl. .env.dev, .env.prod
+
+# Flask / instance mappa (ha érzékeny adatokat tartalmaz)
+instance/
+
+# IDE fájlok
+.vscode/
+.idea/
+
+# Log fájlok
+*.log
