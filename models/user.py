@@ -4,7 +4,7 @@ from datetime import date, datetime, timedelta
 import secrets
 
 class User(db.Model, UserMixin):
-    __tablename__ = "user"
+    __tablename__ = "users"
     user_id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(150), unique=True, nullable=False)
     first_name = db.Column(db.String(150), nullable=False)
