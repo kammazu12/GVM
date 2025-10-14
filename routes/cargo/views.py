@@ -10,24 +10,6 @@ from models import *
 from extensions import *
 from matching import find_matches_for_cargo
 
-
-# --- routes/cargo/views.py vagy routes/expired.py tetejére ---
-def cargo_to_dict(cargo):
-    pickups = [loc for loc in cargo.locations if loc.type == 'pickup']
-    dropoffs = [loc for loc in cargo.locations if loc.type == 'dropoff']
-
-    first_city = min(pickups, key=lambda l: l.id).city if pickups else "?"
-    last_city = max(dropoffs, key=lambda l: l.id).city if dropoffs else "?"
-
-    return {
-        "cargo_id": cargo.cargo_id,
-        "title": cargo.description or "Lejárt tétel",
-        "first_city": first_city,
-        "last_city": last_city,
-        "end_date": cargo.last_republished_at or cargo.created_at,
-    }
-
-
 @cargo_bp.route('/delete_cargos', methods=['POST'])
 @login_required
 @no_cache
@@ -102,28 +84,13 @@ def check_expired_items():
         if n.item_type == "cargo":
             item = Cargo.query.get(n.item_id)
             if item:
-                # --- pickup és dropoff városok meghatározása ---
-                pickups = [loc for loc in item.locations if loc.type == "pickup"]
-                dropoffs = [loc for loc in item.locations if loc.type == "dropoff"]
-
-                first_city = min(pickups, key=lambda l: l.id).city if pickups else "?"
-                last_city = max(dropoffs, key=lambda l: l.id).city if dropoffs else "?"
-
-                # --- rakomány lejárati dátum ---
-                end_date = None
-                if item.locations:
-                    valid_dates = [loc.end_date for loc in item.locations if loc.end_date]
-                    end_date = max(valid_dates) if valid_dates else None
-
                 results.append({
                     "type": "cargo",
                     "id": item.cargo_id,
-                    "title": (item.description or "Lejárt tétel")[:30],
-                    "first_city": first_city,
-                    "last_city": last_city,
-                    "end_date": end_date
+                    "title": item.description[:30],  # rövidítés
+                    "end_date": max(loc.end_date for loc in item.locations if loc.end_date) if item.locations else None
                 })
-                print(f"[DEBUG] Cargo hozzáadva: {item.cargo_id}, {first_city} → {last_city}")
+                print(f"[DEBUG] Cargo hozzáadva a válaszhoz: {item.cargo_id}")
             else:
                 print(f"[WARN] Cargo nem található: {n.item_id}")
         else:
@@ -185,7 +152,6 @@ def handle_expired_action():
     notif.resolved = True
     db.session.commit()
     return jsonify({"success": True})
-
 
 
 @cargo_bp.route('/republish_cargos', methods=['POST'])
