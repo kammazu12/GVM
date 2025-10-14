@@ -132,7 +132,7 @@ def check_expired_items():
 def handle_expired_action():
     data = request.get_json()
     item_type = data.get("type")
-    item_id = data.get("id")
+    item_id = data.get("id") or data.get("cargo_id") or data.get("vehicle_id")
     action = data.get("action")
     days = int(data.get("days", 0))
 
@@ -150,14 +150,9 @@ def handle_expired_action():
         if action == "delete":
             db.session.delete(cargo)
         elif action == "extend":
-            today = date.today()
             for loc in cargo.locations:
-                if loc.type == "pickup":
-                    loc.start_date = today
-                    loc.end_date = today
-                elif loc.type == "dropoff":
-                    if loc.start_date: loc.start_date += timedelta(days=days)
-                    if loc.end_date: loc.end_date += timedelta(days=days)
+                if loc.end_date:
+                    loc.end_date += timedelta(days=days)
     elif item_type == "storage":
         vehicle = Vehicle.query.get(item_id)
         if action == "delete":
@@ -167,7 +162,9 @@ def handle_expired_action():
             vehicle.available_from = today
             vehicle.available_until = today + timedelta(days=days)
 
-    notif.resolved = True
+    # régi resolved helyett
+    db.session.delete(notif)
+
     db.session.commit()
     return jsonify({"success": True})
 
