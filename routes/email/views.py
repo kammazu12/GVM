@@ -8,6 +8,8 @@ from . import email_bp
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from google.auth.transport.requests import Request
+from dotenv import load_dotenv
+load_dotenv()
 
 email_cache = {}  # key: email_id, value: full message
 schema = {
@@ -37,7 +39,7 @@ schema = {
                  "shipment_size","shipment_weight","vehicle_type","vehicle_body"]
 }
 
-client = genai.Client(api_key='AIzaSyByu3AatMxSafp8eKCBeON4DYTjm8ZfiYw')
+client = genai.Client(api_key=os.environ.get("GENAI_API_KEY"))
 
 @email_bp.route('/api/gmail-emails')
 @login_required
