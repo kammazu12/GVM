@@ -35,7 +35,7 @@ def change_password():
         db.session.commit()
 
         flash("Your password has been updated.", "success")
-        return redirect(url_for('profile'))
+        return redirect(url_for('profile.profile'))
 
     return render_template('change_password.html', message=message)
 
@@ -72,12 +72,12 @@ def edit_profile():
         if new_email != user.email:
             if User.query.filter_by(email=new_email).first():
                 flash("Ez az e-mail cím már használatban van!", "error")
-                return redirect(url_for("edit_profile"))
+                return redirect(url_for("profile.edit_profile"))
             user.email = new_email
 
         db.session.commit()
         flash("Profil sikeresen frissítve!", "success")
-        return redirect(url_for("profile"))
+        return redirect(url_for("profile.profile"))
 
     return render_template("edit_profile.html", user=user)
 
