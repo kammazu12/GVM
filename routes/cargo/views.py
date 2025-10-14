@@ -10,6 +10,27 @@ from models import *
 from extensions import *
 from matching import find_matches_for_cargo
 
+
+def cargo_to_dict(cargo):
+    pickups = [loc for loc in cargo.locations if loc.type == 'pickup']
+    dropoffs = [loc for loc in cargo.locations if loc.type == 'dropoff']
+
+    # Legkisebb id-jú pickup
+    first_city = min(pickups, key=lambda l: l.id).city if pickups else "?"
+
+    # Legnagyobb id-jú dropoff
+    last_city = max(dropoffs, key=lambda l: l.id).city if dropoffs else "?"
+
+    return {
+        "cargo_id": cargo.cargo_id,
+        "title": cargo.description or "Lejárt tétel",
+        "first_city": first_city,
+        "last_city": last_city,
+        "end_date": cargo.last_republished_at or cargo.created_at,
+        # ide jöhetnek más mezők is, amire szükség van
+    }
+
+
 @cargo_bp.route('/delete_cargos', methods=['POST'])
 @login_required
 @no_cache
@@ -84,12 +105,9 @@ def check_expired_items():
         if n.item_type == "cargo":
             item = Cargo.query.get(n.item_id)
             if item:
-                results.append({
-                    "type": "cargo",
-                    "id": item.cargo_id,
-                    "title": item.description[:30],  # rövidítés
-                    "end_date": max(loc.end_date for loc in item.locations if loc.end_date) if item.locations else None
-                })
+                cargo_data = cargo_to_dict(item)
+                cargo_data["type"] = "cargo"
+                results.append(cargo_data)
                 print(f"[DEBUG] Cargo hozzáadva a válaszhoz: {item.cargo_id}")
             else:
                 print(f"[WARN] Cargo nem található: {n.item_id}")
@@ -149,9 +167,8 @@ def handle_expired_action():
             vehicle.available_from = today
             vehicle.available_until = today + timedelta(days=days)
 
-    db.session.delete(notif)
+    notif.resolved = True
     db.session.commit()
-
     return jsonify({"success": True})
 
 
