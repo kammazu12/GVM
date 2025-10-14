@@ -122,6 +122,7 @@ class Offer(db.Model):
     offer_id = db.Column(db.Integer, primary_key=True)
     cargo_id = db.Column(db.Integer, db.ForeignKey('cargo.cargo_id', ondelete='CASCADE'))
     offer_user_id = db.Column(db.Integer, db.ForeignKey('users.user_id', ondelete='CASCADE'))        # ajánlattevő ID-ja
+    vehicle_id = db.Column(db.Integer, db.ForeignKey('vehicle.vehicle_id'), nullable=True)
 
     price = db.Column(db.Float, nullable=False)
     currency = db.Column(db.String(10), default="EUR")
@@ -134,7 +135,7 @@ class Offer(db.Model):
 
     cargo = db.relationship('Cargo', back_populates='offers')
     offer_user = db.relationship('User', back_populates='offers')
-
+    vehicle = db.relationship('Vehicle', back_populates='offers', lazy=True)
     seen = db.Column(db.Boolean, default=False)
 
 
