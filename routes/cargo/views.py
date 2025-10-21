@@ -1550,11 +1550,11 @@ def city_search():
     # --- 2. AlterName táblában trigram alapú keresés ---
     alt_query = db.session.query(
         City,
-        func.similarity(AlterName.alter_name, term).label("score")
+        func.similarity(AlterName.alternames, term).label("score")
     ).join(AlterName).filter(
-        func.similarity(AlterName.alter_name, term) > 0.2
+        func.similarity(AlterName.alternames, term) > 0.2
     ).order_by(
-        func.similarity(AlterName.alter_name, term).desc()
+        func.similarity(AlterName.alternames, term).desc()
     ).limit(10)
 
     for city, score in alt_query.all():
