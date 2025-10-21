@@ -798,3 +798,19 @@ def handle_company_block_fast(blocker_company_id, blocked_company_id):
 
     # 4️⃣ Commit
     db.session.commit()
+
+# --- Segédfüggvény járműadatokhoz ---
+def serialize_vehicle(vehicle):
+    if not vehicle:
+        return None
+    return {
+        "vehicle_id": vehicle.vehicle_id,
+        "license_plate": getattr(vehicle, "license_plate", ""),
+        "vehicle_type": getattr(vehicle, "vehicle_type", ""),
+        "structure": getattr(vehicle, "structure", ""),
+        "capacity_t": getattr(vehicle, "capacity_t", ""),
+        "volume_m3": getattr(vehicle, "volume_m3", ""),
+        "origin_city": getattr(vehicle, "origin_city", ""),
+        "destination_city": getattr(vehicle, "destination_city", "")
+    }
+
