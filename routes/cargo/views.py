@@ -1525,52 +1525,66 @@ def city_search():
     words = term.lower().split()
     has_number = any(re.search(r'\d', w) for w in words)
 
-    # --- Alap lekérdezés ---
-    query = (
-        db.session.query(City)
-        .outerjoin(CityZipcode, City.id == CityZipcode.city_id)
-        .outerjoin(AlterName, City.id == AlterName.city_id)
-    )
+    city_ids = set()
+    results = []
 
-    # --- Szűrés a keresett szavak alapján ---
+    # --- 1. Keresés városnév alapján (City) ---
+    city_query = db.session.query(City)
     for w in words:
-        if len(w) == 2:  # országkód (pl. HU)
-            query = query.filter(City.country_code.ilike(w))
-        elif re.search(r'\d', w):  # irányítószám
-            query = query.filter(CityZipcode.zipcode.ilike(f"{w}%"))
-        else:  # városnév vagy alternatív név
-            query = query.filter(
-                or_(
-                    City.city_name.ilike(f"{w}%"),
-                    AlterName.alternames.ilike(f"{w}%")
-                )
-            )
+        if len(w) == 2 and not re.search(r'\d', w):  # országkód
+            city_query = city_query.filter(City.country_code.ilike(w))
+        elif re.search(r'\d', w):  # szám van → ZIP
+            city_query = city_query.join(CityZipcode).filter(CityZipcode.zipcode.ilike(f"{w}%"))
+        else:  # városnév
+            city_query = city_query.filter(City.city_name.ilike(f"{w}%"))
 
-    # --- Rendezés ---
-    if has_number:
-        query = query.order_by(CityZipcode.zipcode.asc(), City.city_name.asc())
+    # Rendezés: similarity a városnévre
+    if not has_number:
+        city_query = city_query.order_by(func.similarity(City.city_name, term).desc())
     else:
-        # similarity: a keresett kifejezéshez legjobban hasonló városokat előre teszi
-        query = query.order_by(func.similarity(City.city_name, term).desc())
+        city_query = city_query.order_by(City.city_name.asc())
 
-    # --- Limit és duplikátum-szűrés ---
-    results = (
-        query.group_by(City.id)
-             .order_by(func.similarity(City.city_name, term).desc())
-             .limit(10)
-             .all()
-    )
-
-    # --- JSON formázás ---
-    data = []
-    for city in results:
+    for city in city_query.limit(10).all():
+        city_ids.add(city.id)
         zipcodes = [zc.zipcode for zc in city.zipcodes] if city.zipcodes else []
         first_zip = zipcodes[0] if zipcodes else city.zipcode
-        data.append({
+        results.append({
             "id": city.id,
             "city_name": city.city_name,
             "country_code": city.country_code,
             "zipcode": first_zip
         })
 
-    return jsonify(data)
+    # --- 2. Keresés alternames táblában (AlterName) ---
+    alt_query = db.session.query(City).join(AlterName)
+    for w in words:
+        if len(w) == 2 and not re.search(r'\d', w):
+            alt_query = alt_query.filter(City.country_code.ilike(w))
+        elif re.search(r'\d', w):
+            alt_query = alt_query.join(CityZipcode).filter(CityZipcode.zipcode.ilike(f"{w}%"))
+        else:
+            alt_query = alt_query.filter(AlterName.alternames.ilike(f"{w}%"))
+
+    if not has_number:
+        alt_query = alt_query.order_by(func.similarity(City.city_name, term).desc())
+    else:
+        alt_query = alt_query.order_by(City.city_name.asc())
+
+    # Csak azok, amik még nincsenek a city_results-ban
+    for city in alt_query.limit(10).all():
+        if city.id in city_ids:
+            continue
+        city_ids.add(city.id)
+        zipcodes = [zc.zipcode for zc in city.zipcodes] if city.zipcodes else []
+        first_zip = zipcodes[0] if zipcodes else city.zipcode
+        results.append({
+            "id": city.id,
+            "city_name": city.city_name,
+            "country_code": city.country_code,
+            "zipcode": first_zip
+        })
+        if len(results) >= 10:
+            break
+
+    return jsonify(results)
+
