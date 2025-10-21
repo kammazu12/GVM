@@ -272,8 +272,6 @@ def save_vehicle():
                 equipment=",".join(equipment) if equipment else None,
                 cargo_securement=",".join(securement) if securement else None,
                 description=description,
-                license_plate=license_plate,
-                public_license_plate=public_license_plate,
                 capacity_t=capacity_t,
                 volume_m3=volume_m3,
                 palette_exchange=palette_exchange,
