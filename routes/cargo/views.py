@@ -1525,15 +1525,17 @@ def city_search():
     city_ids = set()
     results = []
 
-    # --- 1. City táblában FTS ---
-    ts_query = " & ".join(term.split())  # minden szó "AND" logikával
-    city_query = db.session.query(City).filter(
-        City.search_vector.op('@@')(func.to_tsquery('simple', ts_query))
+    # --- 1. City táblában trigram alapú keresés ---
+    city_query = db.session.query(
+        City,
+        func.similarity(City.city_name, term).label("score")
+    ).filter(
+        func.similarity(City.city_name, term) > 0.2  # 0.2 = hasonlósági küszöb
     ).order_by(
-        func.ts_rank_cd(City.search_vector, func.to_tsquery('simple', ts_query)).desc()
+        func.similarity(City.city_name, term).desc()
     ).limit(10)
 
-    for city in city_query.all():
+    for city, score in city_query.all():
         city_ids.add(city.id)
         zipcodes = [zc.zipcode for zc in city.zipcodes] if city.zipcodes else []
         first_zip = zipcodes[0] if zipcodes else city.zipcode
@@ -1541,15 +1543,21 @@ def city_search():
             "id": city.id,
             "city_name": city.city_name,
             "country_code": city.country_code,
-            "zipcode": first_zip
+            "zipcode": first_zip,
+            "score": round(score, 3)
         })
 
-    # --- 2. AlterName táblában FTS ---
-    alt_query = db.session.query(City).join(AlterName).filter(
-        AlterName.search_vector.op('@@')(func.to_tsquery('simple', ts_query))
+    # --- 2. AlterName táblában trigram alapú keresés ---
+    alt_query = db.session.query(
+        City,
+        func.similarity(AlterName.alter_name, term).label("score")
+    ).join(AlterName).filter(
+        func.similarity(AlterName.alter_name, term) > 0.2
+    ).order_by(
+        func.similarity(AlterName.alter_name, term).desc()
     ).limit(10)
 
-    for city in alt_query.all():
+    for city, score in alt_query.all():
         if city.id in city_ids:
             continue
         city_ids.add(city.id)
@@ -1559,11 +1567,10 @@ def city_search():
             "id": city.id,
             "city_name": city.city_name,
             "country_code": city.country_code,
-            "zipcode": first_zip
+            "zipcode": first_zip,
+            "score": round(score, 3)
         })
         if len(results) >= 10:
             break
 
     return jsonify(results)
-
-
