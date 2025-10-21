@@ -1554,7 +1554,13 @@ def city_search():
         query = query.order_by(func.similarity(City.city_name, term).desc())
 
     # --- Limit és duplikátum-szűrés ---
-    results = query.distinct(City.id).limit(10).all()
+    results = (
+        query.distinct(City.id)
+             .order_by(City.id, func.similarity(City.city_name, term).desc())
+             .limit(10)
+             .all()
+    )
+
 
     # --- JSON formázás ---
     data = []
