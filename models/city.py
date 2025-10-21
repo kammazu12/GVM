@@ -9,6 +9,7 @@ class City(db.Model):
     longitude = db.Column(db.Float)
     zipcode = db.Column(db.String(20))  # string legyen
     country_code = db.Column(db.String(2), db.ForeignKey('countries.code'))
+    search_vector = db.Column(TSVECTOR)
 
 
 class CityZipcode(db.Model):
@@ -27,6 +28,7 @@ class AlterName(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     city_id = db.Column(db.Integer, db.ForeignKey('city.id'), nullable=False)
     alternames = db.Column(db.String(1000), nullable=False)
+    search_vector = db.Column(TSVECTOR)
 
 
 class Country(db.Model):
