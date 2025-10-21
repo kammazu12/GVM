@@ -8,229 +8,300 @@
         <h1 class="cim">Rakományok</h1>
 
         <div class="cargo-container">
-        <button class="accordion-btn">Raktér feltöltése / rakomány keresése ▼</button>
+        <button class="accordion-btn">Raktér keresése/feltöltése ▼</button>
         <!-- Lenyíló form -->
         <div class="accordion-content">
             <!-- Tabs gombok -->
             <div id="form-tab" class="tab-content" style="display:block;">
-            <form action="{{ url_for('vehicles.save_vehicle') }}" method="POST" id="vehicleForm" class="freight-form">
-                <!-- Eredet -->
-                <div class="form-section">
-                    <h4>Hely adatok</h4>
-                    <div class="places">
-                        <label for="origin" class="elso_label">Honnan?</label>
-                        <label for="origin_diff" class="x"></label>
-                        <label for="swap-btn" class="y"></label>
-                        <label for="destination" class="masodik_label">Hova?</label>
-                        <label for="destination_diff" class="z"></label>
-
-                        <div class="autocomplete-wrapper">
-                            <input type="text" id="origin" placeholder="Város" autocomplete="off">
-                            <div id="origin_suggestions" class="suggestions"></div>
-                            <input type="hidden" id="origin_city" name="origin_city">
-                            <input type="hidden" id="origin_zip" name="origin_zip">
-                            <input type="hidden" id="origin_country" name="origin_country">
-                        </div>
-
-
-                        <select id="origin_diff" name="origin_diff">
-                            <option value="0" selected>+0 km</option>
-                            <option value="25">+25 km</option>
-                            <option value="50">+50 km</option>
-                            <option value="100">+100 km</option>
-                            <option value="any">+any km</option>
-                        </select>
-                        <button type="button" id="swap-btn">⇄</button>
-
-                        <div class="autocomplete-wrapper">
-                            <input type="text" id="destination" placeholder="Város" autocomplete="off">
-                            <div id="destination_suggestions" class="suggestions"></div>
-                            <input type="hidden" id="destination_city" name="destination_city">
-                            <input type="hidden" id="destination_zip" name="destination_zip">
-                            <input type="hidden" id="destination_country" name="destination_country">
-                        </div>
-
-
-                        <select id="destination_diff" name="destination_diff">
-                            <option value="0" selected>+0 km</option>
-                            <option value="25">+25 km</option>
-                            <option value="50">+50 km</option>
-                            <option value="100">+100 km</option>
-                            <option value="any">+any km</option>
-                        </select>
-
-                        <input type="date" id="available_from" name="available_from">
-                        <input type="date" id="available_until" name="available_until">
-                    </div>
-                </div>
-                <br>
-                <!-- Jármű alapadatok -->
-                <div class="form-section">
-                    <h4>About truck</h4>
-                    <div class="vehicle-col">
-                        <label for="vehicle_type">Jármű típusa *</label>
-                        <label for="superstructure">Felépítmény<span class="required">*</span></label>
-                        <select id="vehicle_type" name="vehicle_type" required>
-                        <option value="" disabled selected>Válassz jármű típust</option>
-                        <option value="Jármű 3,5 t-ig">Jármű 3,5 t-ig</option>
-                        <option value="Nyerges szerelvény">Nyerges szerelvény</option>
-                        <option value="Pótos szerelvény">Pótos szerelvény</option>
-                        <option value="Tehergépjármű 7,5 t-ig">Tehergépjármű 7,5 t-ig</option>
-                        <option value="Tehergépjármű 12 t-ig">Tehergépjármű 12 t-ig</option>
-                    </select>
-                        <select id="superstructure" name="superstructure" required>
-                            <option value="" disabled selected>Válassz felépítményt</option>
-                            <option value="Autószállító">Autószállító</option>
-                            <option value="Billenős konténer">Billenős konténer</option>
-                            <option value="Cserefelépítmény-Chassis">Cserefelépítmény-Chassis</option>
-                            <option value="Dobozos">Dobozos</option>
-                            <option value="Furgon">Furgon</option>
-                            <option value="Dupla kabinos">Dupla kabinos</option>
-                            <option value="Félpótkocsi">Félpótkocsi</option>
-                            <option value="Hűtő">Hűtő</option>
-                            <option value="Jumbo">Jumbo</option>
-                            <option value="Klipper">Klipper</option>
-                            <option value="Konténerszállító">Konténerszállító</option>
-                            <option value="Kábeldobszálíltó">Kábeldobszálíltó</option>
-                            <option value="Középrakodós">Középrakodós</option>
-                            <option value="Mega">Mega</option>
-                            <option value="Mozgópadlós">Mozgópadlós</option>
-                            <option value="Mozgópadlós (ömlesztett áru)">Mozgópadlós (ömlesztett áru)</option>
-                            <option value="Mélybölcsős">Mélybölcsős</option>
-                            <option value="Nyitott tehergépkocsi">Nyitott tehergépkocsi</option>
-                            <option value="Oldalrakodós">Oldalrakodós</option>
-                            <option value="Ponyvás">Ponyvás</option>
-                            <option value="Sasszé">Sasszé</option>
-                            <option value="Siló">Siló</option>
-                            <option value="Speciális jármű">Speciális jármű</option>
-                            <option value="Szigetelt">Szigetelt</option>
-                            <option value="Szállítószalagos">Szállítószalagos</option>
-                            <option value="Tartálykocsi">Tartálykocsi</option>
-                            <option value="Tautliner">Tautliner</option>
-                            <option value="Tele">Tele</option>
-                            <option value="Vontató">Vontató</option>
-                        </select>
-
-                        <label for="equipment">Felszereltség</label>
-                        <label for="securement">Rakományrögzítés</label>
-
-                        <!-- Felszereltség -->
-                        <div class="multiselect">
-                            <div class="selectBox" onclick="toggleCheckboxes('equipment')">
-                                <span id="equipment-selected">Válassz felszereltséget</span> ▼
-                            </div>
-                            <div class="checkboxes" id="equipment-checkboxes" data-editor-usable="equipment">
-                                <label><input type="checkbox" value="2. sofőr"> 2. sofőr </label>
-                                <label><input type="checkbox" value="A-Schild"> A-Schild </label>
-                                <label><input type="checkbox" value="ADR"> ADR </label>
-                                <label><input type="checkbox" value="BF3 kísérőjármű"> BF3</label>
-                                <label><input type="checkbox" value="BF4 kísérőjármű"> BF4</label>
-                                <label><input type="checkbox" value="Béka"> Béka</label>
-                                <label><input type="checkbox" value="Emelőhátfal"> Emelőhátfal</label>
-                                <label><input type="checkbox" value="Farönkszállító"> Farönkszállító</label>
-                                <label><input type="checkbox" value="GPS követő"> GPS követő</label>
-                                <label><input type="checkbox" value="Húskampó"> Húskampó</label>
-                                <label><input type="checkbox" value="Rakodódaru"> Rakodódaru</label>
-                                <label><input type="checkbox" value="Rámpa"> Rámpa</label>
-                                <label><input type="checkbox" value="Takaróponyva"> Takaróponyva</label>
-                                <label><input type="checkbox" value="Targonca"> Targonca</label>
-                                <label><input type="checkbox" value="Válaszfal"> Válaszfal</label>
-                                <label><input type="checkbox" value="Vámzsinór"> Vámzsinór</label>
-                            </div>
-                        </div>
-                        <select id="equipment" name="equipment" multiple hidden>
-                            <option value="2. sofőr">2. sofőr</option>
-                            <option value="A-Schild">A-Schild</option>
-                            <option value="ADR">ADR</option>
-                            <option value="BF3 kísérőjármű">BF3 kísérőjármű</option>
-                            <option value="BF4 kísérőjármű">BF4 kísérőjármű</option>
-                            <option value="Béka">Béka</option>
-                            <option value="Emelőhátfal">Emelőhátfal</option>
-                            <option value="Farönkszállító">Farönkszállító</option>
-                            <option value="GPS követő">GPS követő</option>
-                            <option value="Húskampó">Húskampó</option>
-                            <option value="Rakodódaru">Rakodódaru</option>
-                            <option value="Rámpa">Rámpa</option>
-                            <option value="Takaróponyva">Takaróponyva</option>
-                            <option value="Targonca">Targonca</option>
-                            <option value="Válaszfal">Válaszfal</option>
-                            <option value="Vámzsinór">Vámzsinór</option>
-                        </select>
-
-                        <!-- Rakományrögzítés -->
-                        <div class="multiselect">
-                            <div class="selectBox" onclick="toggleCheckboxes('securement')">
-                                <span id="securement-selected">Válassz rakományrögzítést</span> ▼
-                            </div>
-                            <div class="checkboxes" id="securement-checkboxes" data-editor-usable="securement">
-                                <label><input type="checkbox" value="Csúszásgátló"> Csúszásgátló</label>
-                                <label><input type="checkbox" value="Láncos feszítő"> Láncos feszítő</label>
-                                <label><input type="checkbox" value="Multilock"> Multilock</label>
-                                <label><input type="checkbox" value="Oldalfalas"> Oldalfalas</label>
-                                <label><input type="checkbox" value="Palettarögzítő gerenda"> Rögzítő gerenda</label>
-                                <label><input type="checkbox" value="Rakományrögzítő rúd"> Rakományrögzítő rúd</label>
-                                <label><input type="checkbox" value="Rakonca"> Rakonca</label>
-                                <label><input type="checkbox" value="Spanifer"> Spanifer</label>
-                                <label><input type="checkbox" value="Élvédő"> Élvédő</label>
-                            </div>
-                        </div>
-                        <select id="securement" name="securement" multiple hidden>
-                            <option value="Csúszásgátló">Csúszásgátló</option>
-                            <option value="Láncos feszítő">Láncos feszítő</option>
-                            <option value="Multilock">Multilock</option>
-                            <option value="Oldalfalas">Oldalfalas</option>
-                            <option value="Palettarögzítő gerenda">Palettarögzítő gerenda</option>
-                            <option value="Rakományrögzítő rúd">Rakományrögzítő rúd</option>
-                            <option value="Rakonca">Rakonca</option>
-                            <option value="Spanifer">Spanifer</option>
-                            <option value="Élvédő">Élvédő</option>
+                <form action="{{ url_for('vehicles.save_vehicle') }}" method="POST" id="vehicleForm" class="freight-form">
+                    <div class="template-select-wrapper">
+                        <label for="vehicle_template_select"><strong>Sablon betöltése:</strong></label>
+                        <!-- Most már látható select -->
+                        <select id="vehicle_template_select" name="template_id">
+                            <option value="" selected disabled>Válassz sablont</option>
+                            {% for t in templates %}
+                                <option value="{{ t.id }}">
+                                    {{ t.origin_city }} → {{ t.destination_city }} | {{ t.capacity_t }} t | {{ t.volume_m3 }} m³ | {{ t.vehicle_type or '–' }}
+                                </option>
+                            {% endfor %}
                         </select>
                     </div>
-                    <label for="description">Leírás</label>
-                    <textarea id="description" name="description" placeholder="Részletek a járműről" rows="1" style="max-height: 35px"></textarea>
-                </div>
 
-                <!-- Rakomány -->
-                <div class="form-section">
-                <label for="capacity_t">Kapacitás (t)</label>
-                <input type="number" step="0.1" id="capacity_t" name="capacity_t">
+                    <!-- Eredet -->
+                    <div class="form-section">
+                        <h4>Hely adatok</h4>
+                        <div class="places">
+                            <label for="origin" class="elso_label">Honnan?</label>
+                            <label for="origin_diff" class="x"></label>
+                            <label for="swap-btn" class="y"></label>
+                            <label for="destination" class="masodik_label">Hova?</label>
+                            <label for="destination_diff" class="z"></label>
 
-                <label for="volume_m3">Raktér méret (m³)</label>
-                <input type="number" step="0.1" id="volume_m3" name="volume_m3">
+                            <div class="autocomplete-wrapper">
+                                <input type="text" id="origin" placeholder="Város" autocomplete="off">
+                                <div id="origin_suggestions" class="suggestions"></div>
+                                <input type="hidden" id="origin_city" name="origin_city">
+                                <input type="hidden" id="origin_zip" name="origin_zip">
+                                <input type="hidden" id="origin_country" name="origin_country">
+                            </div>
 
-                <div class="cards-row">
-                    <div id="paletteCard" class="palette-card">Raklap csere <img src="{{ url_for('static', filename='icons/exchange_palette.png') }}" alt="Palettacsere"></div>
-                    <input type="hidden" id="palette_exch" name="palette_exchange" value="false">
 
-                    <div id="oversizeCard" class="oversize-card">Túlméretes áru<img src="{{ url_for('static', filename='icons/oversize.png') }}" alt="Túlméretes"></div>
-                    <input type="hidden" id="oversize" name="oversize" value="false">
+                            <select id="origin_diff" name="origin_diff">
+                                <option value="0" selected>+0 km</option>
+                                <option value="25">+25 km</option>
+                                <option value="50">+50 km</option>
+                                <option value="100">+100 km</option>
+                                <option value="any">+any km</option>
+                            </select>
+                            <button type="button" id="swap-btn">⇄</button>
 
-                    <div id="loadtypeCard" class="loadtype-card">Részrakomány <img src="{{ url_for('static', filename='icons/ltl.png') }}" alt="LTL"></div>
-                    <input type="hidden" id="load_type" name="load_type" value="false">
-                </div>
-              </div>
+                            <div class="autocomplete-wrapper">
+                                <input type="text" id="destination" placeholder="Város" autocomplete="off">
+                                <div id="destination_suggestions" class="suggestions"></div>
+                                <input type="hidden" id="destination_city" name="destination_city">
+                                <input type="hidden" id="destination_zip" name="destination_zip">
+                                <input type="hidden" id="destination_country" name="destination_country">
+                            </div>
 
-                <!-- Díj -->
-                <div class="form-section">
-                    <label for="price">Ár</label>
-                    <input type="number" step="0.01" id="price" name="price">
 
-                    <label for="currency">Pénznem</label>
-                    <select id="currency" name="currency">
-                    <option value="EUR">EUR</option>
-                    <option value="HUF">HUF</option>
-                    </select>
-                </div>
+                            <select id="destination_diff" name="destination_diff">
+                                <option value="0" selected>+0 km</option>
+                                <option value="25">+25 km</option>
+                                <option value="50">+50 km</option>
+                                <option value="100">+100 km</option>
+                                <option value="any">+any km</option>
+                            </select>
 
-                <input type="hidden" id="origin_lat" name="origin_lat">
-                <input type="hidden" id="origin_lon" name="origin_lon">
-                <input type="hidden" id="destination_lat" name="destination_lat">
-                <input type="hidden" id="destination_lon" name="destination_lon">
-                <input type="hidden" id="routeCoordsInput" name="routeCoordsInput">
-                <div class="btn-wrapper" style="margin-top:15px;">
-                <button type="submit">Keresés és mentés</button>
-              </div>
-            </form>
+                            <input type="date" id="available_from" name="available_from">
+                            <input type="date" id="available_until" name="available_until">
+                        </div>
+
+                        <div class="form-section hidden" id="destination-countries-section">
+                        <label for="destination_countries">Országok, ahova mehet a jármű</label>
+                        <div class="multiselect">
+                            <div class="selectBox" onclick="toggleCheckboxes('destination_countries')">
+                                <span id="destination_countries-selected">Válassz országot</span> ▼
+                            </div>
+                            <select id="destination_countries" name="destination_countries" multiple hidden>
+                                {% for country in eu_countries %}
+                                    <option value="{{ country.code }}">{{ country.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                    </div>
+
+                    </div>
+                    <br>
+
+                    <!-- Jármű alapadatok -->
+                    <div class="form-section">
+                        <h4>About vehicle</h4>
+                        <div class="vehicle-col">
+                            <label for="vehicle_type">Jármű típusa *</label>
+                            <label for="structure">Felépítmény<span class="required">*</span></label>
+                            <select id="vehicle_type" name="vehicle_type" required>
+                            <option value="" disabled selected>Válassz jármű típust</option>
+                            <option value="Jármű 3,5 t-ig">Jármű 3,5 t-ig</option>
+                            <option value="Nyerges szerelvény">Nyerges szerelvény</option>
+                            <option value="Pótos szerelvény">Pótos szerelvény</option>
+                            <option value="Tehergépjármű 7,5 t-ig">Tehergépjármű 7,5 t-ig</option>
+                            <option value="Tehergépjármű 12 t-ig">Tehergépjármű 12 t-ig</option>
+                        </select>
+                            <select id="structure" name="structure" required>
+                                <option value="" disabled selected>Válassz felépítményt</option>
+                                <option value="Autószállító">Autószállító</option>
+                                <option value="Billenős konténer">Billenős konténer</option>
+                                <option value="Cserefelépítmény-Chassis">Cserefelépítmény-Chassis</option>
+                                <option value="Dobozos">Dobozos</option>
+                                <option value="Furgon">Furgon</option>
+                                <option value="Dupla kabinos">Dupla kabinos</option>
+                                <option value="Félpótkocsi">Félpótkocsi</option>
+                                <option value="Hűtő">Hűtő</option>
+                                <option value="Jumbo">Jumbo</option>
+                                <option value="Klipper">Klipper</option>
+                                <option value="Konténerszállító">Konténerszállító</option>
+                                <option value="Kábeldobszálíltó">Kábeldobszálíltó</option>
+                                <option value="Középrakodós">Középrakodós</option>
+                                <option value="Mega">Mega</option>
+                                <option value="Mozgópadlós">Mozgópadlós</option>
+                                <option value="Mozgópadlós (ömlesztett áru)">Mozgópadlós (ömlesztett áru)</option>
+                                <option value="Mélybölcsős">Mélybölcsős</option>
+                                <option value="Nyitott tehergépkocsi">Nyitott tehergépkocsi</option>
+                                <option value="Oldalrakodós">Oldalrakodós</option>
+                                <option value="Ponyvás">Ponyvás</option>
+                                <option value="Sasszé">Sasszé</option>
+                                <option value="Siló">Siló</option>
+                                <option value="Speciális jármű">Speciális jármű</option>
+                                <option value="Szigetelt">Szigetelt</option>
+                                <option value="Szállítószalagos">Szállítószalagos</option>
+                                <option value="Tartálykocsi">Tartálykocsi</option>
+                                <option value="Tautliner">Tautliner</option>
+                                <option value="Tele">Tele</option>
+                                <option value="Vontató">Vontató</option>
+                            </select>
+
+                            <label for="equipment">Felszereltség</label>
+                            <label for="securement">Rakományrögzítés</label>
+
+                            <!-- Felszereltség -->
+                            <div class="multiselect">
+                                <div class="selectBox" onclick="toggleCheckboxes('equipment')">
+                                    <span id="equipment-selected">Válassz felszereltséget</span> ▼
+                                </div>
+                                <div class="checkboxes" id="equipment-checkboxes" data-editor-usable="equipment">
+                                    <label><input type="checkbox" value="2. sofőr"> 2. sofőr </label>
+                                    <label><input type="checkbox" value="A-Schild"> A-Schild </label>
+                                    <label><input type="checkbox" value="ADR"> ADR </label>
+                                    <label><input type="checkbox" value="BF3 kísérőjármű"> BF3</label>
+                                    <label><input type="checkbox" value="BF4 kísérőjármű"> BF4</label>
+                                    <label><input type="checkbox" value="Béka"> Béka</label>
+                                    <label><input type="checkbox" value="Emelőhátfal"> Emelőhátfal</label>
+                                    <label><input type="checkbox" value="Farönkszállító"> Farönkszállító</label>
+                                    <label><input type="checkbox" value="GPS követő"> GPS követő</label>
+                                    <label><input type="checkbox" value="Húskampó"> Húskampó</label>
+                                    <label><input type="checkbox" value="Rakodódaru"> Rakodódaru</label>
+                                    <label><input type="checkbox" value="Rámpa"> Rámpa</label>
+                                    <label><input type="checkbox" value="Takaróponyva"> Takaróponyva</label>
+                                    <label><input type="checkbox" value="Targonca"> Targonca</label>
+                                    <label><input type="checkbox" value="Válaszfal"> Válaszfal</label>
+                                    <label><input type="checkbox" value="Vámzsinór"> Vámzsinór</label>
+                                </div>
+                            </div>
+                            <select id="equipment" name="equipment" multiple hidden>
+                                <option value="2. sofőr">2. sofőr</option>
+                                <option value="A-Schild">A-Schild</option>
+                                <option value="ADR">ADR</option>
+                                <option value="BF3 kísérőjármű">BF3 kísérőjármű</option>
+                                <option value="BF4 kísérőjármű">BF4 kísérőjármű</option>
+                                <option value="Béka">Béka</option>
+                                <option value="Emelőhátfal">Emelőhátfal</option>
+                                <option value="Farönkszállító">Farönkszállító</option>
+                                <option value="GPS követő">GPS követő</option>
+                                <option value="Húskampó">Húskampó</option>
+                                <option value="Rakodódaru">Rakodódaru</option>
+                                <option value="Rámpa">Rámpa</option>
+                                <option value="Takaróponyva">Takaróponyva</option>
+                                <option value="Targonca">Targonca</option>
+                                <option value="Válaszfal">Válaszfal</option>
+                                <option value="Vámzsinór">Vámzsinór</option>
+                            </select>
+
+                            <!-- Rakományrögzítés -->
+                            <div class="multiselect">
+                                <div class="selectBox" onclick="toggleCheckboxes('securement')">
+                                    <span id="securement-selected">Válassz rakományrögzítést</span> ▼
+                                </div>
+                                <div class="checkboxes" id="securement-checkboxes" data-editor-usable="securement">
+                                    <label><input type="checkbox" value="Csúszásgátló"> Csúszásgátló</label>
+                                    <label><input type="checkbox" value="Láncos feszítő"> Láncos feszítő</label>
+                                    <label><input type="checkbox" value="Multilock"> Multilock</label>
+                                    <label><input type="checkbox" value="Oldalfalas"> Oldalfalas</label>
+                                    <label><input type="checkbox" value="Palettarögzítő gerenda"> Rögzítő gerenda</label>
+                                    <label><input type="checkbox" value="Rakományrögzítő rúd"> Rakományrögzítő rúd</label>
+                                    <label><input type="checkbox" value="Rakonca"> Rakonca</label>
+                                    <label><input type="checkbox" value="Spanifer"> Spanifer</label>
+                                    <label><input type="checkbox" value="Élvédő"> Élvédő</label>
+                                </div>
+                            </div>
+                            <select id="securement" name="securement" multiple hidden>
+                                <option value="Csúszásgátló">Csúszásgátló</option>
+                                <option value="Láncos feszítő">Láncos feszítő</option>
+                                <option value="Multilock">Multilock</option>
+                                <option value="Oldalfalas">Oldalfalas</option>
+                                <option value="Palettarögzítő gerenda">Palettarögzítő gerenda</option>
+                                <option value="Rakományrögzítő rúd">Rakományrögzítő rúd</option>
+                                <option value="Rakonca">Rakonca</option>
+                                <option value="Spanifer">Spanifer</option>
+                                <option value="Élvédő">Élvédő</option>
+                            </select>
+                        </div>
+                        <!-- Leírás + Rendszám sor -->
+                        <div class="form-row" style="display: flex; gap: 15px; align-items: flex-start; margin-top: 10px;">
+                            <!-- Leírás -->
+                            <div class="form-group" style="flex: 3;">
+                                <label for="description">Leírás</label>
+                                <textarea id="description" name="description" placeholder="Részletek a járműről" rows="1" style="width: 100%; max-height: 35px;"></textarea>
+                            </div>
+
+                            <!-- Rendszám -->
+                            <div class="form-group" style="flex: 1;">
+                                <label for="license_plate">
+                                    Rendszám
+                                    <span data-bs-toggle="tooltip" title="A rendszám nem fog megjelenni senki számára, amíg az üzlet meg nem köttetik. A gyorsabb ügyintézés miatt érdemes megadni.">
+                                        <img src="{{ url_for('static', filename='icons/tooltip.png') }}" alt="Tooltip" style="width:16px; height:16px; vertical-align: middle;">
+                                    </span>
+                                </label>
+                                <input type="text" id="license_plate" name="license_plate" placeholder="Pl. ABC-123" maxlength="10" style="width: 100%;">
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Díj / Kapacitás sor átalakítva flexbox-szal -->
+                    <div class="form-section flex-row">
+                        <div style="flex: 0 0 25%; padding-right:5px;">
+                            <label for="capacity_t">Kapacitás (t)</label>
+                            <input type="number" step="0.1" id="capacity_t" name="capacity_t">
+                        </div>
+
+                        <div style="flex: 0 0 25%; padding-right:5px;">
+                            <label for="volume_m3">Raktér méret (m³)</label>
+                            <input type="number" step="0.1" id="volume_m3" name="volume_m3">
+                        </div>
+
+                        <div style="flex: 0 0 30%; padding-right:5px;">
+                            <label for="price">Ár</label>
+                            <input type="number" step="0.01" id="price" name="price">
+                        </div>
+
+                        <div style="flex: 0 0 15%;">
+                            <label for="currency">Pénznem</label>
+                            <select id="currency" name="currency">
+                                <option value="EUR">EUR</option>
+                                <option value="HUF">HUF</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="cards-row">
+                        <div id="paletteCard" class="palette-card">Raklap csere <img src="{{ url_for('static', filename='icons/exchange_palette.png') }}" alt="Palettacsere"></div>
+                        <input type="hidden" id="palette_exch" name="palette_exchange" value="false">
+
+                        <div id="oversizeCard" class="oversize-card">Túlméretes áru<img src="{{ url_for('static', filename='icons/oversize.png') }}" alt="Túlméretes"></div>
+                        <input type="hidden" id="oversize" name="oversize" value="false">
+
+                        <div id="loadtypeCard" class="loadtype-card">Részrakomány <img src="{{ url_for('static', filename='icons/ltl.png') }}" alt="LTL"></div>
+                        <input type="hidden" id="load_type" name="load_type" value="false">
+
+                        <div id="publicLicenseCard" class="publiclicense-card" title="Mások számára is elérhető lesz a rendszám már az üzletkötés előtt. Ne aggódj, nem fogjuk az arcukba nyomni.">Publikus rendszám <img src="{{ url_for('static', filename='icons/license_plate.png') }}" alt="License plate"></div>
+                        <input type="hidden" id="public_license" name="public_license" value="false">
+                    </div>
+
+                    <input type="hidden" id="origin_lat" name="origin_lat">
+                    <input type="hidden" id="origin_lon" name="origin_lon">
+                    <input type="hidden" id="destination_lat" name="destination_lat">
+                    <input type="hidden" id="destination_lon" name="destination_lon">
+                    <input type="hidden" id="routeCoordsInput" name="routeCoordsInput">
+                    <!-- Checkboxok a mentés előtt -->
+                    <div class="sablon-wrapper">
+                        <label class="custom-checkbox">
+                            <input type="checkbox" id="sablonCheckbox" name="sablonCheckbox" class="sablon">
+                            <span class="checkmark"></span>
+                            Mentés sablonként
+                        </label>
+
+                        <label class="custom-checkbox">
+                            <input type="checkbox" id="longtermCheckbox" name="longtermCheckbox" class="sablon">
+                            <span class="checkmark"></span>
+                            Mentés állandó fuvarként
+                        </label>
+                    </div>
+
+                    <div class="btn-wrapper" style="margin-top:15px;">
+                        <button type="submit">Keresés és mentés</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -409,10 +480,185 @@
         <p>Nincs még rakomány.</p>
         {% endif %}
         </div>
+
+        <!-- Modal a konkrét jármű ajánláshoz -->
+        <div class="modal fade" id="specificvehicleModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Hirdetett rakterek kiválasztása</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <!-- Ide töltjük az AJAX-szal a raktereket -->
+                    </div>
+                </div>
+            </div>
+        </div>
     </main>
 </div>
 
 <style>
+/* Modal body: középre rendezés */
+#specificvehicleModal .modal-body {
+    display: flex;
+    flex-direction: column;   /* függőleges lista */
+    align-items: center;      /* vízszintesen középre */
+    gap: 15px;                /* kis távolság a gombok között */
+    padding: 20px;
+}
+
+#specificvehicleModal .vehicle-list {
+    width: 80%;
+}
+
+/* Vehicle gombok a modalban - konkrét modal szelektorral, felülírja a Bootstrap-et */
+#specificvehicleModal .vehicle-select-btn {
+    width: 100% !important;               /* teljes szélesség */
+    text-align: center !important;
+    display: block !important;
+    padding: 10px 0 !important;
+    font-size: 16px !important;
+    border-radius: 8px !important;
+    border: 1px solid #333 !important;
+    background-color: #eee !important;
+    color: #000 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    margin: 0;
+}
+
+#specificvehicleModal .vehicle-select-btn.active {
+    background-color: #0d6efd !important;
+    border-color: #0d6efd !important;
+    color: #fff !important;
+    margin:0;
+}
+/* Modal body: középre rendezés */
+#specificvehicleModal .modal-body {
+    display: flex;
+    flex-direction: column;   /* függőleges lista */
+    align-items: center;      /* vízszintesen középre */
+    gap: 15px;                /* kis távolság a gombok között */
+    padding: 20px;
+    margin:0;
+}
+
+#specificvehicleModal .vehicle-list {
+    width: 80%;
+}
+
+/* Vehicle gombok a modalban - konkrét modal szelektorral, felülírja a Bootstrap-et */
+#specificvehicleModal .vehicle-select-btn {
+    width: 100% !important;               /* teljes szélesség */
+    text-align: center !important;
+    display: block !important;
+    padding: 10px 0 !important;
+    font-size: 16px !important;
+    border-radius: 8px !important;
+    border: 1px solid #333 !important;
+    background-color: #eee !important;
+    color: #000 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+#specificvehicleModal .vehicle-select-btn.active, #specificvehicleModal .vehicle-select-btn.active:hover{
+    background-color: #1d1d1d !important;
+    border-color: #1d1d1d !important;
+    color: #fff !important;
+}
+
+#specificvehicleModal .vehicle-select-btn:hover {
+    background-color: #818181 !important;
+    border-color: #818181 !important;
+    color: #fff !important;
+}
+
+#vehicle-cancel-btn {
+    border: 1px solid #ccc;
+    color: #999;
+    background-color: #fff;
+}
+
+#vehicle-select-confirm-btn:disabled {
+    background-color: #ddd;
+    border-color: #ccc;
+    color: #999;
+}
+
+.sablon-wrapper {
+    margin-top: 10px;
+    width: 15vw;
+    display: flex;
+    flex-direction: column; /* egymás alá */
+    gap: 0.5em;             /* kis távolság a checkboxok között */
+}
+
+/* A label legyen flex, a checkmark mindig bal oldalon */
+.custom-checkbox {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    position: relative;
+    font-size: 0.9em;
+    user-select: none;
+}
+
+/* Eredeti checkbox elrejtése */
+.custom-checkbox input[type="checkbox"] {
+    display: none;
+}
+
+/* Saját checkmark stílus */
+.custom-checkbox .checkmark {
+    width: 25px;
+    height: 25px;
+    border: 2px solid #ccc;
+    border-radius: 6px;
+    background-color: #fff;
+    position: relative;
+    margin-right: 10px; /* szöveg és checkmark közti távolság */
+}
+
+/* Pipa megjelenítése, ha checked */
+.custom-checkbox input[type="checkbox"]:checked + .checkmark::after {
+    content: "";
+    position: absolute;
+    left: 6px;
+    top: 2px;
+    width: 8px;
+    height: 16px;
+    border: solid #333;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+
+@media (max-width: 1550px) {
+    .vehicle-second-row {
+        flex-direction: column;
+    }
+
+}
+
+#destination-countries-section.inline-mode {
+    margin: 0;
+    padding: 0;
+}
+
+#destination-countries-section.inline-mode label {
+    display: none; /* ne legyen cím fölötte */
+}
+
+#destination-countries-section.inline-mode .multiselect {
+    display: inline-block;
+    width: 100%;
+}
+
+.autocomplete-wrapper.hidden {
+    display: none !important;
+}
 
 .suggestions {
     display: none;
@@ -458,11 +704,9 @@
 /* DataTables által beszúrt child sor td-jeire és a wrapperre biztos háttér és magasabb z-index */
 table.dataTable tr.child td, .offer-child-wrapper {
     background: #fff;
-    position: sticky;
     z-index: 5;
     padding: 10px;
     width: 100%;
-    left: 10%;
 }
 
 .dataTables_wrapper .dataTables_filter {
@@ -483,25 +727,32 @@ td{
     flex-wrap: wrap;
     gap: 12px;
     align-items: center;
+    width : 50%;
+    position: sticky;
+    left: 10px;
 }
+
+/* Új sor: konkrét jármű ajánlása */
+.offer-specific-row {
+    width: 100%;
+    text-align: center;
+    margin-top: 10px;
+}
+
+.offer-specific-text {
+    cursor: pointer;
+    color: #007bff;
+    font-weight: 600;
+    font-size: 1.5em;
+    text-decoration: underline;
+}
+
 .offer-form label { display: flex; flex-direction: column; font-size: 0.9em; }
 .offer-form button { padding: 6px 10px; cursor: pointer; }
 
 @keyframes slideIn {
     from { opacity: 0; transform: translateX(100%); }
     to { opacity: 1; transform: translateX(0); }
-}
-
-.offer-notification a.open-chat {
-    display: inline-block;
-    margin-left: 10px;
-    color: #0066cc;
-    text-decoration: none;
-    font-weight: bold;
-}
-
-.offer-notification a.open-chat:hover {
-    text-decoration: underline;
 }
 
 .country-zip {
@@ -562,6 +813,11 @@ td{
   font-size: 14px;
   transition: border-color 0.2s;
 }
+.flex-row {
+    display: flex;
+    flex-wrap: nowrap; /* mindig egy sor */
+    gap: 5px; /* kis térköz */
+}
 
 .freight-form input:focus,
 .freight-form select:focus,
@@ -579,7 +835,8 @@ td{
 
 .palette-card,
 .oversize-card,
-.loadtype-card {
+.loadtype-card,
+.publiclicense-card {
   flex: 1;
   text-align: center;
   padding: 12px;
@@ -607,13 +864,19 @@ td{
   background: #0056b3;
 }
 
-.palette-card:hover, .oversize-card:hover, .loadtype-card:hover {
+#offer-submit-btn{
+    padding: 0 8px;
+    height:40px;
+    margin-top: auto;
+}
+
+.palette-card:hover, .oversize-card:hover, .loadtype-card:hover, .publiclicense-card:hover {
     background: #f2f6ff;
     border-color: #cfe0ff;
     box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
 
-.palette-card.active, .oversize-card.active, .loadtype-card.active {
+.palette-card.active, .oversize-card.active, .loadtype-card.active, .publiclicense-card.active {
     background: #e9f5ff;
     border-color: #5aa3ff;
     box-shadow: 0 2px 6px rgba(0,0,0,0.08);
@@ -683,9 +946,33 @@ td{
 }
 
 /* ---------- MULTISELECT LOOK ---------- */
+/* FONTOS: A .multiselect legyen pozicionálási referencia */
 .multiselect {
-  position: relative;
-  font-family: Arial, Helvetica, sans-serif;
+  position: relative; /* ez lesz a referenciapont az absolute-hoz */
+  display: inline-block;
+  width: 100%; /* illeszkedjen a selectBox-hoz */
+}
+
+/* A lenyíló (checkboxes) pontosan alatta nyíljon meg */
+.multiselect .checkboxes {
+  position: absolute;
+  top: 100%; /* közvetlenül a selectBox alá */
+  left: 0;
+  width: 100%; /* pont akkora, mint a selectBox */
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  margin-top: 4px;
+  display: none;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 9999; /* biztos, hogy semmi ne takarja */
+}
+
+/* amikor látszik */
+.multiselect .checkboxes.active {
+  display: block;
 }
 
 .selectBox {
@@ -710,8 +997,6 @@ td{
   max-width: calc(100% - 24px);
 }
 
-/* A régi .checkboxes elrejtve (nem töröljük, mert ha kell, a JS használhatja) */
-.multiselect .checkboxes { display: none !important; }
 
 /* ---------- KÁRTYAPANEL ---------- */
 .cards-panel {
@@ -808,12 +1093,93 @@ td{
     display: none;
 }
 
+.btn-secondary, .btn-primary{
+    margin: 0;
+}
+
+.btn-holder{
+    position: sticky;
+    bottom: 10px;
+}
+
+.modal-body{
+    max-height: 75vh;
+}
+
+.vehicle-list{
+    max-height: 65vh;
+    overflow-y: auto;
+}
+
+.modal-footer{
+    width: 100%;
+    background-color: #fff;
+}
 </style>
 {% endblock %}
 
 {% block scripts %}
 <script>
+// Bootstrap 5 tooltip inicializálás
+var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+  return new bootstrap.Tooltip(tooltipTriggerEl)
+})
+
+document.getElementById('destination_diff').addEventListener('change', function() {
+    const diffValue = this.value;
+    const countriesSection = document.getElementById('destination-countries-section');
+    const destinationWrapper = document.querySelector('#destination').closest('.autocomplete-wrapper');
+    const parentContainer = destinationWrapper.parentElement;
+
+    if (diffValue === 'any') {
+        // --- ha +any km ---
+        countriesSection.classList.remove('hidden');
+
+        // rejtsük el az autocomplete inputot
+        destinationWrapper.classList.add('hidden');
+
+        // helyezzük a countriesSection-t a helyére (közvetlenül a destination helyére)
+        if (!countriesSection.classList.contains('inline-mode')) {
+            parentContainer.insertBefore(countriesSection, destinationWrapper.nextSibling);
+            countriesSection.classList.add('inline-mode');
+        }
+    } else {
+        // --- ha nem +any ---
+        countriesSection.classList.add('hidden');
+        destinationWrapper.classList.remove('hidden');
+
+        // országok kiválasztásának ürítése
+        const select = document.getElementById('destination_countries');
+        Array.from(select.options).forEach(o => o.selected = false);
+        updateSelectPlaceholder('destination_countries');
+    }
+});
+
+function updateSelectPlaceholder(name) {
+    const select = document.getElementById(name);
+    const selected = Array.from(select.selectedOptions).map(o => o.text);
+    const span = document.getElementById(name + '-selected');
+    span.innerText = selected.length ? selected.join(', ') : 'Válassz országot';
+}
+
 const vehicleForm = document.getElementById("vehicleForm");
+
+document.addEventListener("DOMContentLoaded", function() {
+    const destinationDiff = document.getElementById("destination_diff");
+    const countriesSection = document.getElementById("destination-countries-section");
+
+    function toggleCountriesSection() {
+        if (destinationDiff.value === "any") {
+            countriesSection.classList.remove("hidden");
+        } else {
+            countriesSection.classList.add("hidden");
+        }
+    }
+
+    destinationDiff.addEventListener("change", toggleCountriesSection);
+    toggleCountriesSection(); // azonnal lefut betöltéskor is
+});
 
 /**
  * Csökkenti a koordináták számát az útvonalon.
@@ -845,9 +1211,12 @@ vehicleForm.addEventListener("submit", async function(e) {
     const originZip = document.getElementById("origin_zip").value;
     const originCountry = document.getElementById("origin_country").value;
 
-    const destCity = document.getElementById("destination_city").value;
-    const destZip = document.getElementById("destination_zip").value;
-    const destCountry = document.getElementById("destination_country").value;
+    const destinationDiff = document.getElementById("destination_diff").value;
+    const selectedDestCountries = Array.from(document.getElementById("destination_countries").selectedOptions).map(o => o.value);
+
+    const destCityInput = document.getElementById("destination_city").value;
+    const destZipInput = document.getElementById("destination_zip").value;
+    const destCountryInput = document.getElementById("destination_country").value;
 
     // --- Geocode lekérés backendről ---
     async function geocode(city, zip, country) {
@@ -859,36 +1228,75 @@ vehicleForm.addEventListener("submit", async function(e) {
 
     let originCoords, destCoords;
     try {
+        // Origin koordináták mindig lekérve
         originCoords = await geocode(originCity, originZip, originCountry);
-        destCoords = await geocode(destCity, destZip, destCountry);
-    } catch(err) {
+
+        // --- ANY eset ---
+        if (destinationDiff === "any") {
+            // ha nincs megadva city, akkor automatikusan az origin értékeket használjuk
+            const destCity = originCity;
+            const destZip = originZip;
+            const destCountry = originCountry;
+
+            destCoords = await geocode(destCity, destZip, destCountry);
+
+            // hidden mezők frissítése
+            document.getElementById("destination_city").value = destCity;
+            document.getElementById("destination_zip").value = destZip;
+            document.getElementById("destination_country").value = destCountry;
+            document.getElementById("destination_lat").value = destCoords.lat;
+            document.getElementById("destination_lon").value = destCoords.lng;
+        } 
+        // --- Konkrét cél eset ---
+        else if (destCityInput || destZipInput || destCountryInput) {
+            const destCity = destCityInput || originCity;
+            const destZip = destZipInput || originZip;
+            const destCountry = destCountryInput || originCountry;
+
+            destCoords = await geocode(destCity, destZip, destCountry);
+
+            document.getElementById("destination_lat").value = destCoords.lat;
+            document.getElementById("destination_lon").value = destCoords.lng;
+        } 
+        // --- Egyébként nincs céladat ---
+        else {
+            document.getElementById("destination_lat").value = "";
+            document.getElementById("destination_lon").value = "";
+        }
+
+        // mindig legyen origin koordináta
+        document.getElementById("origin_lat").value = originCoords.lat;
+        document.getElementById("origin_lon").value = originCoords.lng;
+
+    } catch (err) {
+        console.error("Geocode hiba:", err);
         alert("Nem sikerült lekérni a koordinátákat!");
         return;
     }
 
-    // --- OSRM útvonal lekérése ---
+    // --- OSRM útvonal lekérése (csak ha van cél koordináta) ---
     let routeCoords = [];
-    try {
-        const osrmRes = await fetch(`https://router.project-osrm.org/route/v1/driving/${originCoords.lng},${originCoords.lat};${destCoords.lng},${destCoords.lat}?overview=full&geometries=geojson`);
-        const data = await osrmRes.json();
-        if(data.routes && data.routes.length){
-            routeCoords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]); // lat, lon sorrend
+    if(destCoords) {
+        try {
+            const osrmRes = await fetch(`https://router.project-osrm.org/route/v1/driving/${originCoords.lng},${originCoords.lat};${destCoords.lng},${destCoords.lat}?overview=full&geometries=geojson`);
+            const data = await osrmRes.json();
+            if(data.routes && data.routes.length){
+                routeCoords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+            }
+            routeCoords = downsampleRoute(routeCoords, 500);
+        } catch(err){
+            console.error("OSRM hiba:", err);
         }
-
-        // --- Pontcsökkentés (max 500 pont) ---
-        routeCoords = downsampleRoute(routeCoords, 500);
-
-    } catch(err){
-        console.error("OSRM hiba:", err);
     }
 
-
-    // --- Hidden input feltöltése ---
-    document.getElementById("origin_lat").value = originCoords.lat;
-    document.getElementById("origin_lon").value = originCoords.lng;
-    document.getElementById("destination_lat").value = destCoords.lat;
-    document.getElementById("destination_lon").value = destCoords.lng;
     document.getElementById("routeCoordsInput").value = JSON.stringify(routeCoords);
+
+    // --- JSON mező létrehozása a kiválasztott országokhoz ---
+    const countriesInput = document.createElement("input");
+    countriesInput.type = "hidden";
+    countriesInput.name = "selected_dest_countries";
+    countriesInput.value = JSON.stringify(selectedDestCountries);
+    vehicleForm.appendChild(countriesInput);
 
     // --- Form submit ---
     vehicleForm.submit();
@@ -912,13 +1320,11 @@ $(document).ready(function() {
 
     // Offer gomb click (child row)
     $(document).on('click', 'button.offer-btn', function(e) {
-        console.log("Offer button clicked!", e.target);
         e.stopPropagation();
 
         var tr = $(this).closest('tr');
         var row = table.row(tr);
         const cargoId = tr.data('cargo-id');
-        console.log("cargoId:", cargoId);
 
         if (row.child.isShown()) {
             row.child.hide();
@@ -936,6 +1342,8 @@ $(document).ready(function() {
             <div class="offer-child-wrapper">
                 <form class="offer-form">
                     <input type="hidden" name="cargo_id" value="${cargoId}">
+
+                    <!-- 1. sor: standard inputok -->
                     <label>Felvét dátuma: <input type="date" name="pickup_date" required></label>
                     <label>Letét dátuma: <input type="date" name="delivery_date" required></label>
                     <label>Ár: <input type="number" name="price" step="1" required></label>
@@ -946,21 +1354,152 @@ $(document).ready(function() {
                         </select>
                     </label>
                     <label>Megjegyzés: <input type="text" name="note" maxlength="50"></label>
-                    <button type="submit">Küldés</button>
+                    <button type="submit" id="offer-submit-btn">Küldés</button>
+
+                    <!-- 2. sor: konkrét jármű ajánlása -->
+                    <div class="offer-specific-row">
+                        <span class="offer-specific-text" data-cargo-id="${cargoId}">
+                            Konkrét jármű ajánlása
+                        </span>
+                    </div>
                 </form>
             </div>
         `;
+
         row.child(formHtml).show();
         tr.addClass('shown');
     });
+
+    // 🔸 Globális változó
+    let selectedVehicleId = null;
+
+    // Kattintás a "Konkrét jármű ajánlása" szövegre
+    $(document).on('click', '.offer-specific-text', function() {
+        const cargoId = $(this).data('cargo-id');
+
+        $.get(`/cargo/specific_vehicles/${cargoId}`, function(html) {
+            $('#specificvehicleModal .modal-body').html(html);
+
+            const modalEl = document.getElementById('specificvehicleModal');
+            const myModal = new bootstrap.Modal(modalEl);
+
+            // 🔹 Ellenőrizzük, van-e már kiválasztott jármű
+            const $form = $(`form.offer-form input[name="cargo_id"][value="${cargoId}"]`).closest('form');
+            const existingVehicleId = $form.find('input[name="vehicle_id"]').val();
+
+            // Mindent alaphelyzetbe állítunk
+            $('#specificvehicleModal .vehicle-select-btn')
+                .removeClass('active btn-primary')
+                .addClass('btn-outline-primary');
+
+            if (existingVehicleId) {
+                // Jelöljük ki a modalban is
+                $('#specificvehicleModal .vehicle-select-btn').each(function() {
+                    if (String($(this).data('vehicle-id')) === String(existingVehicleId)) {
+                        $(this).addClass('active btn-primary').removeClass('btn-outline-primary');
+                    }
+                });
+
+                // 🔹 FONTOS: frissítjük a globális változót is!
+                selectedVehicleId = String(existingVehicleId);
+
+                $('#vehicle-select-toggle-btn')
+                    .text('Kiválasztás')
+                    .removeClass('btn-secondary')
+                    .addClass('btn-primary');
+            } else {
+                selectedVehicleId = null;
+                $('#vehicle-select-toggle-btn')
+                    .text('Mégse')
+                    .removeClass('btn-primary')
+                    .addClass('btn-secondary');
+            }
+
+            myModal.show();
+        });
+    });
+
+    // Kattintás egy járműre
+    $(document).on('click', '.vehicle-select-btn', function() {
+        const clickedId = String($(this).data('vehicle-id')); // 👉 mindig stringként kezeljük!
+
+        if (selectedVehicleId === clickedId) {
+            // Ugyanaz: töröljük a kijelölést
+            selectedVehicleId = null;
+            $(this).removeClass('active btn-primary').addClass('btn-outline-primary');
+
+            $('#vehicle-select-toggle-btn')
+                .text('Mégse')
+                .removeClass('btn-primary')
+                .addClass('btn-secondary');
+        } else {
+            // Új jármű kiválasztása
+            $('.vehicle-select-btn').removeClass('active btn-primary').addClass('btn-outline-primary');
+            $(this).addClass('active btn-primary').removeClass('btn-outline-primary');
+
+            selectedVehicleId = clickedId;
+
+            $('#vehicle-select-toggle-btn')
+                .text('Kiválasztás')
+                .removeClass('btn-secondary')
+                .addClass('btn-primary');
+        }
+    });
+
+    // Gomb click: kiválasztás vagy mégse
+    $(document).on('click', '#vehicle-select-toggle-btn', function() {
+        const $btn = $(this);
+        const modalEl = document.getElementById('specificvehicleModal');
+        const modalInstance = bootstrap.Modal.getInstance(modalEl);
+
+        if (selectedVehicleId) {
+            // 1️⃣ Keresd meg az aktuális offer formot
+            const $activeBtn = $('.vehicle-select-btn.active');
+            const cargoId = $activeBtn.data('cargo-id');
+            const vehicleName = $activeBtn.data('vehicle-name');
+            const vehicleType = $activeBtn.data('vehicle-type');
+
+            const $form = $(`form.offer-form input[name="cargo_id"][value="${cargoId}"]`).closest('form');
+
+            // 2️⃣ Hidden input létrehozása, ha kell
+            let $hidden = $form.find('input[name="vehicle_id"]');
+            if ($hidden.length === 0) {
+                $hidden = $('<input type="hidden" name="vehicle_id">');
+                $form.append($hidden);
+            }
+
+            // 3️⃣ Beállítjuk a jármű ID-t
+            $hidden.val(selectedVehicleId);
+
+            // 4️⃣ Formon vizuális jelzés
+            if (vehicleName !== '') {
+                $form.find('.offer-specific-text').text(`Kiválasztott jármű: ${vehicleName} (${vehicleType})`);
+            } else{
+                $form.find('.offer-specific-text').text(`Kiválasztott jármű: ${vehicleType}`);
+            }
+        }
+
+        // Modal bezárása
+        modalInstance.hide();
+
+        // Reset
+        selectedVehicleId = null;
+        $('#vehicle-select-toggle-btn')
+            .text('Mégse')
+            .removeClass('btn-primary')
+            .addClass('btn-secondary');
+
+        $('.vehicle-select-btn').removeClass('active btn-primary').addClass('btn-outline-primary');
+    });
+
 
     // Offer form submit
     $('#shipmentsTable').on('submit', '.offer-form', function(e) {
         e.preventDefault();
         const $form = $(this);
-        const data = $form.serialize();
+        const data = $form.serialize();  // <-- vehicle_id automatikusan benne lesz
 
-        $.post('cargo/offer', data)
+        $.post('/cargo/offer', data)
             .done(function(response) {
                 alert('Ajánlat elküldve!');
                 $form.closest('.offer-child-wrapper').remove();
@@ -1021,6 +1560,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const oversizeInput = document.getElementById("oversize");
     const loadtypeCard = document.getElementById("loadtypeCard");
     const loadtypeInput = document.getElementById("load_type");
+    const publicLicenseCard = document.getElementById("publicLicenseCard");
+    const publiclicenseInput = document.getElementById("public_license");
 
     if (paletteCard) {
         paletteCard.addEventListener("click", () => {
@@ -1040,6 +1581,13 @@ document.addEventListener("DOMContentLoaded", () => {
         loadtypeCard.addEventListener("click", () => {
             loadtypeCard.classList.toggle("active");
             loadtypeInput.value = loadtypeCard.classList.contains("active");
+        });
+    }
+
+    if (publicLicenseCard) {
+        publicLicenseCard.addEventListener("click", () => {
+            publicLicenseCard.classList.toggle("active");
+            publiclicenseInput.value = publicLicenseCard.classList.contains("active");
         });
     }
 });
@@ -1265,19 +1813,18 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // kártyás multiselect
 (function(){
-  // alapértelmezett szövegek
   const PLACEHOLDERS = {
     equipment: 'Válassz felszereltséget',
-    securement: 'Válassz rakományrögzítést'
+    securement: 'Válassz rakományrögzítést',
+    destination_countries: 'Válassz országot'
   };
 
-  // Ez a függvény kerül meghívásra a HTML onclick-jából.
   window.toggleCheckboxes = function(name) {
     let panel = document.getElementById(name + '-panel');
     if (!panel) {
       panel = createPanelFromSelect(name);
     }
-    if (!panel) return; // ha panel null, ne próbáljuk toggle-olni
+    if (!panel) return;
 
     panel.classList.toggle('open');
 
@@ -1287,71 +1834,103 @@ document.addEventListener("DOMContentLoaded", function() {
     }
   };
 
-  // Létrehozza a kártyapanelt a hidden <select> alapján
-    function createPanelFromSelect(name) {
-        const selectEl = document.getElementById(name);
-        if (!selectEl) return null;
+  function createPanelFromSelect(name) {
+    let selectEl = document.getElementById(name);
+    let panel = document.getElementById(name + '-panel');
+    if (panel) return panel;
+    if (!selectEl) return null;
 
-        // Javított multiselect keresés
-        const multiselect = selectEl.closest('.multiselect') || selectEl.previousElementSibling?.closest('.multiselect') || selectEl.parentElement;
-        if (!multiselect) return null;
+    const multiselect = selectEl.closest('.multiselect') || selectEl.previousElementSibling?.closest('.multiselect') || selectEl.parentElement;
+    if (!multiselect) return null;
 
-        const panel = document.createElement('div');
-        panel.className = 'cards-panel';
-        panel.id = name + '-panel';
+    panel = document.createElement('div');
+    panel.className = 'cards-panel';
+    panel.id = name + '-panel';
 
     const grid = document.createElement('div');
     grid.className = 'cards-grid';
-
     let cols = name === 'securement' ? 3 : 4;
     grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
 
     Array.from(selectEl.options).forEach((opt, idx) => {
-      const card = document.createElement('div');
-      card.className = 'card-item';
-      card.tabIndex = 0;
-      card.dataset.value = opt.value;
-      card.dataset.index = idx;
-      card.innerText = opt.text;
+        const card = document.createElement('div');
+        card.className = 'card-item';
+        card.tabIndex = 0;
+        card.dataset.value = opt.value;
+        card.dataset.index = idx;
+        card.style.display = 'flex';
+        card.style.flexDirection = 'column';
+        card.style.alignItems = 'center'; // középre igazítás vízszintesen
+        card.style.justifyContent = 'center'; // középre függőlegesen (ha kell)
 
-      if (opt.selected) card.classList.add('selected');
+        if (opt.selected) card.classList.add('selected');
 
-      card.addEventListener('click', () => toggleOption(selectEl, opt, card));
-      card.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          toggleOption(selectEl, opt, card);
+        // Ország neve
+        const span = document.createElement('span');
+        span.textContent = opt.text;
+        span.style.display = 'block';
+        span.style.textAlign = 'center';
+        span.style.marginBottom = '5px';
+
+        // Zászló csak destination_countries esetén
+        if (name === 'destination_countries') {
+            const flagCode = opt.dataset.flag || opt.value;
+            const img = document.createElement('img');
+            img.src = `/static/images/flags/${flagCode}.png`;
+            img.alt = opt.text;
+            img.style.display = 'block';
+            img.style.margin = '0 auto';
+            img.style.width = '28px';
+            img.style.height = 'auto';
+            card.appendChild(img);
         }
-      });
 
-      grid.appendChild(card);
+        card.appendChild(span);
+
+        card.addEventListener('click', () => toggleOption(selectEl, opt, card));
+        card.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                toggleOption(selectEl, opt, card);
+            }
+        });
+
+        grid.appendChild(card);
     });
 
-    if (selectEl.options.length > cols * cols) {
-      panel.classList.add('scrollable');
-    }
+    if (selectEl.options.length > cols * cols) panel.classList.add('scrollable');
 
     panel.appendChild(grid);
     multiselect.appendChild(panel);
 
     refreshSelectedText(name);
-
     return panel;
   }
 
-  // Kapcsolja a <select> opciót és a kártya osztályt
-  function toggleOption(selectEl, optEl, cardEl) {
-    const wasSelected = optEl.selected;
-    optEl.selected = !wasSelected;
-    cardEl.classList.toggle('selected', optEl.selected);
+    function toggleOption(selectEl, optEl, cardEl) {
+        const wasSelected = optEl.selected;
+        optEl.selected = !wasSelected;
+        cardEl.classList.toggle('selected', optEl.selected);
 
-    const ev = new Event('change', { bubbles: true });
-    selectEl.dispatchEvent(ev);
+        // Trigger change event a selectnél
+        const ev = new Event('change', { bubbles: true });
+        selectEl.dispatchEvent(ev);
 
-    refreshSelectedText(selectEl.id);
-  }
+        refreshSelectedText(selectEl.id);
 
-  // Frissíti a selectBoxban lévő span szövegét a kiválasztottakkal
+        // --- Hidden input frissítése csak +any esetén ---
+        if (selectEl.id === 'destination_countries') {
+            const destinationDiff = document.getElementById('destination_diff').value;
+            if (destinationDiff === 'any') {
+                const hiddenInput = document.getElementById('destination_country');
+                // Ha van kiválasztott elem, a hidden inputba csak az első kódot írjuk (vagy tetszőleges logika)
+                const selectedOpts = Array.from(selectEl.selectedOptions).map(o => o.value);
+                hiddenInput.value = selectedOpts.length ? selectedOpts.join(',') : '';
+            }
+        }
+    }
+
+
   function refreshSelectedText(name) {
     const span = document.getElementById(name + '-selected');
     const select = document.getElementById(name);
@@ -1370,7 +1949,6 @@ document.addEventListener("DOMContentLoaded", function() {
     }
   }
 
-  // Kattintás kívül -> zárja az összes panelt
   document.addEventListener('click', function(event) {
     const openPanels = document.querySelectorAll('.cards-panel.open');
     openPanels.forEach(panel => {
@@ -1382,7 +1960,6 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   });
 
-  // Ha a selectet (pl. programból) megváltoztatják, tükrözzük a kártyákon
   document.addEventListener('change', function(e){
     const el = e.target;
     if (el && el.tagName === 'SELECT' && el.multiple) {
@@ -1398,10 +1975,27 @@ document.addEventListener("DOMContentLoaded", function() {
     }
   });
 
-  // Inicializáljuk minden meglévő select feliratát
-  document.addEventListener('DOMContentLoaded', function(){
-    ['equipment','securement'].forEach(name => refreshSelectedText(name));
-  });
+  document.addEventListener('DOMContentLoaded', () => {
+        fetch('/vehicles/api/eu-countries')
+            .then(res => res.json())
+            .then(countries => {
+                const select = document.getElementById('destination_countries');
+                countries.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.code;
+                    opt.textContent = c.name;
+                    opt.dataset.flag = c.code; // zászló kód
+                    select.appendChild(opt);
+                });
+
+                // Létrehozzuk a panelt
+                createPanelFromSelect('destination_countries');
+            })
+            .catch(err => console.error("Hiba EU országok betöltésénél:", err));
+
+        // Frissítjük a feliratokat
+        ['equipment','securement','destination_countries'].forEach(name => refreshSelectedText(name));
+    });
 })();
 
 // dátum mezők
@@ -1437,7 +2031,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 $(document).ready(function() {
     let searchTimer;
-
     const apiUrl = "/cargo/ajax/city_search";
 
     // Delegált input esemény minden autocomplete-wrapper inputjára
@@ -1452,7 +2045,6 @@ $(document).ready(function() {
         if(query.length < 2) return;
 
         searchTimer = setTimeout(() => {
-            // A query szóközökre darabolása
             const terms = query.split(" ").filter(t => t.length > 0);
 
             $.get(apiUrl, { q: query }, function(data) {
@@ -1461,8 +2053,6 @@ $(document).ready(function() {
                 if(!data.length) return;
 
                 data.forEach(item => {
-                    // Ellenőrizzük a feltételeket:
-                    // ha számjegy -> zip, ha 2 karakter -> országkód, egyébként city
                     let matched = false;
                     for(const term of terms) {
                         if(/^\d+$/.test(term)) {
@@ -1512,196 +2102,127 @@ $(document).ready(function() {
         const $results = $(this).siblings(".suggestions");
         setTimeout(() => $results.hide(), 200);
     });
-});
 
-//
-// // city autocomplete AJAX
-// function setupAjaxCityList(inputId, apiUrl) {
-//     const input = document.getElementById(inputId);
-//     const container = document.getElementById(inputId + "_suggestions");
-//
-//     input.addEventListener("input", async function() {
-//         const query = this.value.trim();
-//         container.innerHTML = "";
-//         if (query.length < 2) return;
-//
-//         try {
-//             const res = await fetch(`${apiUrl}?q=${encodeURIComponent(query)}`);
-//             const cities = await res.json();
-//
-//             cities.slice(0, 10).forEach(city => {
-//                 const div = document.createElement("div");
-//                 div.classList.add("suggestion-item");
-//                 div.textContent = `${city.city_name} (${city.zipcode})`;
-//                 div.dataset.city = city.city_name;
-//                 div.dataset.zipcode = city.zipcode;
-//                 div.dataset.country = city.country_code;
-//
-//                 div.addEventListener("click", () => {
-//                     const fieldset = input.closest("fieldset");
-//
-//                     input.value = div.textContent;
-//
-//                     const countryInput = fieldset.querySelector(`#${inputId}_country`);
-//                     const zipInput = fieldset.querySelector(`#${inputId}_zip`);
-//                     const cityInput = fieldset.querySelector(`#${inputId}_city`);
-//                     const validInput = fieldset.querySelector(`#${inputId}_valid`);
-//
-//                     if(cityInput) cityInput.value = div.dataset.city;
-//                     if(zipInput) zipInput.value = div.dataset.zipcode;
-//                     if(countryInput) countryInput.value = div.dataset.country;
-//                     if(validInput) validInput.value = 1;
-//
-//                     console.log(`[Selection] ${inputId}: city=${div.dataset.city}, zip=${div.dataset.zipcode}, country=${div.dataset.country}`);
-//
-//                     container.innerHTML = "";
-//                 });
-//
-//
-//                 container.appendChild(div);
-//             });
-//
-//         } catch (err) {
-//             console.error("City fetch error:", err);
-//         }
-//     });
-//
-//     // Ha a felhasználó máshova kattint, eltűnik a lista
-//     document.addEventListener("click", function(e) {
-//         if (!container.contains(e.target) && e.target !== input) {
-//             container.innerHTML = "";
-//         }
-//     });
-// }
-//
-// // Inicializálás
-// setupAjaxCityList("origin", "/cargo/api/cities");
-// setupAjaxCityList("destination", "/cargo/api/cities");
-//
-// $(document).ready(function() {
-//     let searchTimer;
-//
-//     // Mapping az input ID-khoz és API endpointokhoz
-//     const apiMap = {
-//         origin: "/cargo/api/cities",
-//         destination: "/cargo/api/cities"
-//     };
-//     const debounceTimers = {};
-//
-//     $(document).on("input", ".city-search", function() {
-//         const $input = $(this);
-//         const query = $input.val().trim();
-//         const $results = $input.siblings(".suggestions"); // HTML-hez igazítva
-//         const apiUrl = apiMap[$input.attr("id")] || "/cargo/api/cities";
-//
-//         clearTimeout(debounceTimers[$input.attr("id")]);
-//         $results.empty().hide();
-//
-//         if (query.length < 1) return;
-//
-//         debounceTimers[$input.attr("id")] = setTimeout(async () => {
-//             const terms = query.split(/\s+/); // spacek mentén
-//             try {
-//                 const res = await fetch(`${apiUrl}?q=${encodeURIComponent(query)}`);
-//                 let cities = await res.json();
-//
-//                 cities = cities.filter(city => {
-//                     return terms.every(term => {
-//                         if (/^\d+$/.test(term)) {
-//                             return city.zipcode && city.zipcode.includes(term);
-//                         } else if (/^[A-Za-z]{2}$/.test(term)) {
-//                             return city.country_code && city.country_code.toLowerCase().includes(term.toLowerCase());
-//                         } else {
-//                             return city.city_name && city.city_name.toLowerCase().includes(term.toLowerCase());
-//                         }
-//                     });
-//                 });
-//
-//                 if (!cities.length) return;
-//
-//                 cities.slice(0, 10).forEach(city => {
-//                     const text = `${city.city_name} (${city.zipcode}, ${city.country_code})`;
-//                     const $li = $('<div class="result-item"></div>').text(text)
-//                         .data({ city });
-//                     $results.append($li);
-//                 });
-//
-//                 $results.show();
-//             } catch (err) {
-//                 console.error("City fetch error:", err);
-//             }
-//         }, 300); // 0.3s debounce
-//     });
-//
-//
-//
-//     // Delegált click esemény a találatokra
-//     $(document).on("click", ".result-item", function() {
-//         const $li = $(this);
-//         const $ul = $li.parent();
-//         const $input = $ul.siblings(".city-search");
-//         const fieldset = $input.closest("fieldset");
-//
-//         const cityData = {
-//             city: $li.data("city"),
-//             postcode: $li.data("zipcode"),
-//             country: $li.data("country")
-//         };
-//
-//         // Kitöltjük a mezőket
-//         selectCity($input[0], cityData);
-//
-//         $ul.empty().hide();
-//
-//         console.log(`[Selection] ${$input.attr('id')}: city=${cityData.city}, zip=${cityData.postcode}, country=${cityData.country}`);
-//     });
-//
-//     // Blur esemény, hogy eltűnjön a lista, ha elhagyja az input
-//     $(document).on("blur", ".city-search", function() {
-//         const $ul = $(this).siblings(".search-results");
-//         setTimeout(() => $ul.hide(), 200);
-//     });
-//
-//     // Ha a felhasználó ír az inputba, reseteljük az érvényességet
-//     $(document).on("input", ".city-search", function() {
-//         const $valid = $(this).siblings(".city-valid");
-//         $valid.val("0");
-//     });
-//
-//     // Form submit validáció
-//     $(".freight-form").on("submit", function(e) {
-//         let allValid = true;
-//         $(this).find(".city-valid").each(function() {
-//             if ($(this).val() !== "1") {
-//                 allValid = false;
-//                 return false;
-//             }
-//         });
-//
-//         if (!allValid) {
-//             e.preventDefault();
-//             alert("Minden városnál érvényes értéket kell kiválasztani a listából!");
-//         }
-//     });
-// });
-//
-// // --- Segédfüggvény a kiválasztott város mezők kitöltésére ---
-// function selectCity(element, cityData) {
-//     const fieldset = element.closest("fieldset");
-//
-//     // City input
-//     element.value = cityData.city;
-//
-//     // Hidden mezők
-//     const countryInput = fieldset.querySelector(".city-country");
-//     const postcodeInput = fieldset.querySelector(".city-postcode");
-//     if (countryInput) countryInput.value = cityData.country;
-//     if (postcodeInput) postcodeInput.value = cityData.postcode;
-//
-//     // Valid mező
-//     const validInput = fieldset.querySelector(".city-valid");
-//     if (validInput) validInput.value = 1;
-// }
+    // --- Vehicle sablon betöltés ---
+    const templateSelect = document.getElementById('vehicle_template_select');
+    const paletteCard = document.getElementById('paletteCard');
+    const oversizeCard = document.getElementById('oversizeCard');
+    const loadtypeCard = document.getElementById('loadtypeCard');
+    const publicLicenseCard = document.getElementById('publicLicenseCard');
+
+    templateSelect.addEventListener('change', async function() {
+        const templateId = this.value;
+        if (!templateId) return;
+
+        try {
+            const res = await fetch(`/vehicles/template/${templateId}`);
+            const data = await res.json();
+
+            if (!data.success) {
+                alert('Hiba: ' + data.error);
+                return;
+            }
+
+            const t = data.template;
+            console.log('[DEBUG] Betöltött sablon:', t);
+
+            // Egyszerű mezők
+            const simpleFields = ['vehicle_type', 'structure', 'capacity_t', 'volume_m3', 'price', 'currency', 'description'];
+            simpleFields.forEach(f => {
+                const el = document.getElementById(f);
+                if (el) el.value = t[f] ?? '';
+            });
+
+            // Városok automatikus kiválasztása
+            await fillCityFromTemplate('origin', t.origin_city, t.origin_country, t.origin_postcode);
+            await fillCityFromTemplate('destination', t.destination_city, t.destination_country, t.destination_postcode);
+
+            // Kapcsoló gombok
+            setActive(paletteCard, 'palette_exch', t.palette_exchange);
+            setActive(oversizeCard, 'oversize', t.oversize);
+            setActive(loadtypeCard, 'load_type', t.load_type === 'LTL');
+            setActive(publicLicenseCard, 'public_license', t.public_license);
+
+            // Multiselectek
+            setMultiselect('equipment', t.equipment);
+            setMultiselect('securement', t.cargo_securement);
+
+        } catch (err) {
+            console.error('Hiba a sablon betöltésekor:', err);
+            alert('Nem sikerült betölteni a sablont.');
+        }
+    });
+
+    function setActive(cardEl, hiddenId, active) {
+        const hidden = document.getElementById(hiddenId);
+        if (active) {
+            cardEl.classList.add('active');
+            hidden.value = 'true';
+        } else {
+            cardEl.classList.remove('active');
+            hidden.value = 'false';
+        }
+    }
+
+    function setMultiselect(type, valueStr) {
+        const selected = valueStr ? valueStr.split(',').map(v => v.trim()) : [];
+        const checkboxes = document.querySelectorAll(`#${type}-checkboxes input[type="checkbox"]`);
+        const displaySpan = document.getElementById(`${type}-selected`);
+        const hiddenSelect = document.getElementById(type);
+
+        let selectedLabels = [];
+
+        checkboxes.forEach(cb => {
+            cb.checked = selected.includes(cb.value);
+            if (cb.checked) selectedLabels.push(cb.value);
+        });
+
+        if (displaySpan) {
+            displaySpan.textContent = selectedLabels.length
+                ? selectedLabels.join(', ')
+                : (type === 'equipment' ? 'Válassz felszereltséget' : 'Válassz rakományrögzítést');
+        }
+
+        if (hiddenSelect) {
+            [...hiddenSelect.options].forEach(opt => {
+                opt.selected = selected.includes(opt.value);
+            });
+        }
+    }
+
+    // --- Városmező automatikus kiválasztása sablonból ---
+    async function fillCityFromTemplate(type, city, countryCode, postcode) {
+        return new Promise((resolve) => {
+            if (!city) return resolve();
+
+            const input = document.getElementById(type);
+            const $results = $(input).siblings(".suggestions");
+            if (!input || !$results.length) return resolve();
+
+            // 1️⃣ Beírjuk az inputba a város adatokat
+            input.value = `${countryCode || ''} ${postcode || ''} ${city}`.trim();
+
+            // 2️⃣ Triggereljük az input eseményt, hogy az autocomplete lefusson
+            $(input).trigger('input');
+
+            // 3️⃣ Várunk max. 2 másodpercet, és ha megjelenik a találat, kattintunk az elsőre
+            let tries = 0;
+            const maxTries = 20; // 20*100ms = 2s
+            const interval = setInterval(() => {
+                const $first = $results.children().first();
+                if ($first.length) {
+                    $first.click();
+                    clearInterval(interval);
+                    console.log(`[DEBUG] Autocomplete kiválasztva: ${$first.text()}`);
+                    resolve();
+                } else if (tries++ >= maxTries) {
+                    clearInterval(interval);
+                    console.warn(`[DEBUG] Nincs találat (timeout): ${city}`);
+                    resolve();
+                }
+            }, 100);
+        });
+    }
+});
 </script>
 {% endblock %}
-

@@ -1,0 +1,76 @@
+<div class="vehicle-list">
+    {% if vehicles %}
+        <ul style="list-style:none; padding:0;">
+            {% for vehicle in vehicles %}
+                <li style="margin-bottom:8px;">
+                    <button type="button"
+                            class="btn btn-outline-primary vehicle-select-btn"
+                            data-vehicle-id="{{ vehicle.vehicle_id }}"
+                            data-vehicle-type="{{ vehicle.vehicle_type }}"
+                            data-vehicle-name="{{ vehicle.license_plate }}"
+                            data-cargo-id="{{ cargo_id }}">
+
+                        {% if vehicle.license_plate %}
+                        <div class="license-plate">
+                            <div class="lp-eu">EU</div>
+                            <div class="lp-number">{{ vehicle.license_plate }}</div>
+                        </div>
+                        {% endif %}
+
+                        <strong>{{ vehicle.origin_country }}{{ vehicle.origin_postcode }}</strong> {{ vehicle.origin_city }}
+                        &rarr;
+                        <strong>{{ vehicle.destination_country }}{{ vehicle.destination_postcode }}</strong> {{ vehicle.destination_city }}
+                        <br>
+                        {{ vehicle.vehicle_type }} | {{ vehicle.structure }} <br>
+                        {% if vehicle.capacity_t %} ({{ vehicle.capacity_t }} t |{% endif %}
+                        {% if vehicle.volume_m3 %} {{ vehicle.volume_m3 }} m³){% endif %}
+                    </button>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>Nincsenek elérhető járműveid.</p>
+    {% endif %}
+</div>
+
+
+<!-- Modal alján egy gomb, ami változik -->
+<div class="modal-footer d-flex justify-content-center btn-holder">
+    <button type="button" class="btn btn-secondary" id="vehicle-select-toggle-btn">Mégse</button>
+</div>
+
+
+<style>
+/* License plate stílus */
+.license-plate {
+    display: flex;
+    width: 20%;           /* a gomb szélességének 20%-a */
+    margin: 0 auto 5px auto; /* középre igazítás, kis alsó margó */
+    border: 1px solid #333;
+    border-radius: 4px;
+    overflow: hidden;
+    font-family: sans-serif;
+    font-weight: bold;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.lp-eu {
+    width: 30%;
+    background-color: #003399; /* kék */
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.lp-number {
+    width: 70%;
+    background-color: white;
+    color: black;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+</style>

@@ -12,8 +12,8 @@ class ExpiredNotification(db.Model):
 
     # --- kapcsolatok ---
     user_id = db.Column(
-        db.Integer, 
-        db.ForeignKey("users.user_id", ondelete="CASCADE"), 
+        db.Integer,
+        db.ForeignKey("users.user_id", ondelete="CASCADE"),
         nullable=False
     )
     item_id = db.Column(db.Integer, nullable=False)
@@ -31,7 +31,7 @@ class ExpiredNotification(db.Model):
     # --- egyedi index, hogy ne legyen duplikált bejegyzés ---
     __table_args__ = (
         db.UniqueConstraint(
-            "user_id", "item_id", "item_type", "resolved", 
+            "user_id", "item_id", "item_type", "resolved",
             name="uq_expired_active_item"
         ),
         db.Index("ix_expired_user", "user_id"),

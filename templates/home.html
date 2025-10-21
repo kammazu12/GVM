@@ -502,10 +502,21 @@ function showExpiredModal(item) {
 
   setTimeout(() => content.classList.add('scale-100'), 10);
 
-  document.getElementById('expiredTitle').textContent = item.title || "Lejárt tétel";
-  const firstCity = item.first_city || "?";
-  const lastCity = item.last_city || "?";
-  const endDate = new Date(item.end_date || item.expiry_date).toLocaleDateString('hu-HU');
+  // --- itt módosítunk ---
+  let titleText = "Lejárt tétel";
+  if (item.type === "cargo") {
+    titleText = "Lejárt rakomány";
+  } else if (item.type === "vehicle" || item.type === "storage") {
+    titleText = "Lejárt raktér";
+  }
+
+  document.getElementById('expiredTitle').textContent = titleText;
+  // ----------------------
+
+  const firstCity = item.first_city || item.start_city || "?";
+  const lastCity = item.last_city || item.end_city || "?";
+  const endDate = new Date(item.end_date || item.expiry_date || item.available_until).toLocaleDateString('hu-HU');
+
   document.getElementById('expiredSub').textContent = `Lejárat: ${endDate} • ${firstCity} → ${lastCity}`;
 }
 
@@ -525,7 +536,6 @@ function hideExpiredModal() {
     checkNextExpired();
   }, 200); // megegyezik az animáció hosszával
 }
-
 
 // Bal oldal törlés
 document.getElementById('expiredDeleteArea').addEventListener('click', () => handleAction('delete'));
@@ -2389,8 +2399,8 @@ $('.edit-cargo-btn').on('click', function(){
 
 /* Kép animáció hoverkor */
 .kepek img {
-    width: 100%;
-    height: 95%;
+    width: 95%;
+    height: 90%;
     transition: transform 0.3s ease, opacity 0.3s ease;
 }
 

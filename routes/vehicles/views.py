@@ -19,13 +19,59 @@ from models import Vehicle, VehicleRoute, City
 @login_required
 @no_cache
 def vehicles():
-    return render_template('vehicles.html', user=current_user,
-        current_year=datetime.now().year)
+    templates = SavedVehicle.query.filter_by(
+        user_id=current_user.user_id,
+        save_type='template'
+    ).all()
+
+    templates_dict = []
+    for t in templates:
+        t_dict = {
+            "id": t.id,
+            "vehicle_type": t.vehicle_type,
+            "structure": t.structure,
+            "equipment": t.equipment,
+            "cargo_securement": t.cargo_securement,
+            "note": t.note,
+            "description": t.description,
+            "capacity_t": t.capacity_t,
+            "volume_m3": t.volume_m3,
+            "palette_exchange": t.palette_exchange,
+            "oversize": t.oversize,
+            "price": t.price,
+            "currency": t.currency,
+            "origin_country": t.origin_country,
+            "origin_postcode": t.origin_postcode,
+            "origin_city": t.origin_city,
+            "origin_diff": t.origin_diff,
+            "destination_country": t.destination_country,
+            "destination_postcode": t.destination_postcode,
+            "destination_city": t.destination_city,
+            "destination_diff": t.destination_diff,
+            "load_type": t.load_type,
+            "save_type": t.save_type,
+            "created_at": t.created_at,
+
+        }
+        templates_dict.append(t_dict)
+
+        # --- Backend debug log ---
+        print(f"[DEBUG] Vehicle template loaded: {t_dict}")
+
+    return render_template(
+        'vehicles.html',
+        user=current_user,
+        current_year=datetime.now().year,
+        templates=templates_dict
+    )
 
 
 @vehicles_bp.route("/save", methods=["POST"])
+@login_required
 def save_vehicle():
-    # --- Form mezők beolvasása ---
+    # -------------------------------
+    # 1️⃣ Form mezők beolvasása
+    # -------------------------------
     origin_city = request.form.get("origin_city")
     origin_postcode = request.form.get("origin_zip")
     origin_country = request.form.get("origin_country")
@@ -34,29 +80,55 @@ def save_vehicle():
     destination_city = request.form.get("destination_city")
     destination_postcode = request.form.get("destination_zip")
     destination_country = request.form.get("destination_country")
-    destination_diff = parse_float(request.form.get("destination_diff"))
+    destination_diff_raw = request.form.get("destination_diff")
 
     available_from_str = request.form.get("available_from")
     available_until_str = request.form.get("available_until")
 
-    available_from = datetime.strptime(available_from_str, "%Y-%m-%d").date() if available_from_str else None
-    available_until = datetime.strptime(available_until_str, "%Y-%m-%d").date() if available_until_str else None
-
     vehicle_type = request.form.get("vehicle_type")
-    superstructure = request.form.get("superstructure")
+    structure = request.form.get("structure")
     description = request.form.get("description")
     equipment = request.form.getlist("equipment")
     securement = request.form.getlist("securement")
+    license_plate = request.form.get("license_plate")
+    public_license_plate = request.form.get("public_license") == "true"
     capacity_t = parse_float(request.form.get("capacity_t"))
     volume_m3 = parse_float(request.form.get("volume_m3"))
     palette_exchange = request.form.get("palette_exchange") == "true"
     oversize = request.form.get("oversize") == "true"
-    price = request.form.get("price")
+    price = parse_float(request.form.get("price"))
     currency = request.form.get("currency")
     load_type = request.form.get("load_type") == "true"
     load_type = "LTL" if load_type else "FTL"
 
-    # --- Vehicle mentése ---
+    # -------------------------------
+    # 2️⃣ Checkboxok
+    # -------------------------------
+    save_sablon = request.form.get("sablonCheckbox") == "on"
+    save_longterm = request.form.get("longtermCheckbox") == "on"
+
+    # -------------------------------
+    # 3️⃣ destination_diff feldolgozása
+    # -------------------------------
+    diff_type = None
+    destination_diff = None
+    if destination_diff_raw == "any":
+        diff_type = "any"
+        destination_city = origin_city
+        destination_postcode = origin_postcode
+        destination_country = origin_country
+        destination_diff = None
+    else:
+        try:
+            destination_diff = float(destination_diff_raw) if destination_diff_raw else 0.0
+            diff_type = "number"
+        except (ValueError, TypeError):
+            diff_type = "zero"
+            destination_diff = 0.0
+
+    # -------------------------------
+    # 4️⃣ Vehicle mentése
+    # -------------------------------
     new_vehicle = Vehicle(
         user_id=current_user.user_id,
         company_id=current_user.company_id,
@@ -68,10 +140,12 @@ def save_vehicle():
         destination_postcode=destination_postcode,
         destination_country=destination_country,
         destination_diff=destination_diff,
-        available_from=available_from,
-        available_until=available_until,
+        available_from=datetime.strptime(available_from_str, "%Y-%m-%d").date() if available_from_str else None,
+        available_until=datetime.strptime(available_until_str, "%Y-%m-%d").date() if available_until_str else None,
         vehicle_type=vehicle_type,
-        structure=superstructure,
+        structure=structure,
+        license_plate=license_plate,
+        public_license_plate=public_license_plate,
         description=description,
         equipment=",".join(equipment) if equipment else None,
         cargo_securement=",".join(securement) if securement else None,
@@ -85,28 +159,44 @@ def save_vehicle():
     )
     db.session.add(new_vehicle)
     db.session.commit()
-    print(f"[LOG] Vehicle mentve: ID={new_vehicle.vehicle_id}")
+    print(f"[LOG] Vehicle mentve: ID={new_vehicle.vehicle_id}, diff_type={diff_type}")
 
-    # --- Pickup és Dropoff koordináták lekérése ---
+    # -------------------------------
+    # 5️⃣ VehicleDestination mentése 'any' esetén
+    # -------------------------------
+    if diff_type == "any":
+        selected_countries_json = request.form.get("selected_dest_countries")
+        if selected_countries_json:
+            try:
+                selected_countries = json.loads(selected_countries_json)
+                for code in selected_countries:
+                    if code:
+                        vd = VehicleDestination(vehicle_id=new_vehicle.vehicle_id, country=code)
+                        db.session.add(vd)
+                        print(f"[LOG] VehicleDestination mentve: {code}")
+                db.session.commit()
+            except Exception as e:
+                print("[ERROR] Hibás JSON formátum az országlistánál:", e)
+        return redirect(url_for("shipments"))
+
+    # -------------------------------
+    # 6️⃣ OSRM útvonal és VehicleRoute
+    # -------------------------------
     pickup_city = City.query.filter_by(city_name=origin_city, country_code=origin_country).first()
     dropoff_city = City.query.filter_by(city_name=destination_city, country_code=destination_country).first()
 
-    if not pickup_city or not dropoff_city or not pickup_city.latitude or not dropoff_city.latitude:
-        print("[ERROR] Nem található origin vagy destination város koordináta!")
+    if not pickup_city or not dropoff_city:
+        print("[ERROR] Nem található origin vagy destination város!")
         return redirect(url_for("shipments"))
 
-    # --- Elsőként a frontend által küldött OSRM útvonal feldolgozása ---
     osrm_route_coords = []
     route_coords_input = request.form.get("routeCoordsInput")
-
     if route_coords_input:
         try:
             osrm_route_coords = json.loads(route_coords_input)
-            print(f"[LOG] Frontend OSRM útvonal betöltve: {len(osrm_route_coords)} pont")
         except Exception as e:
             print("[ERROR] routeCoordsInput feldolgozási hiba:", e)
 
-    # --- Ha nem jött frontend útvonal, akkor backend OSRM számítás fallback ---
     if not osrm_route_coords:
         try:
             coord_string = f"{pickup_city.longitude},{pickup_city.latitude};{dropoff_city.longitude},{dropoff_city.latitude}"
@@ -115,21 +205,18 @@ def save_vehicle():
             data = response.json()
             if "routes" in data and len(data["routes"]) > 0:
                 osrm_route_coords = [[lat, lon] for lon, lat in data["routes"][0]["geometry"]["coordinates"]]
-            print(f"[LOG] Backend OSRM útvonal koordináták száma: {len(osrm_route_coords)}")
         except Exception as e:
             print("[ERROR] OSRM hiba:", e)
 
-    # Ha semmi sincs, legalább a két végpontot használjuk
     if not osrm_route_coords:
         osrm_route_coords = [[pickup_city.latitude, pickup_city.longitude],
                              [dropoff_city.latitude, dropoff_city.longitude]]
-        print("[LOG] OSRM nem adott vissza útvonalat, a két végpontot használjuk.")
 
-    # --- Bounding box és városok keresése ---
+    # Bounding box + nearby cities
     lats = [lat for lat, lon in osrm_route_coords]
     lons = [lon for lat, lon in osrm_route_coords]
-    min_lat, max_lat = min(lats)-0.1, max(lats)+0.1
-    min_lon, max_lon = min(lons)-0.1, max(lons)+0.1
+    min_lat, max_lat = min(lats) - 0.1, max(lats) + 0.1
+    min_lon, max_lon = min(lons) - 0.1, max(lons) + 0.1
 
     cities_query = City.query.filter(
         City.latitude != None,
@@ -137,9 +224,7 @@ def save_vehicle():
         City.latitude >= min_lat, City.latitude <= max_lat,
         City.longitude >= min_lon, City.longitude <= max_lon
     ).all()
-    print(f"[LOG] Bounding box városok: {len(cities_query)}")
 
-    # --- Radius szűrés és haversine távolság ---
     radius_km = 3
     nearby = []
     for city in cities_query:
@@ -149,22 +234,18 @@ def save_vehicle():
             max_deg = radius_km / 111.0
             if abs(lat - city.latitude) > max_deg or abs(lon - city.longitude) > max_deg:
                 continue
-            # haversine
             dlat = radians(city.latitude - lat)
             dlon = radians(city.longitude - lon)
-            a = sin(dlat/2)**2 + cos(radians(lat))*cos(radians(city.latitude))*sin(dlon/2)**2
-            c = 2 * atan2(sqrt(a), sqrt(1-a))
+            a = sin(dlat / 2) ** 2 + cos(radians(lat)) * cos(radians(city.latitude)) * sin(dlon / 2) ** 2
+            c = 2 * atan2(sqrt(a), sqrt(1 - a))
             dist = 6371 * c
             if dist <= radius_km and dist < min_dist:
                 min_dist = dist
                 min_idx = idx
         if min_idx is not None:
             nearby.append((min_idx, city))
-
     nearby.sort(key=lambda x: x[0])
-    print(f"[LOG] Talált városok a route mentén: {len(nearby)}")
 
-    # --- Mentés VehicleRoute táblába ---
     for stop_number, (_, city) in enumerate(nearby, start=1):
         route_entry = VehicleRoute(
             vehicle_id=new_vehicle.vehicle_id,
@@ -174,12 +255,52 @@ def save_vehicle():
             city=city.city_name
         )
         db.session.add(route_entry)
-        print(f"[LOG] VehicleRoute hozzáadva: {city.city_name}, stop_number={stop_number}")
-
     db.session.commit()
-    print(f"[LOG] Összes VehicleRoute mentve a járműhöz ID={new_vehicle.vehicle_id}")
 
-    # --- NearbyCity feltöltés csak végpontokhoz ---
+    # -------------------------------
+    # 7️⃣ SavedVehicle mentése a checkboxok alapján
+    # -------------------------------
+    saved_vehicles = []
+
+    for save_type in (("template", save_sablon), ("long-term", save_longterm)):
+        type_name, should_save = save_type
+        if should_save:
+            sv = SavedVehicle(
+                user_id=current_user.user_id,
+                vehicle_type=vehicle_type,
+                structure=structure,
+                equipment=",".join(equipment) if equipment else None,
+                cargo_securement=",".join(securement) if securement else None,
+                description=description,
+                license_plate=license_plate,
+                public_license_plate=public_license_plate,
+                capacity_t=capacity_t,
+                volume_m3=volume_m3,
+                palette_exchange=palette_exchange,
+                oversize=oversize,
+                price=price,
+                currency=currency,
+                origin_country=origin_country,
+                origin_postcode=origin_postcode,
+                origin_city=origin_city,
+                origin_diff=origin_diff,
+                destination_country=destination_country,
+                destination_postcode=destination_postcode,
+                destination_city=destination_city,
+                destination_diff=destination_diff,
+                load_type=load_type,
+                save_type=type_name
+            )
+            saved_vehicles.append(sv)
+
+    if saved_vehicles:
+        db.session.add_all(saved_vehicles)
+        db.session.commit()
+        print(f"[LOG] SavedVehicle rekordok mentve: {len(saved_vehicles)}")
+
+    # -------------------------------
+    # 8️⃣ NearbyCity feldolgozás (opcionális)
+    # -------------------------------
     add_nearby_cities_for_vehicle(new_vehicle)
 
     return redirect(url_for("shipments"))
@@ -200,6 +321,8 @@ def get_vehicle(vehicle_id):
         "equipment": vehicle.equipment or "",           # lehet None → üres string
         "cargo_securement": vehicle.cargo_securement or "",
         "description": vehicle.description or "",
+        "license_plate": vehicle.license_plate or "",
+        "public_license_plate": bool(vehicle.public_license_plate),
         "capacity_t": vehicle.capacity_t or "",
         "volume_m3": vehicle.volume_m3 or "",
         "available_from": vehicle.available_from.strftime('%Y-%m-%d') if vehicle.available_from else "",
@@ -237,9 +360,9 @@ def update_vehicle():
 
     # Csak engedélyezett mezők frissítése
     editable_fields = [
-        "vehicle_type","structure","equipment","cargo_securement",
+        "vehicle_type","structure","equipment","cargo_securement", "license_plate",
         "description","capacity_t","volume_m3","available_from","available_until",
-        "palette_exchange","oversize","price","currency",
+        "palette_exchange","oversize", "public_license", "price","currency",
         "origin_country","origin_postcode","origin_city",
         "destination_country","destination_postcode","destination_city"
     ]
@@ -356,6 +479,8 @@ def vehicles_api():
     """
     vehicles = Vehicle.query.filter_by(company_id=current_user.company_id).all()
 
+    print(f"[LOG] Vállalat járművei: {len(vehicles)}")
+
     vehicles_data = []
     for v in vehicles:
         vehicles_data.append({
@@ -388,25 +513,63 @@ def vehicles_api():
     return jsonify(vehicles_data)
 
 
+@vehicles_bp.route("/api/eu-countries")
+@login_required
+def eu_countries():
+    countries = Country.query.with_entities(
+        Country.id, Country.name, Country.code, Country.flag_url, Country.region
+    ).all()
+    print(countries)
+
+    result = []
+    for idx, c in enumerate(countries):
+        if c is None:
+            print(f"[WARNING] countries listában None elem: index={idx}")
+            continue
+
+        code = getattr(c, "code", None)
+        name = getattr(c, "name", None)
+        flag_url = getattr(c, "flag_url", "")
+        region = getattr(c, "region", None)
+
+        # Szűrés csak EU országokra
+        if region != "EU":
+            continue
+
+        if not code or not name:
+            print(
+                f"[WARNING] hiányzó mező egy Country rekordnál: id={getattr(c, 'id', 'unknown')}, code={code}, name={name}"
+            )
+            continue
+
+        result.append({"code": code, "name": name, "flag_url": flag_url})
+        print(f"[LOG] EU ország hozzáadva: {name} ({code})")
+
+    print(f"[LOG] Összes EU ország JSON-ba: {len(result)}")
+    return jsonify(result)
+
+
 @vehicles_bp.route('/<vehicle_id>/details')
 def vehicle_details(vehicle_id):
     vehicle = Vehicle.query.get(vehicle_id)
     if not vehicle:
         abort(404, description="Vehicle not found")
 
-    # pickup
+    # pickup város
     pickup_city = City.query.filter_by(
         city_name=vehicle.origin_city,
         country_code=vehicle.origin_country
     ).first()
 
-    # dropoff
+    # dropoff város
     dropoff_city = City.query.filter_by(
         city_name=vehicle.destination_city,
         country_code=vehicle.destination_country
     ).first()
 
     pickups, dropoffs = [], []
+
+    # pickup adatok
     if pickup_city:
         pickups.append({
             "lat": pickup_city.latitude,
@@ -416,6 +579,8 @@ def vehicle_details(vehicle_id):
             "country": pickup_city.country_code,
             "radiusKm": vehicle.origin_diff
         })
+
+    # dropoff adatok
     if dropoff_city:
         dropoffs.append({
             "lat": dropoff_city.latitude,
@@ -425,6 +590,12 @@ def vehicle_details(vehicle_id):
             "country": dropoff_city.country_code,
             "radiusKm": vehicle.destination_diff
         })
+
+    # --- EXTRA ORSZÁGOK (VehicleDestination táblából) ---
+    extra_destinations = []
+    if vehicle.destination_diff is None:  # csak ha országlista alapján dolgozunk
+        extra_records = VehicleDestination.query.filter_by(vehicle_id=vehicle.vehicle_id).all()
+        extra_destinations = [r.country for r in extra_records]
 
     # útvonal számítás
     route_coords, route_distance_km, route_duration_text, route_cities = [], None, None, []
@@ -450,7 +621,8 @@ def vehicle_details(vehicle_id):
         route_coords=route_coords,
         route_distance_km=route_distance_km,
         route_duration_text=route_duration_text,
-        route_cities=route_cities
+        route_cities=route_cities,
+        extra_destinations=extra_destinations  # ← EZ ÚJ!
     )
 
 
@@ -537,3 +709,63 @@ def geojson_countries_list():
     folder = os.path.join(current_app.static_folder, "geojson/countries")
     files = [f for f in os.listdir(folder) if f.endswith(".json")]
     return jsonify(files)
+
+
+# GET: betölti egy mentett jármű sablon adatait JSON-ban
+@vehicles_bp.route('/template/<int:template_id>', methods=['GET'])
+@login_required
+@no_cache
+def load_vehicle_template(template_id):
+    template = SavedVehicle.query.filter_by(
+        id=template_id,
+        user_id=current_user.user_id,
+        save_type='template'   # csak sablonok
+    ).first()
+
+    if not template:
+        return jsonify({"success": False, "error": "Sablon nem található"})
+
+    return jsonify({
+        "success": True,
+        "template": {
+            "id": template.id,
+            "vehicle_type": template.vehicle_type,
+            "structure": template.structure,
+            "equipment": template.equipment,
+            "cargo_securement": template.cargo_securement,
+            "description": template.description,
+            "capacity_t": template.capacity_t,
+            "volume_m3": template.volume_m3,
+            "palette_exchange": template.palette_exchange,
+            "oversize": template.oversize,
+            "price": template.price,
+            "currency": template.currency,
+            "origin_country": template.origin_country,
+            "origin_postcode": template.origin_postcode,
+            "origin_city": template.origin_city,
+            "origin_diff": template.origin_diff,
+            "destination_country": template.destination_country,
+            "destination_postcode": template.destination_postcode,
+            "destination_city": template.destination_city,
+            "destination_diff": template.destination_diff,
+            "load_type": template.load_type
+        }
+    })
+
+
+@vehicles_bp.route('/template/delete/<int:template_id>', methods=['POST'])
+@login_required
+@no_cache
+def delete_vehicle_template(template_id):
+    template = SavedVehicle.query.filter_by(
+        id=template_id,
+        user_id=current_user.user_id,
+        save_type='template'
+    ).first()
+
+    if not template:
+        return jsonify({'success': False, 'error': 'A sablon nem található.'})
+
+    db.session.delete(template)
+    db.session.commit()
+    return jsonify({'success': True})

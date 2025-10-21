@@ -37,6 +37,24 @@
                 </div>
             </div>
         </div>
+
+        <!-- 🚛 Járműadatok Modal -->
+        <div class="modal fade" id="vehicleDetailsModal" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered modal-md">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Ajánlott jármű adatai</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Bezárás"></button>
+              </div>
+              <div class="modal-body">
+                <p>Betöltés...</p>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bezárás</button>
+              </div>
+            </div>
+          </div>
+        </div>
     </main>
 </div>
 
@@ -73,8 +91,7 @@ if (!window.profileInitDone) {
 
 const incomingContainer = document.getElementById("offer-notifications");
 const outgoingContainer = document.getElementById("my-offer-notifications");
-
-// ======= Funkció: 1 ajánlat DOM elem generálása =======
+// ======= Funkció: 1 ajánlat DOM elem generálása (cargo + vehicle) =======
 function createOfferLink(data, direction) {
     const unseenClass = (direction === "in" && !data.seen) ? 'unseen' : '';
     const seenByRecipientClass = (direction === "out" && data.seen) ? 'seen-by-recipient' : '';
@@ -114,8 +131,12 @@ function createOfferLink(data, direction) {
         ? '<span class="seen-badge" title="A fogadó megtekintette">👁 Ajánlat megtekintve</span>'
         : '';
 
-    const $link = $(`<a href="#" class="open-chat" data-cargo="${data.cargo_id}" data-offer="${data.offer_id}">
+    // Label a típus jelzésére (opcionális, vizuális megkülönböztetés)
+    const offerTypeLabel = data.offer_type === "vehicle" ? '<span class="offer-type">Járműajánlat</span>' : '';
+
+    const $link = $(`<a href="#" class="open-chat" data-cargo="${data.cargo_id}" data-offer="${data.offer_id}" data-offer-type="${data.offer_type}">
         <div id="offer-${data.offer_id}" class="${classes}" style="padding:10px; border-radius:5px; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,0.1); position:relative;">
+            ${offerTypeLabel}
             ${direction==="in"
                 ? `<div><b>${data.from_user}</b></div>`
                 : `<div>Ajánlatod <b>${data.to_user}</b> részére:</div>`}
@@ -127,12 +148,14 @@ function createOfferLink(data, direction) {
             ${statusBadge}
         </div>
     </a>`);
+
     const fromUserId = data.from_user_id;
     const toUserId   = data.to_user_id;
 
-    // Chat megnyitás
+    // Chat megnyitás (később a chat.js-ben a vehicle-t külön kezelhetjük)
     $link.on('click', e => {
         e.preventDefault();
+
         openChatWindow(
             data.cargo_id,
             data.offer_id,
@@ -143,8 +166,13 @@ function createOfferLink(data, direction) {
             fromUserId,
             toUserId
         );
+
         if(direction === "in" && !data.seen){
-            fetch(`/cargo/offer/mark_seen/${data.offer_id}`, { method:'POST', credentials:'same-origin' })
+            const endpoint = data.offer_type === "vehicle"
+                ? `/cargo/vehicle_offer/mark_seen/${data.offer_id}`
+                : `/cargo/offer/mark_seen/${data.offer_id}`;
+
+            fetch(endpoint, { method:'POST', credentials:'same-origin' })
             .then(res=>res.json())
             .then(resp => {
                 if(resp.success){
@@ -154,8 +182,10 @@ function createOfferLink(data, direction) {
             });
         }
     });
+
     return $link[0];
 }
+
 
 // ======= Frissítés: lekérés szerverről =======
 function refreshOffers(){
@@ -207,6 +237,18 @@ document.getElementById('outgoing-tab').addEventListener('click', () => {
 
 {% endblock %}
 <style>
+.vehicle-info-box p {
+  margin: 4px 0;
+  padding: 6px 0;
+  border-bottom: 1px solid #e0e0e0;
+}
+.vehicle-info-box strong {
+  color: #333;
+}
+.vehicle-header-link:hover {
+  text-decoration: underline;
+}
+
 .offer-item {
     transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
     border: 5px solid #fff; /* alap keret */

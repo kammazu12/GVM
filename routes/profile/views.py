@@ -165,39 +165,35 @@ def forgot_password():
 @no_cache
 def get_user_offers():
     try:
-        # --- Bejövő ajánlatok ---
-        incoming_query = (
+        result_in = []
+        result_out = []
+
+        # --- 1️⃣ Sima Offer-ek ---
+        offers_query = (
             db.session.query(Offer, Cargo, User)
             .join(Cargo, Offer.cargo_id == Cargo.cargo_id)
             .join(User, Offer.offer_user_id == User.user_id)
-            .filter(Cargo.user_id == current_user.user_id)
-            .order_by(Offer.created_at.desc())
-            .all()
         )
 
-        result_in = []
-        for offer, cargo, user in incoming_query:
+        # Bejövő ajánlatok
+        for offer, cargo, user in offers_query.filter(Cargo.user_id == current_user.user_id).order_by(Offer.created_at.desc()).all():
             pickups = [loc.city for loc in cargo.locations if loc.type == 'pickup']
             dropoffs = [loc.city for loc in cargo.locations if loc.type == 'dropoff']
-
-            origin_display = pickups[0] if pickups else ''
-            origin_extra = len(pickups) - 1 if len(pickups) > 1 else 0
-
-            destination_display = dropoffs[-1] if dropoffs else ''
-            destination_extra = len(dropoffs) - 1 if len(dropoffs) > 1 else 0
 
             result_in.append({
                 'offer_id': offer.offer_id,
                 'cargo_id': cargo.cargo_id,
-                'offer_user_id': offer.offer_user_id,  # <<< ide kell!
+                'offer_user_id': offer.offer_user_id,
+                'vehicle_id': offer.vehicle_id,
                 'from_user': f"{user.first_name} {user.last_name}",
+                'to_user': f"{cargo.posted_by.first_name} {cargo.posted_by.last_name}" if cargo.posted_by else '',
                 'user_company': user.company.name if user.company else '',
-                'profile_picture': url_for('static', filename='uploads/profile_pictures/' + (
-                            user.profile_picture or 'default.png')),
-                'origin': origin_display,
-                'origin_extra_count': origin_extra,
-                'destination': destination_display,
-                'destination_extra_count': destination_extra,
+                'partner_company': cargo.posted_by.company.name if cargo.posted_by and cargo.posted_by.company else '',
+                'profile_picture': url_for('static', filename='uploads/profile_pictures/' + (user.profile_picture or 'default.png')),
+                'origin': pickups[0] if pickups else '',
+                'origin_extra_count': max(len(pickups)-1, 0),
+                'destination': dropoffs[-1] if dropoffs else '',
+                'destination_extra_count': max(len(dropoffs)-1, 0),
                 'price': offer.price,
                 'currency': offer.currency,
                 'note': offer.note,
@@ -207,43 +203,29 @@ def get_user_offers():
                 'direction': "in",
                 'cargo_owner_id': cargo.user_id,
                 'seen': bool(offer.seen),
-                'status': offer.status
+                'status': offer.status,
+                'type': 'offer'
             })
 
-        # --- Kimenő ajánlatok ---
-        outgoing_query = (
-            db.session.query(Offer, Cargo, User)
-            .join(Cargo, Offer.cargo_id == Cargo.cargo_id)
-            .join(User, Cargo.user_id == User.user_id)
-            .filter(Offer.offer_user_id == current_user.user_id)
-            .order_by(Offer.created_at.desc())
-            .all()
-        )
-
-        result_out = []
-        for offer, cargo, user in outgoing_query:
+        # Kimenő ajánlatok
+        for offer, cargo, user in offers_query.filter(Offer.offer_user_id == current_user.user_id).order_by(Offer.created_at.desc()).all():
             pickups = [loc.city for loc in cargo.locations if loc.type == 'pickup']
             dropoffs = [loc.city for loc in cargo.locations if loc.type == 'dropoff']
-
-            origin_display = pickups[0] if pickups else ''
-            origin_extra = len(pickups) - 1 if len(pickups) > 1 else 0
-
-            destination_display = dropoffs[-1] if dropoffs else ''
-            destination_extra = len(dropoffs) - 1 if len(dropoffs) > 1 else 0
 
             result_out.append({
                 'offer_id': offer.offer_id,
                 'cargo_id': cargo.cargo_id,
-                'offer_user_id': offer.offer_user_id,  # <<< ide is kell!
+                'offer_user_id': offer.offer_user_id,
+                'vehicle_id': offer.vehicle_id,
                 'from_user': f"{current_user.first_name} {current_user.last_name}",
                 'to_user': f"{user.first_name} {user.last_name}",
+                'user_company': current_user.company.name if current_user.company else '',
                 'partner_company': user.company.name if user.company else '',
-                'profile_picture': url_for('static', filename='uploads/profile_pictures/' + (
-                            user.profile_picture or 'default.png')),
-                'origin': origin_display,
-                'origin_extra_count': origin_extra,
-                'destination': destination_display,
-                'destination_extra_count': destination_extra,
+                'profile_picture': url_for('static', filename='uploads/profile_pictures/' + (user.profile_picture or 'default.png')),
+                'origin': pickups[0] if pickups else '',
+                'origin_extra_count': max(len(pickups)-1, 0),
+                'destination': dropoffs[-1] if dropoffs else '',
+                'destination_extra_count': max(len(dropoffs)-1, 0),
                 'price': offer.price,
                 'currency': offer.currency,
                 'note': offer.note,
@@ -253,7 +235,8 @@ def get_user_offers():
                 'direction': "out",
                 'cargo_owner_id': cargo.user_id,
                 'seen': bool(offer.seen),
-                'status': offer.status
+                'status': offer.status,
+                'type': 'offer'
             })
 
         return jsonify({"incoming": result_in, "outgoing": result_out})

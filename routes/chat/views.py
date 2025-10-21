@@ -4,7 +4,7 @@ from flask_login import login_required
 from . import chat_bp
 from models import *  # vagy ahogy nálad importálódik
 from sqlalchemy import asc
-from utils import no_cache
+from utils import no_cache, serialize_vehicle
 
 @chat_bp.route("/chat_history/<int:cargo_id>/<int:offer_id>")
 @login_required
@@ -54,6 +54,8 @@ def chat_history(cargo_id, offer_id):
         "destination": destination,
         "pickup_date": offer.pickup_date.strftime('%Y-%m-%d') if offer.pickup_date else "",
         "arrival_date": offer.arrival_date.strftime('%Y-%m-%d') if offer.arrival_date else "",
+        "vehicle_attached": offer.vehicle_id is not None,
+        "vehicle_data": serialize_vehicle(offer.vehicle) if offer.vehicle_id else None
     }
 
     return jsonify({"messages": out, "offer": offer_data})
@@ -67,6 +69,7 @@ def offer_info(offer_id):
     offer = Offer.query.get_or_404(offer_id)
     cargo = Cargo.query.get(offer.cargo_id)
     user = User.query.get(offer.offer_user_id)
+    vehicle = offer.vehicle if offer.vehicle_id else None
 
     origin = None
     destination = None
@@ -77,6 +80,8 @@ def offer_info(offer_id):
                 origin = loc.city
             elif loc.type == "dropoff":
                 destination = loc.city
+
+    print(vehicle)
 
     return jsonify({
         "offer_id": offer.offer_id,
@@ -93,4 +98,6 @@ def offer_info(offer_id):
         "destination": destination or "",
         "pickup_date": offer.pickup_date.strftime('%Y-%m-%d') if offer.pickup_date else "",
         "arrival_date": offer.arrival_date.strftime('%Y-%m-%d') if offer.arrival_date else "",
+        "vehicle_attached": offer.vehicle_id is not None,
+        "vehicle_data": serialize_vehicle(offer.vehicle) if offer.vehicle_id else None
     })

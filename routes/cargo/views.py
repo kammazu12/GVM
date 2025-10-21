@@ -1528,21 +1528,21 @@ def city_search():
     city_ids = set()
     results = []
 
-    # --- 1. Keresés városnév alapján (City) ---
+    # --- 1. Keresés City táblában ---
     city_query = db.session.query(City)
     for w in words:
         if len(w) == 2 and not re.search(r'\d', w):  # országkód
-            city_query = city_query.filter(City.country_code.ilike(w))
-        elif re.search(r'\d', w):  # szám van → ZIP
-            city_query = city_query.join(CityZipcode).filter(CityZipcode.zipcode.ilike(f"{w}%"))
+            city_query = city_query.filter(func.lower(City.country_code) == w)
+        elif re.search(r'\d', w):  # ZIP szám
+            city_query = city_query.join(CityZipcode).filter(CityZipcode.zipcode.like(f"{w}%"))
         else:  # városnév
-            city_query = city_query.filter(City.city_name.ilike(f"{w}%"))
+            city_query = city_query.filter(func.lower(City.city_name).like(f"{w}%"))
 
-    # Rendezés: similarity a városnévre
+    # Rendezés
     if not has_number:
-        city_query = city_query.order_by(func.similarity(City.city_name, term).desc())
-    else:
         city_query = city_query.order_by(City.city_name.asc())
+    else:
+        city_query = city_query.order_by(CityZipcode.zipcode.asc(), City.city_name.asc())
 
     for city in city_query.limit(10).all():
         city_ids.add(city.id)
@@ -1555,22 +1555,21 @@ def city_search():
             "zipcode": first_zip
         })
 
-    # --- 2. Keresés alternames táblában (AlterName) ---
+    # --- 2. Keresés alter_names táblában ---
     alt_query = db.session.query(City).join(AlterName)
     for w in words:
         if len(w) == 2 and not re.search(r'\d', w):
-            alt_query = alt_query.filter(City.country_code.ilike(w))
+            alt_query = alt_query.filter(func.lower(City.country_code) == w)
         elif re.search(r'\d', w):
-            alt_query = alt_query.join(CityZipcode).filter(CityZipcode.zipcode.ilike(f"{w}%"))
+            alt_query = alt_query.join(CityZipcode).filter(CityZipcode.zipcode.like(f"{w}%"))
         else:
-            alt_query = alt_query.filter(AlterName.alternames.ilike(f"{w}%"))
+            alt_query = alt_query.filter(func.lower(AlterName.alternames).like(f"{w}%"))
 
     if not has_number:
-        alt_query = alt_query.order_by(func.similarity(City.city_name, term).desc())
-    else:
         alt_query = alt_query.order_by(City.city_name.asc())
+    else:
+        alt_query = alt_query.order_by(CityZipcode.zipcode.asc(), City.city_name.asc())
 
-    # Csak azok, amik még nincsenek a city_results-ban
     for city in alt_query.limit(10).all():
         if city.id in city_ids:
             continue

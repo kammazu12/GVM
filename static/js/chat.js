@@ -8,7 +8,7 @@ socket.on('connect', () => {
     console.log("[DEBUG] Socket connected, id:", socket.id);
     if(typeof CURRENT_USER_ID !== 'undefined'){
         console.log("[DEBUG] Joining user room with CURRENT_USER_ID:", CURRENT_USER_ID);
-        socket.emit("join_user", { user_id: CURRENT_USER_ID });
+        socket.emit("join_user", { user_id: CURRENT_USER_ID }   );
     } else {
         console.warn("[WARN] CURRENT_USER_ID nincs definiálva!");
     }
@@ -86,19 +86,13 @@ function openChatWindow(cargoId, offerId, fromUser, profilePictureUrl, offerData
 
     if (offerData) {
         const isOwn = (offerData.from_user_id === CURRENT_USER_ID);
-        console.log("isOwn:", isOwn, "from_user_id:", offerData.from_user_id, "CURRENT_USER_ID:", CURRENT_USER_ID);
 
         let partnerName = isOwn ? offerData.to_user : offerData.from_user;
         let partnerProfilePic = offerData.profile_picture || '/static/uploads/profile_pictures/default.png';
 
-        // offerData.status lehet: "pending", "accepted", "declined"
-        let priceColor = "#007bff"; // alap: pending → kék
-
-        if(offerData.status === "accepted" || offerData.status === "finalized") {
-            priceColor = "green";
-        } else if(offerData.status === "declined" || offerData.status === "withdrawn") {
-            priceColor = "red";
-        }
+        let priceColor = "#007bff";
+        if(offerData.status === "accepted" || offerData.status === "finalized") priceColor = "green";
+        else if(offerData.status === "declined" || offerData.status === "withdrawn") priceColor = "red";
 
         let buttonsHtml = "";
         if (!isOwn && offerData.cargo_owner_id === CURRENT_USER_ID) {
@@ -110,7 +104,6 @@ function openChatWindow(cargoId, offerId, fromUser, profilePictureUrl, offerData
                     </div>`;
             }
         } else if (offerData.cargo_owner_id !== CURRENT_USER_ID) {
-            // ajánlattevő saját oldala → új ajánlat
             if (offerData.status === "accepted") {
                 buttonsHtml = `
                     <div class="offer-buttons one-btn">
@@ -125,28 +118,59 @@ function openChatWindow(cargoId, offerId, fromUser, profilePictureUrl, offerData
             }
         }
 
+        // ==== ÚJ RÉSZ: summary link a modalhoz ====
+        let vehicleLinkHtml = "";
+        console.log("[DEBUG] offerData.vehicle_attached:", offerData.vehicle_attached);
+        if (offerData.vehicle_attached) {
+            vehicleLinkHtml = `
+                <div style="margin-top:5px;">
+                    🚛 <a href="#" class="vehicle-summary-link" data-offer-id="${offerData.offer_id}">
+                        Jármű adatai megtekintése
+                    </a>
+                </div>
+            `;
+        }
 
         $messages.append(`
-        <div class="msg offer-summary" data-offer-id="${offerData.offer_id}" data-price="${offerData.price}" data-currency="${offerData.currency}" style="background:#f0f0f0; padding:5px; border-radius:5px; margin-bottom:5px; display:flex; justify-content:space-between; position: sticky; top: 0; flex-wrap: wrap">
-            <div class="offer-left" style="display:flex; flex-direction:column; align-items:flex-start;">
-                <span>⬆️${offerData.origin}</span>
-                <small><b>${offerData.pickup_date}</b></small>
-                <b class="offer-price" style="color: ${priceColor}">${offerData.price} ${offerData.currency.toUpperCase()}</b>
+            <div class="msg offer-summary" data-offer-id="${offerData.offer_id}" data-price="${offerData.price}" data-currency="${offerData.currency}" style="background:#f0f0f0; padding:5px; border-radius:5px; margin-bottom:5px; display:flex; flex-direction:column;">
+                <div style="display:flex; justify-content:space-between;">
+                    <div>
+                        ⬆️ ${offerData.origin}<br>
+                        <small><b>${offerData.pickup_date}</b></small>
+                    </div>
+                    <div>
+                        ${offerData.destination} ⬇️<br>
+                        <small><b>${offerData.arrival_date}</b></small>
+                    </div>
+                    <b class="offer-price" style="color:${priceColor}">${offerData.price} ${offerData.currency.toUpperCase()}</b>
+                </div>
+                ${buttonsHtml}
+                ${vehicleLinkHtml}
+                ${offerData.note ? `
+                    <div style="display:flex; align-items:center; margin-top:5px;">
+                        <img src="${partnerProfilePic}" alt="${partnerName}" style="width:30px; height:30px; border-radius:50%; object-fit:cover; margin-right:8px;">
+                        <span>${offerData.note}</span>
+                    </div>` : ''}
             </div>
-            <div class="offer-right" style="display:flex; flex-direction:column; align-items:flex-end;">
-                <span>${offerData.destination}⬇️</span>
-                <small><b>${offerData.arrival_date}</b></small>
-                <div style="height: 24px;"></div>
-            </div>
-            ${buttonsHtml}
-            <!-- Ide tesszük a státusz divet -->
-            <div class="offer-status" style="margin-top:5px;"></div>
-            ${offerData.note ? `
-            <div style="display:flex; align-items:center; margin-top:5px;">
-                <img src="${partnerProfilePic}" alt="${partnerName}" style="width:30px; height:30px; border-radius:50%; object-fit:cover; margin-right:8px;">
-                <span>${offerData.note}</span>
-            </div>` : ''}
         `);
+    }
+
+    console.log("[DEBUG] offerData in chat window:", offerData);
+    // === 🚛 Ha az ajánlathoz jármű van csatolva, tegyünk linket a chat fejlécbe ===
+    if (offerData.vehicle_attached && offerData.vehicle_data) {
+        const vehicleName = offerData.vehicle_data.plate_number || "Ismeretlen rendszám";
+
+        // Duplikáció elkerülése
+        if ($chat.find('.vehicle-header-link').length === 0) {
+            $chat.find('.chat-header-left').append(`
+                <a href="#"
+                   class="vehicle-header-link"
+                   data-vehicle='${JSON.stringify(offerData.vehicle_data)}'
+                   style="margin-left:10px; font-size:0.85em; color:#007bff; text-decoration:none;">
+                   🚛 Ajánlott autó
+                </a>
+            `);
+        }
     }
 
     const $header = $chat.find('.chat-header');
@@ -492,42 +516,6 @@ function showOfferToast(message, status) {
     }, 4000);
 }
 
-// Frissített socket.on az ajánlat státuszhoz
-// socket.on('offer_status_update', function(data){
-//     const offerId = data.offer_id;
-//     const status = data.status; // "accepted" vagy "declined"
-//     const statusText = status === 'accepted' ? "✔ Elfogadva" : "✖ Elutasítva";
-//     const toastMessage = `Ajánlat státusza változott:<br> ${data.origin} - ${data.destination} (${data.price} ${data.currency.toUpperCase()})<br>${statusText}`;
-//
-//     // Először próbáljuk listában frissíteni
-//     socket.on('offer_status_update', function(data){
-//         const $offerItem = $(`#offer-${data.offer_id}`);
-//         if($offerItem.length){
-//             // Státusz osztály frissítése
-//             $offerItem.removeClass('status-accepted status-declined status-pending')
-//                       .addClass(data.status === 'accepted' ? 'status-accepted'
-//                                                             : data.status === 'declined' ? 'status-declined'
-//                                                                                           : 'status-pending');
-//             // Státusz szöveg
-//             const $statusDiv = $offerItem.find('.offer-status');
-//             $statusDiv.text(data.status === 'accepted' ? '✅ Elfogadva'
-//                                                         : data.status === 'declined' ? '❌ Elutasítva'
-//                                                                                       : '');
-//         }
-//     });
-//
-//     // Chat ablakban
-//     const $chatOffer = $(`.offer-summary[data-offer-id="${offerId}"] .offer-status`);
-//     if($chatOffer.length){
-//         $chatOffer.text(statusText).css("color", status === 'accepted' ? 'green' : 'red');
-//     }
-//
-//     // Toast, ha nincs sehol
-//     if(!$offerItem.length && !$chatOffer.length){
-//         showOfferToast(toastMessage, status);
-//     }
-// });
-
 // SocketIO: másik fél frissítése a gyors ajánlatról
 socket.on('offer_updated', function(data){
     const offerId = data.offer_id;
@@ -540,4 +528,70 @@ socket.on('offer_updated', function(data){
     $offerDiv.find('.offer-left small b').first().text(updated.pickup_date);
     $offerDiv.find('.offer-right small b').first().text(updated.arrival_date);
     $offerDiv.find('.offer-left b').first().text(`${updated.price} ${updated.currency.toUpperCase()}`);
+});
+
+// ======= Vehicle selection -> csak kijelölés (nem ment adatbázisba) =========
+$(document).on('click', '.select-vehicle-btn', function() {
+    const vehicleId = $(this).data('vehicle-id');
+    const cargoId = $(this).data('cargo-id');
+    const vehicleName = $(this).data('vehicle-name'); // pl. rendszám vagy név
+
+    if (!confirm(`Biztosan ezzel a járművel: ${vehicleName} szeretnéd elvinni a rakományt?`)) return;
+
+    // 1️⃣ Beírjuk a hidden mezőbe
+    const $form = $(`#offer-form-${cargoId}`); // form az adott cargo-hoz
+    if ($form.length) {
+        $form.find('input[name="vehicle_id"]').val(vehicleId);
+        console.log(`✅ Beírva a jármű ID a formba: ${vehicleId}`);
+    } else {
+        console.warn("Nem található a form az offer-hez:", cargoId);
+    }
+
+    // 3️⃣ (Opcionális) megjelenítés a felületen, pl. gomb mellett
+    const $btn = $(this);
+    $btn.closest('.vehicle-card').find('.selected-vehicle-label').remove(); // töröljük a régit, ha van
+    $btn.closest('.vehicle-card').append(`
+        <div class="selected-vehicle-label" style="margin-top:5px; color:green; font-weight:bold;">
+            ✅ Kiválasztva: ${vehicleName}
+        </div>
+    `);
+});
+
+// === 🚛 Jármű részletei linkre kattintás ===
+$(document).on('click', '.vehicle-summary-link', function(e) {
+    e.preventDefault();
+    const offerId = $(this).data('offer-id');
+
+    // AJAX kérés az ajánlat adatainak lekéréséhez
+    $.getJSON(`/offer_info/${offerId}`, function(resp) {
+        let vehicleData = resp.vehicle_data;
+
+        let html = '';
+        if(vehicleData){
+            html = `
+                <div style="font-size:0.95em;">
+                    <p><strong>Rendszám:</strong> ${vehicleData.plate_number || 'N/A'}</p>
+                    <p><strong>Típus:</strong> ${vehicleData.type || 'N/A'}</p>
+                    <p><strong>Kapacitás:</strong> ${vehicleData.capacity ? vehicleData.capacity + ' t' : 'N/A'}</p>
+                    <p><strong>Méretek:</strong> ${vehicleData.dimensions || 'N/A'}</p>
+                </div>
+            `;
+        } else {
+            html = '<p>Nincs elérhető adat erről a járműről.</p>';
+        }
+
+        const $modal = $(`
+            <div class="modal-overlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; z-index:2000;">
+                <div class="modal-content" style="background:#fff; padding:20px; border-radius:8px; width:300px;">
+                    <h3>Jármű adatai</h3>
+                    <div class="modal-body">${html}</div>
+                    <button class="modal-close-btn">Mégse</button>
+                </div>
+            </div>
+        `);
+
+        $('body').append($modal);
+
+        $modal.find('.modal-close-btn').on('click', () => $modal.remove());
+    });
 });

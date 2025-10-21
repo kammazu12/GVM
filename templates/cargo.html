@@ -7,7 +7,7 @@
     <main class="main-content">
     <h1 class="cim">Járművek</h1>
     <div class="cargo-container">
-        <button class="accordion-btn">Rakomány feltöltése / fuvar keresése ▼</button>
+        <button class="accordion-btn">Rakomány feltöltése / fuvar keresése▼</button>
         <!-- Lenyíló form -->
         <div class="accordion-content">
             <!-- Tabs gombok -->
@@ -367,9 +367,9 @@
                     </div>
                     <div class="sablon-wrapper">
                         <label class="custom-checkbox">
-                            Mentés sablonként
                             <input type="checkbox" id="sablonCheckbox" name="sablonCheckbox" class="sablon">
                             <span class="checkmark"></span>
+                            Mentés sablonként
                         </label>
                     </div>
                     <div class="btn-wrapper">
@@ -453,15 +453,24 @@
 
                         <!-- Hova -->
                         <td class="dropoff-cell">
-                            <span class="country-zip">
-                                <strong>{{ vehicle.destination_country or '-' }} {{ vehicle.destination_postcode or '-' }}</strong>
-                            </span><br>
-                            <span class="city">{{ vehicle.destination_city or '-' }}</span>
-                            {% if vehicle.destination_diff %}
-                                <br>
-                                <span class="diff">(+{{ vehicle.destination_diff }} km)</span>
+                            {% if vehicle.destination_diff != None %}
+                                <span class="country-zip">
+                                    <strong>{{ vehicle.destination_country or '-' }} {{ vehicle.destination_postcode or '-' }}</strong>
+                                </span><br>
+                                <span class="city">{{ vehicle.destination_city or '-' }}</span>
+                                {% if vehicle.destination_diff > 0 %}
+                                    <br>
+                                    <span class="diff">(+{{ vehicle.destination_diff }} km)</span>
+                                {% endif %}
+                            {% else %}
+                                {% for d in vehicle.extra_destinations %}
+                                    <strong>{{ d.country }}</strong>{% if not loop.last %}, {% endif %}
+                                {% else %}
+                                    -
+                                {% endfor %}
                             {% endif %}
                         </td>
+
 
                         <!-- Jármű jellemzői külön mezők -->
                         <td>{{ vehicle.vehicle_type or '-' }}</td>
@@ -1227,51 +1236,59 @@ label img{
     width: 20px;
 }
 
-
 #paletteText, #oversizeText {
     color: #000;
 
 }
 
 .sablon-wrapper {
-      width: 15vw;
-      margin-bottom: 1em;
+    margin-top: 10px;
+    margin-bottom: 20px;
+    width: 15vw;
+    display: flex;
+    flex-direction: column; /* egymás alá */
+    gap: 0.5em;             /* kis távolság a checkboxok között */
 }
 
-
-.custom-checkbox{
-    width: 75%;
+/* A label legyen flex, a checkmark mindig bal oldalon */
+.custom-checkbox {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    position: relative;
+    font-size: 0.9em;
+    user-select: none;
 }
 
+/* Eredeti checkbox elrejtése */
 .custom-checkbox input[type="checkbox"] {
     display: none;
 }
 
+/* Saját checkmark stílus */
 .custom-checkbox .checkmark {
-    margin-left : 25px;
-    top: 6px;
-    left: 40px;
     width: 25px;
     height: 25px;
-    background-color: #fff;
     border: 2px solid #ccc;
     border-radius: 6px;
-    display: inline-block;
+    background-color: #fff;
     position: relative;
-    cursor: pointer;
+    margin-right: 10px; /* szöveg és checkmark közti távolság */
 }
 
+/* Pipa megjelenítése, ha checked */
 .custom-checkbox input[type="checkbox"]:checked + .checkmark::after {
     content: "";
     position: absolute;
-    left: 5px;
-    top: 1px;
+    left: 6px;
+    top: 2px;
     width: 8px;
     height: 16px;
     border: solid #333;
     border-width: 0 2px 2px 0;
     transform: rotate(45deg);
 }
+
 
 @media (max-width: 1550px) {
     .vehicle-second-row {
@@ -2865,30 +2882,33 @@ const countryBorders = {};
 const countryPromises = {}; // cache a fetch Promise-okhoz
 
 async function drawCountryIfNeeded(countryCode, layer, color) {
-    // console.log("drawCountryIfNeeded hívás:", countryCode);
+    console.log("drawCountryIfNeeded hívás:", countryCode);
 
     if (!countryCode) {
-        // console.log("Nincs countryCode");
+        console.log("Nincs countryCode");
         return;
     }
 
     if (!countryBorders[countryCode]) {
-        // console.log("GeoJSON nincs még cache-ben:", countryCode);
+        console.log("GeoJSON nincs még cache-ben:", countryCode);
         if (!countryPromises[countryCode]) {
-            // console.log("Új fetch Promise létrehozása:", countryCode);
+            console.log("Új fetch Promise létrehozása:", countryCode);
             countryPromises[countryCode] = fetch(`/static/geojson/countries/${countryCode}.geojson`)
-                .then(res => {
-                    if (!res.ok) throw new Error("HTTP hiba "+res.status);
-                    return res.json();
-                })
-                .then(geojson => {
-                    // console.log("GeoJSON betöltve:", countryCode);
+            .then(res => res.text())
+            .then(text => {
+                try {
+                    const geojson = JSON.parse(text);
+                    console.log("GeoJSON betöltve:", countryCode, geojson);
                     countryBorders[countryCode] = geojson;
                     return geojson;
-                })
-                .catch(e => {
-                    console.warn('GeoJSON betöltés hiba:', countryCode, e);
-                });
+                } catch (e) {
+                    console.error("JSON parse hiba:", countryCode, e, text);
+                }
+            })
+            .catch(e => {
+                console.warn("GeoJSON betöltés hiba:", countryCode, e);
+            });
+
         }
 
         await countryPromises[countryCode];
@@ -2897,7 +2917,7 @@ async function drawCountryIfNeeded(countryCode, layer, color) {
     }
 
     if (countryBorders[countryCode]) {
-        // console.log("GeoJSON hozzáadása a layerhez:", countryCode);
+        console.log("GeoJSON hozzáadása a layerhez:", countryCode);
         L.geoJSON(countryBorders[countryCode], {
             style: { color: color, weight: 2, fillOpacity: 0.1 }
         }).addTo(layer);
@@ -2918,7 +2938,7 @@ document.addEventListener("DOMContentLoaded", function() {
             let vehicleDetailsEl = document.getElementById("vehicleDetails");
             vehicleDetailsEl.innerHTML = html;
 
-            // toggle event binding itt:
+            // Toggle esemény
             const toggle = document.getElementById("route-cities-toggle");
             const content = document.getElementById("route-cities-content");
             if (toggle && content) {
@@ -2959,22 +2979,31 @@ document.addEventListener("DOMContentLoaded", function() {
                 let dropoffs = JSON.parse(vehicleDetailsEl.querySelector("#dropoffs-data")?.textContent || "[]");
                 let allCoords = [];
 
-                // PICKUPS
+                // --- EXTRA DESTINATIONS (piros) ---
+                let extraDestinations = [];
+                try {
+                    extraDestinations = JSON.parse(vehicleDetailsEl.querySelector("#extra-destinations")?.textContent || "[]");
+                } catch (e) { console.warn("extraDestinations JSON hiba:", e); }
+                console.log("extraDestinations:", extraDestinations);
+                for (const code of extraDestinations) {
+                    console.log("drawing extra destination country:", code);
+                    await drawCountryIfNeeded(code, dropoffsLayer, '#d73027');
+                }
+                console.log("we tried to draw extra destinations");
+                // --- PICKUPS (zöld) ---
                 for (const p of pickups) {
                     const hasCoords = validCoord(p.lat, p.lng);
                     const needCountry = !hasCoords || p.origin_diff === null;
 
                     if (hasCoords && p.origin_diff !== null) {
-                        // Marker + radius
                         L.circleMarker([p.lat, p.lng], {radius:7, color:'#000', fillColor:'#2ca25f', fillOpacity:0.9})
-                          .bindPopup("<b>Felrakó</b><br>"+(p.city||p.masked_city||''))
+                          .bindPopup(`<b>Felrakó</b><br>${p.city||p.masked_city||''}`)
                           .addTo(pickupsLayer);
 
                         if (p.radiusKm) {
                             L.circle([p.lat, p.lng], {radius: p.radiusKm*1000, color:'#2ca25f', fillOpacity:0.1})
                              .addTo(pickupsLayer);
                         }
-
                         allCoords.push([p.lat, p.lng]);
                     }
 
@@ -2983,21 +3012,20 @@ document.addEventListener("DOMContentLoaded", function() {
                     }
                 }
 
-                // DROPOFFS
+                // --- DROPOFFS (piros) ---
                 for (const d of dropoffs) {
                     const hasCoords = validCoord(d.lat, d.lng);
                     const needCountry = !hasCoords || d.destination_diff === null;
 
                     if (hasCoords && d.destination_diff !== null) {
                         L.circleMarker([d.lat, d.lng], {radius:7, color:'#000', fillColor:'#d73027', fillOpacity:0.9})
-                          .bindPopup("<b>Lerakó</b><br>"+(d.city||d.masked_city||''))
+                          .bindPopup(`<b>Lerakó</b><br>${d.city||d.masked_city||''}`)
                           .addTo(dropoffsLayer);
 
                         if (d.radiusKm) {
                             L.circle([d.lat, d.lng], {radius: d.radiusKm*1000, color:'#d73027', fillOpacity:0.1})
                              .addTo(dropoffsLayer);
                         }
-
                         allCoords.push([d.lat, d.lng]);
                     }
 
@@ -3006,7 +3034,23 @@ document.addEventListener("DOMContentLoaded", function() {
                     }
                 }
 
-                // OSRM ÚTVONAL
+                // --- VEHICLE DESTINATIONS (kék) ha pickup=dropoff ---
+                const sameLocation = pickups.length === 1 && dropoffs.length === 1 &&
+                                     pickups[0].city === dropoffs[0].city &&
+                                     pickups[0].country === dropoffs[0].country;
+
+                if (sameLocation) {
+                    let vehicleDestinations = [];
+                    try {
+                        vehicleDestinations = JSON.parse(vehicleDetailsEl.querySelector("#vehicle-destinations")?.textContent || "[]");
+                    } catch(e) { console.warn("VehicleDestination JSON hiba:", e); }
+
+                    for (const code of vehicleDestinations) {
+                        await drawCountryIfNeeded(code, dropoffsLayer, '#3388ff'); // kék
+                    }
+                }
+
+                // --- OSRM ÚTVONAL ---
                 let routeCoords = [];
                 if(allCoords.length>=2){
                     try {
@@ -3027,7 +3071,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     } catch(e){ console.warn('OSRM hiba', e); routeCoords = allCoords; }
                 }
 
-                // TELEPÜLÉSEK A ROUTE MENTÉN
+                // --- Települések a route mentén ---
                 if(routeCoords.length>=2){
                     const citiesEl = document.getElementById('route-cities-content');
                     if(!citiesEl) return;
@@ -3039,9 +3083,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     })).json();
 
                     if(response && response.length){
-                        let cityNames = response.map(c=>c.city_name);
-                        citiesEl.innerHTML = "" + cityNames.join(" → ");
-
+                        citiesEl.innerHTML = response.map(c=>c.city_name).join(" → ");
                         response.forEach(city=>{
                             if(!pickups.some(p=>p.lat==city.latitude && p.lng==city.longitude) &&
                                !dropoffs.some(d=>d.lat==city.latitude && d.lng==city.longitude)){
@@ -3055,10 +3097,11 @@ document.addEventListener("DOMContentLoaded", function() {
                         });
                     }
                 }
-            }); // shown.bs.modal
+            });
         });
     });
 });
+
 
 </script>
 {% endblock %}
