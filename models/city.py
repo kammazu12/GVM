@@ -1,4 +1,5 @@
 from extensions import *
+from sqlalchemy.dialects.postgresql import TSVECTOR
 
 class City(db.Model):
     __tablename__ = "city"
@@ -46,3 +47,4 @@ class Country(db.Model):
     iso_code = db.Column(db.String(3), nullable=False)
 
     cities = db.relationship('City', backref='country', lazy=True, primaryjoin="Country.code==foreign(City.country_code)")
+
