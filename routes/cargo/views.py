@@ -1522,29 +1522,18 @@ def city_search():
     if len(term) < 2:
         return jsonify([])
 
-    words = term.lower().split()
-    has_number = any(re.search(r'\d', w) for w in words)
-
     city_ids = set()
     results = []
 
-    # --- 1. Keresés City táblában ---
-    city_query = db.session.query(City)
-    for w in words:
-        if len(w) == 2 and not re.search(r'\d', w):  # országkód
-            city_query = city_query.filter(func.lower(City.country_code) == w)
-        elif re.search(r'\d', w):  # ZIP szám
-            city_query = city_query.join(CityZipcode).filter(CityZipcode.zipcode.like(f"{w}%"))
-        else:  # városnév
-            city_query = city_query.filter(func.lower(City.city_name).like(f"{w}%"))
+    # --- 1. City táblában FTS ---
+    ts_query = " & ".join(term.split())  # minden szó "AND" logikával
+    city_query = db.session.query(City).filter(
+        City.search_vector.op('@@')(func.to_tsquery('simple', ts_query))
+    ).order_by(
+        func.ts_rank_cd(City.search_vector, func.to_tsquery('simple', ts_query)).desc()
+    ).limit(10)
 
-    # Rendezés
-    if not has_number:
-        city_query = city_query.order_by(City.city_name.asc())
-    else:
-        city_query = city_query.order_by(CityZipcode.zipcode.asc(), City.city_name.asc())
-
-    for city in city_query.limit(10).all():
+    for city in city_query.all():
         city_ids.add(city.id)
         zipcodes = [zc.zipcode for zc in city.zipcodes] if city.zipcodes else []
         first_zip = zipcodes[0] if zipcodes else city.zipcode
@@ -1555,22 +1544,12 @@ def city_search():
             "zipcode": first_zip
         })
 
-    # --- 2. Keresés alter_names táblában ---
-    alt_query = db.session.query(City).join(AlterName)
-    for w in words:
-        if len(w) == 2 and not re.search(r'\d', w):
-            alt_query = alt_query.filter(func.lower(City.country_code) == w)
-        elif re.search(r'\d', w):
-            alt_query = alt_query.join(CityZipcode).filter(CityZipcode.zipcode.like(f"{w}%"))
-        else:
-            alt_query = alt_query.filter(func.lower(AlterName.alternames).like(f"{w}%"))
+    # --- 2. AlterName táblában FTS ---
+    alt_query = db.session.query(City).join(AlterName).filter(
+        AlterName.search_vector.op('@@')(func.to_tsquery('simple', ts_query))
+    ).limit(10)
 
-    if not has_number:
-        alt_query = alt_query.order_by(City.city_name.asc())
-    else:
-        alt_query = alt_query.order_by(CityZipcode.zipcode.asc(), City.city_name.asc())
-
-    for city in alt_query.limit(10).all():
+    for city in alt_query.all():
         if city.id in city_ids:
             continue
         city_ids.add(city.id)
@@ -1586,4 +1565,5 @@ def city_search():
             break
 
     return jsonify(results)
+
 
