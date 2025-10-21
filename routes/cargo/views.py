@@ -1537,12 +1537,12 @@ def city_search():
         if len(w) == 2:  # országkód (pl. HU)
             query = query.filter(City.country_code.ilike(w))
         elif re.search(r'\d', w):  # irányítószám
-            query = query.filter(CityZipcode.zipcode.ilike(f"%{w}%"))
+            query = query.filter(CityZipcode.zipcode.ilike(f"{w}%"))
         else:  # városnév vagy alternatív név
             query = query.filter(
                 or_(
-                    City.city_name.ilike(f"%{w}%"),
-                    AlterName.alternames.ilike(f"%{w}%")
+                    City.city_name.ilike(f"{w}%"),
+                    AlterName.alternames.ilike(f"{w}%")
                 )
             )
 
@@ -1560,8 +1560,6 @@ def city_search():
              .limit(10)
              .all()
     )
-
-
 
     # --- JSON formázás ---
     data = []
