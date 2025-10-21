@@ -1555,11 +1555,12 @@ def city_search():
 
     # --- Limit és duplikátum-szűrés ---
     results = (
-        query.distinct(City.id)
-             .order_by(City.id, func.similarity(City.city_name, term).desc())
+        query.group_by(City.id)
+             .order_by(func.similarity(City.city_name, term).desc())
              .limit(10)
              .all()
     )
+
 
 
     # --- JSON formázás ---
