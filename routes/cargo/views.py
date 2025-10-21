@@ -115,11 +115,14 @@ def check_expired_items():
             item = Vehicle.query.get(n.item_id)
             if item:
                 results.append({
-                    "type": "storage",
+                    "type": "vehicle",
                     "id": item.vehicle_id,
                     "title": item.description[:30],
-                    "expiry_date": item.available_until
+                    "expiry_date": item.available_until,
+                    "start_city": item.origin_city,
+                    "end_city": item.destination_city
                 })
+
                 print(f"[DEBUG] Vehicle hozzáadva a válaszhoz: {item.vehicle_id}")
             else:
                 print(f"[WARN] Vehicle nem található: {n.item_id}")
@@ -153,7 +156,7 @@ def handle_expired_action():
             for loc in cargo.locations:
                 if loc.end_date:
                     loc.end_date += timedelta(days=days)
-    elif item_type == "storage":
+    elif item_type == "vehicle":
         vehicle = Vehicle.query.get(item_id)
         if action == "delete":
             db.session.delete(vehicle)
@@ -681,6 +684,7 @@ def offer_create():
     price = request.form.get('price')
     pickup_date = request.form.get('pickup_date')
     arrival_date = request.form.get('delivery_date')
+    vehicle_id = request.form.get('vehicle_id')  # 🟢 opcionális mező
 
     if not cargo_id or not price:
         return jsonify(success=False, message="Hiányzó adat"), 400
@@ -695,16 +699,21 @@ def offer_create():
     if not cargo:
         return jsonify(success=False, message="A rakomány nem található"), 404
 
-    # ---- Ellenőrizzük, van-e már ajánlat ugyanattól a felhasználótól ----
-    existing_offer = Offer.query.filter_by(cargo_id=cargo.cargo_id, offer_user_id=current_user.user_id).first()
+    # --- Ellenőrizzük, van-e már ajánlat ugyanattól a felhasználótól ---
+    existing_offer = Offer.query.filter_by(
+        cargo_id=cargo.cargo_id,
+        offer_user_id=current_user.user_id
+    ).first()
 
     if existing_offer:
+        # ha elfogadott, nem lehet újraküldeni
         if existing_offer.status == "accepted":
             return jsonify({
                 "success": False,
                 "message": "Az ajánlat már elfogadásra került. Használja a 'Véglegesítés' vagy 'Visszavonás' funkciót."
             }), 403
-        # Felülírjuk az előző ajánlatot
+
+        # meglévő ajánlat frissítése
         existing_offer.price = price_val
         existing_offer.currency = request.form.get('currency', 'EUR')
         existing_offer.note = request.form.get('note', '')
@@ -712,12 +721,13 @@ def offer_create():
         existing_offer.arrival_date = datetime.strptime(arrival_date, "%Y-%m-%d")
         existing_offer.created_at = datetime.now()
         existing_offer.seen = False
-        existing_offer.status = "pending"  # újra pending
+        existing_offer.status = "pending"
+        existing_offer.vehicle_id = int(vehicle_id) if vehicle_id else None  # 🟢 új mező
+
         db.session.commit()
         offer = existing_offer
-
     else:
-        # Új ajánlat létrehozása
+        # új ajánlat létrehozása
         offer = Offer(
             cargo_id=cargo.cargo_id,
             offer_user_id=current_user.user_id,
@@ -727,15 +737,17 @@ def offer_create():
             pickup_date=datetime.strptime(pickup_date, "%Y-%m-%d"),
             arrival_date=datetime.strptime(arrival_date, "%Y-%m-%d"),
             created_at=datetime.now(),
-            seen=False
+            seen=False,
+            vehicle_id=int(vehicle_id) if vehicle_id else None  # 🟢 új mező
         )
         db.session.add(offer)
         db.session.commit()
 
+    # ajánlatot küldő felhasználó adatai
     offer_user = User.query.get(offer.offer_user_id)
     profile_pic = offer_user.profile_picture if offer_user and offer_user.profile_picture else 'default.png'
 
-    # pickup és dropoff helyek
+    # pickup és dropoff helyek (ha a Cargo-hoz tartoznak)
     origin = destination = ""
     if cargo.locations:
         for loc in cargo.locations:
@@ -744,7 +756,20 @@ def offer_create():
             elif loc.type == "dropoff":
                 destination = loc.city
 
-    # ---- valós idejű értesítés ----
+    # 🟢 jármű adatok betöltése (ha volt kiválasztva)
+    vehicle_data = None
+    if offer.vehicle_id:
+        vehicle = Vehicle.query.get(offer.vehicle_id)
+        if vehicle:
+            vehicle_data = {
+                "vehicle_id": vehicle.vehicle_id,
+                "license_plate": vehicle.license_plate,
+                "type": vehicle.type,
+                "capacity": vehicle.capacity,
+                "dimensions": vehicle.dimensions
+            }
+
+    # --- Socket.IO értesítés ---
     notification_data = {
         'offer_id': offer.offer_id,
         'cargo_id': cargo.cargo_id,
@@ -760,15 +785,44 @@ def offer_create():
         'destination': destination,
         'pickup_date': offer.pickup_date.strftime('%Y-%m-%d') if offer.pickup_date else '',
         'arrival_date': offer.arrival_date.strftime('%Y-%m-%d') if offer.arrival_date else '',
+        'status': offer.status,
+        'vehicle_attached': bool(offer.vehicle_id),  # 🟢 chathez
+        'vehicle_data': vehicle_data                 # 🟢 opcionális extra infó
     }
+
     room = f'user_{cargo.user_id}'
     socketio.emit('new_offer', notification_data, room=room)
 
     return jsonify(success=True, offer_id=offer.offer_id), 201
 
 
+
+@cargo_bp.route('/specific_vehicles/<int:cargo_id>')
+@login_required
+@no_cache
+def specific_vehicles(cargo_id):
+    """
+    Lekéri az aktuális felhasználó összes elérhető járművét a modalhoz.
+    """
+    today = date.today()
+
+    vehicles = Vehicle.query.filter(
+        Vehicle.user_id == current_user.user_id,
+        # csak elérhető járművek, ha vannak dátumok
+        ((Vehicle.available_from == None) | (Vehicle.available_from <= today)),
+        ((Vehicle.available_until == None) | (Vehicle.available_until >= today))
+    ).all()
+
+    return render_template(
+        'specific_vehicles.html',
+        vehicles=vehicles,
+        cargo_id=cargo_id
+    )
+
+
 @cargo_bp.route('/get_cargo/<int:cargo_id>')
 @login_required
+@no_cache
 def get_cargo(cargo_id):
     cargo = Cargo.query.get(cargo_id)
     if not cargo:
@@ -1471,24 +1525,38 @@ def city_search():
     words = term.lower().split()
     has_number = any(re.search(r'\d', w) for w in words)
 
-    query = db.session.query(City).outerjoin(CityZipcode, City.id == CityZipcode.city_id)
+    # --- Alap lekérdezés ---
+    query = (
+        db.session.query(City)
+        .outerjoin(CityZipcode, City.id == CityZipcode.city_id)
+        .outerjoin(AlterName, City.id == AlterName.city_id)
+    )
 
+    # --- Szűrés a keresett szavak alapján ---
     for w in words:
-        if len(w) == 2:  # országkód
+        if len(w) == 2:  # országkód (pl. HU)
             query = query.filter(City.country_code.ilike(w))
-        elif re.search(r'\d', w):  # bármilyen számjegy a szóban → zip
+        elif re.search(r'\d', w):  # irányítószám
             query = query.filter(CityZipcode.zipcode.ilike(f"%{w}%"))
-        else:
-            query = query.filter(City.city_name.ilike(f"%{w}%"))
+        else:  # városnév vagy alternatív név
+            query = query.filter(
+                or_(
+                    City.city_name.ilike(f"%{w}%"),
+                    AlterName.alternames.ilike(f"%{w}%")
+                )
+            )
 
-    # Rendezés
+    # --- Rendezés ---
     if has_number:
         query = query.order_by(CityZipcode.zipcode.asc(), City.city_name.asc())
     else:
-        query = query.order_by(City.city_name.asc())
+        # similarity: a keresett kifejezéshez legjobban hasonló városokat előre teszi
+        query = query.order_by(func.similarity(City.city_name, term).desc())
 
-    results = query.limit(10).all()
+    # --- Limit és duplikátum-szűrés ---
+    results = query.distinct(City.id).limit(10).all()
 
+    # --- JSON formázás ---
     data = []
     for city in results:
         zipcodes = [zc.zipcode for zc in city.zipcodes] if city.zipcodes else []
