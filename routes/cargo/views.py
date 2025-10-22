@@ -1525,14 +1525,32 @@ def city_search():
     city_ids = set()
     results = []
 
-    # --- 1. City táblában trigram alapú keresés ---
+    # --- 1. City táblában trigram alapú keresés (city_name + ascii_name + admin1-3) ---
     city_query = db.session.query(
         City,
-        func.similarity(City.city_name, term).label("score")
+        func.greatest(
+            func.similarity(City.city_name, term),
+            func.similarity(City.ascii_name, term),
+            func.similarity(City.admin1, term),
+            func.similarity(City.admin2, term),
+            func.similarity(City.admin3, term)
+        ).label("score")
     ).filter(
-        func.similarity(City.city_name, term) > 0.2  # 0.2 = hasonlósági küszöb
+        func.greatest(
+            func.similarity(City.city_name, term),
+            func.similarity(City.ascii_name, term),
+            func.similarity(City.admin1, term),
+            func.similarity(City.admin2, term),
+            func.similarity(City.admin3, term)
+        ) > 0.2
     ).order_by(
-        func.similarity(City.city_name, term).desc()
+        func.greatest(
+            func.similarity(City.city_name, term),
+            func.similarity(City.ascii_name, term),
+            func.similarity(City.admin1, term),
+            func.similarity(City.admin2, term),
+            func.similarity(City.admin3, term)
+        ).desc()
     ).limit(10)
 
     for city, score in city_query.all():
